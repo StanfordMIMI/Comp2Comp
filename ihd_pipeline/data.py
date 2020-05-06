@@ -5,6 +5,7 @@ from keras.utils.data_utils import OrderedEnqueuer
 import keras.utils as k_utils
 import numpy as np
 import pydicom
+from tqdm import tqdm
 
 from .models import Models
 
@@ -117,7 +118,7 @@ def predict(
     xs = []
     ys = []
     params = []
-    for s in range(num_scans):
+    for s in tqdm(range(num_scans)):
         x, p = next(output_generator)
         y = model.predict(x, batch_size=batch_size)
 

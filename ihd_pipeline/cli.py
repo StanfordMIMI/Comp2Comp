@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import sys
 from time import perf_counter
 
 from keras.models import K
@@ -16,11 +17,13 @@ from ihd_pipeline.metrics import HounsfieldUnits, CrossSectionalArea
 
 import silx.io.dictdump as sio
 
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+
 
 def argument_parser():
     parser = argparse.ArgumentParser("segment abdominal CT")
     parser.add_argument(
-        "--dicoms", nargs="+", type=str,
+        "--dicoms", nargs="+", type=str, required=True,
         help="path to dicom files(s)/directories to segment."
     )
     parser.add_argument(
@@ -34,7 +37,11 @@ def argument_parser():
         help="regex pattern for file names. Default: None"
     )
     parser.add_argument(
-        "--num-gpus", default=1,
+        "--overwrite", action="store_true",
+        help="overwrite results for computed files. Default: False"
+    )
+    parser.add_argument(
+        "--num-gpus", default=1, type=int,
         help="number of GPU(s) to use. Defaults to cpu if no gpu found."
     )
     parser.add_argument(
@@ -42,13 +49,20 @@ def argument_parser():
         choices=[x.model_name for x in Models],
         help="models to use for inference",
     )
+    parser.add_argument(
+        "opts",
+        help="Modify preferences options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
     return parser
 
 
 def setup(args):
     """Load preferences and perform basic setups.
     """
-    config_file = args.config_file
+    args_dict = vars(args)
+    config_file = args.config_file if "config_file" in args_dict else None
     if config_file:
         PREFERENCES.merge_from_file(args.config_file)
     PREFERENCES.merge_from_list(args.opts)
@@ -79,13 +93,14 @@ def main():
         find_files(
             dirs,
             max_depth=args.max_depth,
-            exist_ok=args.exist_ok,
+            exist_ok=args.overwrite,
             pattern=args.pattern
         )
     )
     logger.info("{} scans found".format(len(files)))
+    if len(files) == 0:
+        sys.exit(0)
 
-    dataset = Dataset(files)
     batch_size = PREFERENCES.BATCH_SIZE
 
     for m_name in args.models:
@@ -97,6 +112,8 @@ def main():
                 model_type = m_type
                 break
         assert model_type is not None
+
+        dataset = Dataset(files, windows=model_type.windows)
         categories = model_type.categories
         model = model_type.load_model()
         if num_gpus > 1:
@@ -119,13 +136,18 @@ def main():
         masks = [model_type.preds_to_mask(p) for p in preds]
         assert len(masks) == len(params_dicts)
         assert len(masks) == len(files)
-        for f, pred, mask, params in tqdm(zip(files, preds, masks, params_dicts)):  # noqa
+        for f, pred, mask, params in tqdm(zip(files, preds, masks, params_dicts), total=len(files)):  # noqa
             x = params["image"]
             results = compute_results(
                 x, mask, categories, params
             )
             output_file = format_output_path(f)
-            sio.dicttoh5(results, output_file, "/{}".format(m_name), mode="a")
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+            sio.dicttoh5(results, output_file, "/{}".format(m_name), mode="w", overwrite_data=True)
         logger.info("<TIME>: Metrics - count: {} - {:.4f} seconds".format(
             len(files), perf_counter() - start_time
         ))
+
+
+if __name__ == "__main__":
+    main()

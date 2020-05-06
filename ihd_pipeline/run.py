@@ -3,19 +3,21 @@ import os
 import re
 from typing import Dict, Sequence, Union
 
+from tabulate import tabulate
+
 from ihd_pipeline.metrics import HounsfieldUnits, CrossSectionalArea
 from ihd_pipeline.preferences import PREFERENCES
 
-logger = logging.getLogger("__name__")
+logger = logging.getLogger(__name__)
 
 
 def format_output_path(file_path, save_dir: str=None):
     if not save_dir:
-        save_dir = PREFERENCES.DATA_FOLDER
+        save_dir = PREFERENCES.DATA_DIR
 
     return os.path.join(
         os.path.dirname(file_path) if not save_dir else save_dir,
-        os.path.basename(file_path)
+        "{}.h5".format(os.path.splitext(os.path.basename(file_path))[0]),
     )
 
 
@@ -61,13 +63,14 @@ def find_files(
             elif os.path.isfile(possible_dir):
                 if pattern and not re.match(pattern, possible_dir):
                     continue
-                output_path = _output_path(possible_dir)
+                output_path = format_output_path(possible_dir)
                 if not exist_ok and os.path.isfile(output_path):
                     logger.info(
                         "Skipping {} - results exist at {}".format(
                             possible_dir, output_path,
                         )
                     )
+                    continue
                 ret_files.append(possible_dir)
 
         return ret_files
@@ -84,7 +87,7 @@ def find_files(
 def compute_results(x, mask, categories, params: Dict):
     hu = HounsfieldUnits()
     spacing = params.get("spacing", None)
-    csa_units = "mm" if spacing else ""
+    csa_units = "mm^2" if spacing else ""
     csa = CrossSectionalArea(csa_units)
 
     hu_vals = hu(mask, x, category_dim=-1)

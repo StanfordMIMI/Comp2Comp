@@ -1,0 +1,5 @@
+BATCH_SIZE: 16
+CACHE_DIR: ~/.ihd_pipeline/cache
+DATA_DIR: /bmrNAS/people/arjun/deployment/models/abCT/results
+MODELS_DIR: /bmrNAS/people/arjun/deployment/models/abCT
+NUM_WORKERS: 0

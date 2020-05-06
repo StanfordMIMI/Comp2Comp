@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Union
 
 import numpy as np
 
 
 def flatten_non_category_dims(
-    xs: Sequence[np.ndarray], category_dim: int = None
+    xs: Union[np.ndarray, Sequence[np.ndarray]], category_dim: int = None
 ):
     """Flattens all non-category dimensions into a single dimension.
 
@@ -17,13 +17,20 @@ def flatten_non_category_dims(
     Returns:
         ndarray: Shape (C, -1) if `category_dim` specified else shape (-1,)
     """
+    single_item = isinstance(xs, np.ndarray)
+    if single_item:
+        xs = [xs]
+
     if category_dim is not None:
         dims = (xs[0].shape[category_dim], -1)
         xs = (np.moveaxis(x, category_dim, 0).reshape(dims) for x in xs)
     else:
         xs = (x.flatten() for x in xs)
 
-    return xs
+    if single_item:
+        return list(xs)[0]
+    else:
+        return xs
 
 
 class Metric(Callable, ABC):
@@ -92,14 +99,12 @@ class CrossSectionalArea(Metric):
     def __call__(self, mask, spacing = None, category_dim: int = None):
         pixel_area = np.prod(spacing) if spacing else 1
         mask = mask.astype(np.bool)
-        mask = flatten_non_category_dims(
-            (mask,), category_dim
-        )
+        mask = flatten_non_category_dims(mask, category_dim)
 
         return pixel_area * np.count_nonzero(mask, -1)
 
     def name(self):
         if self.units:
-            return "Cross-sectional Area ()".format(self.units)
+            return "Cross-sectional Area ({})".format(self.units)
         else:
             return "Cross-sectional Area"
