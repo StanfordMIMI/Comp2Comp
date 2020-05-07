@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from abctseg.data import Dataset, predict
 from abctseg.models import Models
-from abctseg.preferences import PREFERENCES, save_preferences
+from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 from abctseg.run import compute_results, find_files, format_output_path
 from abctseg.utils import dl_utils
 from abctseg.utils.logger import setup_logger
@@ -100,24 +100,35 @@ def argument_parser():
     add_opts_argument(process_parser)
 
     # init parser.
-    init_parser = subparsers.add_parser("init", help="init abCTSeg library")
-    init_parser.add_argument(
-        "--ls", action="store_true", help="list out current preferences config"
+    cfg_parser = subparsers.add_parser("config", help="init abCTSeg library")
+    subparsers = cfg_parser.add_subparsers(
+        title="config sub-commands", dest="cfg_action"
     )
-    add_config_file_argument(init_parser)
-    add_opts_argument(init_parser)
+    subparsers.add_parser("ls", help="list default preferences config")
+    subparsers.add_parser("reset", help="reset to default config")
+    save_cfg_parser = subparsers.add_parser("save", help="set config defaults")
+    add_config_file_argument(save_cfg_parser)
+    add_opts_argument(save_cfg_parser)
     return parser
 
 
 def handle_init(args):
-    if args.ls:
+    cfg_action = args.cfg_action
+    if cfg_action == "ls":
         print("\n" + PREFERENCES.dump())
-    else:
+    elif cfg_action == "reset":
+        print("\nResetting preferences...")
+        reset_preferences()
+        save_preferences()
+        print("\n" + PREFERENCES.dump())
+    elif cfg_action == "save":
         setup(args)
         save_preferences()
         print("\nUpdated Preferences:")
         print("====================")
         print(PREFERENCES.dump())
+    else:
+        raise AssertionError("cfg_action {} not supported".format(cfg_action))
 
 
 def handle_process(args):
@@ -125,7 +136,7 @@ def handle_process(args):
     if not PREFERENCES.MODELS_DIR:
         raise ValueError(
             "MODELS_DIR not initialized. "
-            "Use `python -m abctseg.cli init` to set MODELS_DIR"
+            "Use `python -m abctseg.cli config` to set MODELS_DIR"
         )
     logger = logging.getLogger("abctseg.cli.__main__")
     logger.info("\n\n======================================================")
@@ -213,7 +224,7 @@ def handle_process(args):
 
 def main():
     args = argument_parser().parse_args()
-    if args.action == "init":
+    if args.action == "config":
         handle_init(args)
     elif args.action == "process":
         handle_process(args)

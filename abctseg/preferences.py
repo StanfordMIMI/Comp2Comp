@@ -12,7 +12,7 @@ _HOME_DIR = os.path.expanduser("~")
 _C = CN()
 _C.OUTPUT_DIR = ""
 _C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
-_C.MODELS_DIR = ""  # TODO: UNDO THIS
+_C.MODELS_DIR = ""
 
 _C.BATCH_SIZE = 16
 _C.NUM_WORKERS = 0
@@ -28,8 +28,8 @@ def save_preferences(filename=None):
 
 
 def reset_preferences():
-    with open(_PREFERENCES_FILE, "w") as f:
-        f.write(_C.dump())
+    global PREFERENCES
+    PREFERENCES = _C.clone()
 
 
 PREFERENCES = _C.clone()
@@ -40,9 +40,6 @@ else:
         PREFERENCES.merge_from_file(_PREFERENCES_FILE)
     except KeyError:
         warnings.warn(
-            "Preference file is outdated. "
-            "Please reset your preferences."
+            "Preference file is outdated. Please reset your preferences."
         )
-        warnings.warn(
-            "Loading default config..."
-        )
+        warnings.warn("Loading default config...")
