@@ -10,4 +10,4 @@ See [INSTALL.md](INSTALL.md).
 ## Quick Start
 
 See [GETTING_STARTED.md](GETTING_STARTED.md) and learn more at our
-[documentation](https://ad12.github.io/abctseg/_build/html/index.html).
+[documentation](https://ad12.github.io/abCTSeg/).
