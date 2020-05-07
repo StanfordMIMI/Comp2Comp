@@ -10,75 +10,12 @@ from tqdm import tqdm
 
 from abctseg.data import Dataset, predict
 from abctseg.models import Models
-from abctseg.preferences import PREFERENCES
+from abctseg.preferences import PREFERENCES, save_preferences
 from abctseg.run import compute_results, find_files, format_output_path
 from abctseg.utils import dl_utils
 from abctseg.utils.logger import setup_logger
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-
-
-def argument_parser():
-    parser = argparse.ArgumentParser("segment abdominal CT")
-    subparsers = parser.add_subparsers(dest="action")
-
-    seg_parser = subparsers.add_parser("segment", help="segment abCT scans")
-    seg_parser.add_argument(
-        "--dicoms",
-        nargs="+",
-        type=str,
-        required=True,
-        help="path to dicom files(s)/directories to segment.",
-    )
-    seg_parser.add_argument(
-        "--max-depth",
-        nargs="?",
-        type=str,
-        default=None,
-        help="max depth to search directory. Default: None (recursive search)",
-    )
-    seg_parser.add_argument(
-        "--pattern",
-        nargs="?",
-        type=str,
-        default=None,
-        help="regex pattern for file names. Default: None",
-    )
-    seg_parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="overwrite results for computed files. Default: False",
-    )
-    seg_parser.add_argument(
-        "--num-gpus",
-        default=1,
-        type=int,
-        help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
-    )
-    seg_parser.add_argument(
-        "--models",
-        nargs="+",
-        type=str,
-        choices=[x.model_name for x in Models],
-        help="models to use for inference",
-    )
-    seg_parser.add_argument(
-        "opts",
-        help="Modify preferences options using the command-line",
-        default=None,
-        nargs=argparse.REMAINDER,
-    )
-
-    pref_parser = subparsers.add_parser(
-        "configure", help="configure preferences"
-    )
-    pref_parser.add_argument(
-        "opts",
-        help="Modify preferences options using the command-line",
-        default=None,
-        nargs=argparse.REMAINDER,
-    )
-    return parser
 
 
 def setup(args):
@@ -92,8 +29,93 @@ def setup(args):
     setup_logger(PREFERENCES.CACHE_DIR)
 
 
-def main():
-    args = argument_parser().parse_args()
+def add_config_file_argument(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "--config-file",
+        type=str,
+        required=False,
+        help="Preferences config file"
+    )
+
+
+def add_opts_argument(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "opts",
+        help="Modify preferences options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
+
+
+def argument_parser():
+    parser = argparse.ArgumentParser("abCTSeg command line interface")
+    subparsers = parser.add_subparsers(dest="action")
+
+    # Processing parser
+    process_parser = subparsers.add_parser("process", help="process abCT scans")
+    process_parser.add_argument(
+        "--dicoms",
+        nargs="+",
+        type=str,
+        required=True,
+        help="path to dicom files(s)/directories to segment.",
+    )
+    process_parser.add_argument(
+        "--max-depth",
+        nargs="?",
+        type=str,
+        default=None,
+        help="max depth to search directory. Default: None (recursive search)",
+    )
+    process_parser.add_argument(
+        "--pattern",
+        nargs="?",
+        type=str,
+        default=None,
+        help="regex pattern for file names. Default: None",
+    )
+    process_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="overwrite results for computed files. Default: False",
+    )
+    process_parser.add_argument(
+        "--num-gpus",
+        default=1,
+        type=int,
+        help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
+    )
+    process_parser.add_argument(
+        "--models",
+        nargs="+",
+        type=str,
+        choices=[x.model_name for x in Models],
+        help="models to use for inference",
+    )
+    add_config_file_argument(process_parser)
+    add_opts_argument(process_parser)
+
+    # init parser.
+    init_parser = subparsers.add_parser(
+        "init", help="init abCTSeg library"
+    )
+    init_parser.add_argument(
+        "ls", help="list out current preferences config"
+    )
+    add_config_file_argument(init_parser)
+    add_opts_argument(init_parser)
+    return parser
+
+
+def handle_init(args):
+    if args.ls:
+        print("\n" + PREFERENCES.dump())
+    else:
+        setup(args)
+        save_preferences()
+
+
+def handle_process(args):
     setup(args)
     logger = logging.getLogger("ihd_pipeline.cli.__main__")
     logger.info("\n\n======================================================")
@@ -159,7 +181,7 @@ def main():
         assert len(masks) == len(files)
         for f, pred, mask, params in tqdm(
             zip(files, preds, masks, params_dicts), total=len(files)
-        ):  # noqa
+        ):
             x = params["image"]
             results = compute_results(x, mask, categories, params)
             output_file = format_output_path(f)
@@ -176,6 +198,16 @@ def main():
                 len(files), perf_counter() - start_time
             )
         )
+
+
+def main():
+    args = argument_parser().parse_args()
+    if args.action == "init":
+        handle_init(args)
+    elif args.action == "process":
+        handle_process(args)
+    else:
+        assert False, "{} command not supported".format(args.action)
 
 
 if __name__ == "__main__":
