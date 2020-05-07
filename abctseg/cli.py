@@ -178,7 +178,8 @@ def handle_process(args):
         if num_gpus > 1:
             model = dl_utils.ModelMGPU(model, gpus=num_gpus)
 
-        logger.info("Computing segmentation masks...")
+        logger.info("<MODEL>: {}".format(m_name))
+        logger.info("Computing segmentation masks using...")
         start_time = perf_counter()
         _, preds, params_dicts = predict(model, dataset, batch_size=batch_size)
         K.clear_session()
@@ -204,7 +205,7 @@ def handle_process(args):
                 results,
                 output_file,
                 "/{}".format(m_name),
-                mode="w",
+                mode="a",
                 overwrite_data=True,
             )
         logger.info(

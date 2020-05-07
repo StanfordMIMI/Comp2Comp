@@ -9,7 +9,13 @@ from abctseg.preferences import PREFERENCES
 
 
 class Models(enum.Enum):
-    ABCT_V_0_0_1 = 1, "abct_v0.0.1", (), False, ("soft", "bone", "custom")
+    ABCT_V_0_0_1 = (
+        1,
+        "abCT_v0.0.1",
+        (),
+        False,
+        ("soft", "bone", "custom")
+    )
     STANFORD_V_0_0_1 = (
         2,
         "stanford_v0.0.1",
