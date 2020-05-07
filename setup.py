@@ -15,7 +15,7 @@ assert keras_ver >= [2, 1, 6] and keras_ver < [
     2,
     2,
     0,
-], "Requires Keras >=2.1.6, <2.2.0"
+], "Requires Keras >=2.1.6,<2.2.0"
 
 
 def get_version():

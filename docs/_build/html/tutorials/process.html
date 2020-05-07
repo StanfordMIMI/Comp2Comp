@@ -1,0 +1,304 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Processing scans &mdash; abCTSeg 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="API Documentation" href="../modules/index.html" />
+    <link rel="prev" title="Configure Preferences" href="preferences.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> abCTSeg
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html">Getting Started with abCTSeg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preferences.html">Configure Preferences</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Processing scans</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#segmentation-models">Segmentation Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#calculating-metrics">Calculating metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#processing-scans-via-the-command-line">Processing scans via the Command Line</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#command-line-arguments-for-process">Command Line Arguments for <code class="docutils literal notranslate"><span class="pre">process</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#running-cli-py-as-a-module">Running <code class="docutils literal notranslate"><span class="pre">cli.py</span></code> as a module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/index.html">API Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">abCTSeg</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Tutorials</a> &raquo;</li>
+        
+      <li>Processing scans</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/tutorials/process.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="processing-scans">
+<span id="processing-scans"></span><h1>Processing scans<a class="headerlink" href="#processing-scans" title="Permalink to this headline">¶</a></h1>
+<p>abCTSeg is built to simplify two critical tasks: 1. segmenting abdominal CT scans and 2.
+extracting key metrics that may be useful in downstream analysis. Below we discuss these
+two tasks in more detail.</p>
+<div class="section" id="segmentation-models">
+<span id="segmentation-models"></span><h2>Segmentation Models<a class="headerlink" href="#segmentation-models" title="Permalink to this headline">¶</a></h2>
+<p>There are many pre-trained networks for automatic segmentation of abdominal CT scans.
+In abCTSeg, we support two networks that have shown high fidelity in both
+segmentation and clinical metrics.</p>
+<ol class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">stanford_v0.0.1</span></code>: This model segments muscle, bone, visceral fat (VAT),
+and subcutaneous fat (SAT).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">abCT_v0.0.1</span></code>: This model segments muscle, intramuscular fat (IMAT), VAT, and SAT.</p></li>
+</ol>
+<p>Details on downloading and setting up these models are provided in
+<a class="reference external" href="/tutorials/getting_started.html">Getting Started with abCTSeg</a>.</p>
+</div>
+<div class="section" id="calculating-metrics">
+<span id="calculating-metrics"></span><h2>Calculating metrics<a class="headerlink" href="#calculating-metrics" title="Permalink to this headline">¶</a></h2>
+<p>Two metrics that are popular in downstream CT analysis are hounsfield units (HU) and cross-sectional
+area (CSA). Both metrics are implemented and automatically calculated for all segmented tissues when using
+the command-line.</p>
+</div>
+<div class="section" id="processing-scans-via-the-command-line">
+<span id="processing-scans-via-the-command-line"></span><h2>Processing scans via the Command Line<a class="headerlink" href="#processing-scans-via-the-command-line" title="Permalink to this headline">¶</a></h2>
+<p>abCTSeg is built to allow for easy access through the command line.
+We provide a script in “abctseg/cli.py”, which is the entry point for all command-line operations.
+In this script, the <code class="docutils literal notranslate"><span class="pre">process</span></code> sub-command will segment scans in the appropriate DICOM format,
+compute metrics, and save the data in a structured way. Below we explain the command-line arguments
+in detail and provide some basic usage.</p>
+<div class="section" id="command-line-arguments-for-process">
+<span id="command-line-arguments-for-process"></span><h3>Command Line Arguments for <code class="docutils literal notranslate"><span class="pre">process</span></code><a class="headerlink" href="#command-line-arguments-for-process" title="Permalink to this headline">¶</a></h3>
+<p>For a summary of command-line arguments, run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">abctseg/cli.py</span> <span class="pre">process</span> <span class="pre">--help</span></code>.
+Please defer to the list below for more details.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--dicoms</span> <span class="pre">[str</span> <span class="pre">...]</span></code>: An arbitrary number of dicoms and/or directories to search for dicoms.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--pattern</span> <span class="pre">[str]</span></code>: Regex pattern for selecting files if <code class="docutils literal notranslate"><span class="pre">--dicoms</span></code> specifies a directory.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--max-depth</span> <span class="pre">[int]</span></code>: Maximum depth to search directory if <code class="docutils literal notranslate"><span class="pre">--dicoms</span></code> specifies a directory.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--overwrite</span></code>: If flag is present, will overwrite results for files with the same name.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--num-gpus</span> <span class="pre">[int]</span></code>: Number of gpus to use. To use cpu, specify <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--models</span> <span class="pre">[str</span> <span class="pre">...]</span></code>: Names of models to use for segmentation. If multiple models are specified,
+segmentation masks and metrics will be calculated using each model independently. i.e. no
+ensembling is done.</p></li>
+</ul>
+</div>
+<div class="section" id="examples">
+<span id="examples"></span><h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>Run segmentation on dicom files or directories with dicom files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Segment multiple dicom files.</span>
+python abctseg/cli.py <span class="se">\</span>
+    --dicoms /path/to/scan1/file /path/to/scan2/file <span class="se">\</span>
+    --models stanford_v0.0.1
+
+<span class="c1"># Segment all files in dir1 and dir2 ending with .dcm</span>
+python abctseg/cli.py <span class="se">\</span>
+    --dicoms /path/to/dir1 /path/to/dir2 --pattern <span class="s2">&quot;.*\.dcm&quot;</span> <span class="se">\</span>
+    --models stanford_v0.0.1
+</pre></div>
+</div>
+<p>Use multiple models:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python abctseg/cli.py <span class="se">\</span>
+    --dicoms /path/to/scan1/file
+    --models stanford_v0.0.1 abCT_v0.0.1
+</pre></div>
+</div>
+<p>Change preferences (e.g. <code class="docutils literal notranslate"><span class="pre">BATCH_SIZE</span></code> and <code class="docutils literal notranslate"><span class="pre">OUTPUT_DIR</span></code>) for this run only:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python abctseg/cli.py <span class="se">\</span>
+    --dicoms /path/to/scan1/file
+    --models stanford_v0.0.1 abCT_v0.0.1 <span class="se">\</span>
+    BATCH_SIZE <span class="m">32</span> OUTPUT_DIR /path/to/dir
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="running-cli-py-as-a-module">
+<span id="running-cli-py-as-a-module"></span><h2>Running <code class="docutils literal notranslate"><span class="pre">cli.py</span></code> as a module<a class="headerlink" href="#running-cli-py-as-a-module" title="Permalink to this headline">¶</a></h2>
+<p>Instead of <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">abctseg/cli.py</span></code>, you can also run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">abctseg.cli</span></code>
+to use abctseg as a module if you have followed
+the <a class="reference external" href="/tutorials/install.html">installation instructions</a>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../modules/index.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="preferences.html" class="btn btn-neutral float-left" title="Configure Preferences" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Arjun Desai
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
