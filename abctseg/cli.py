@@ -26,7 +26,7 @@ def setup(args):
     if config_file:
         PREFERENCES.merge_from_file(args.config_file)
     opts = args.opts
-    if opts[0] == "--":
+    if len(opts) and opts[0] == "--":
         opts = opts[1:]
     PREFERENCES.merge_from_list(opts)
     setup_logger(PREFERENCES.CACHE_DIR)
