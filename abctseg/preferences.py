@@ -1,4 +1,5 @@
 import os
+import warnings
 
 from yacs.config import CfgNode as CN
 
@@ -9,7 +10,7 @@ _HOME_DIR = os.path.expanduser("~")
 
 
 _C = CN()
-_C.DATA_DIR = ""
+_C.OUTPUT_DIR = ""
 _C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
 _C.MODELS_DIR = ""  # TODO: UNDO THIS
 
@@ -26,8 +27,22 @@ def save_preferences(filename=None):
         f.write(PREFERENCES.dump())
 
 
-PREFERENCES = _C
+def reset_preferences():
+    with open(_PREFERENCES_FILE, "w") as f:
+        f.write(_C.dump())
+
+
+PREFERENCES = _C.clone()
 if not os.path.isfile(_PREFERENCES_FILE):
     save_preferences()
 else:
-    PREFERENCES.merge_from_file(_PREFERENCES_FILE)
+    try:
+        PREFERENCES.merge_from_file(_PREFERENCES_FILE)
+    except KeyError:
+        warnings.warn(
+            "Preference file is outdated. "
+            "Please reset your preferences."
+        )
+        warnings.warn(
+            "Loading default config..."
+        )

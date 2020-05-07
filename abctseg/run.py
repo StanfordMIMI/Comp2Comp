@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def format_output_path(file_path, save_dir: str = None):
     if not save_dir:
-        save_dir = PREFERENCES.DATA_DIR
+        save_dir = PREFERENCES.OUTPUT_DIR
 
     return os.path.join(
         os.path.dirname(file_path) if not save_dir else save_dir,
@@ -28,7 +28,7 @@ def find_files(
     """Recursively search for files.
 
     To avoid recomputing experiments with results, set `exist_ok=False`.
-    Results will be searched for in `PREFERENCES.DATA_DIR` (if non-empty).
+    Results will be searched for in `PREFERENCES.OUTPUT_DIR` (if non-empty).
 
     Args:
         root_dirs (`str(s)`): Root folder(s) to search.
