@@ -1,0 +1,255 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting Started with abCTSeg &mdash; abCTSeg 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Configure Preferences" href="preferences.html" />
+    <link rel="prev" title="Installation" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> abCTSeg
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Getting Started with abCTSeg</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#downloading-pre-trained-models">Downloading pre-trained models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setting-up-preferences">Setting up preferences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#evaluating-abdominal-ct-scans">Evaluating abdominal CT scans</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="preferences.html">Configure Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="process.html">Processing scans</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/index.html">API Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">abCTSeg</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Tutorials</a> &raquo;</li>
+        
+      <li>Getting Started with abCTSeg</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/tutorials/getting_started.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="getting-started-with-abctseg">
+<span id="getting-started-with-abctseg"></span><h1>Getting Started with abCTSeg<a class="headerlink" href="#getting-started-with-abctseg" title="Permalink to this headline">¶</a></h1>
+<p>This document provides a brief intro of the usage of builtin command-line tools in abCTSeg.
+We provide a script in “abctseg/cli.py”, which is the entry point for all command-line operations.</p>
+<p>For more advanced tutorials, refer to our <a class="reference external" href="https://ad12.github.io/abCTSeg/">documentation</a>.</p>
+<div class="section" id="downloading-pre-trained-models">
+<span id="downloading-pre-trained-models"></span><h2>Downloading pre-trained models<a class="headerlink" href="#downloading-pre-trained-models" title="Permalink to this headline">¶</a></h2>
+<p>Fill out this
+<a class="reference external" href="https://docs.google.com/forms/d/e/1FAIpQLSdohkf9aQHeRvITgbfpNyy5QteY0aP53EH_enZdReePXJ43mg/viewform?usp=sf_link">questionnaire</a>
+and contact Arjun Desai (arjundd &lt;at&gt; stanford &lt;dot&gt; edu) to
+get access to the Google Drive folder containing all models.</p>
+<p>Download the models you would like to use to your local machine. The directory where
+the models are stored will be your models directory. Please specify the path to this folder
+when setting up your preferences (see section below).</p>
+</div>
+<div class="section" id="setting-up-preferences">
+<span id="setting-up-preferences"></span><h2>Setting up preferences<a class="headerlink" href="#setting-up-preferences" title="Permalink to this headline">¶</a></h2>
+<p>To set up your preferences, run the script with the preference options you would like to
+save as defaults.</p>
+<p>At minimum, set your data directory (where your data will be stored) and your models directory.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python abctseg/cli.py config save /
+    OUTPUT_DIR /path/to/store/data /
+    MODELS_DIR /path/to/models/folder
+</pre></div>
+</div>
+</div>
+<div class="section" id="evaluating-abdominal-ct-scans">
+<span id="evaluating-abdominal-ct-scans"></span><h2>Evaluating abdominal CT scans<a class="headerlink" href="#evaluating-abdominal-ct-scans" title="Permalink to this headline">¶</a></h2>
+<p>All scans to be segmented must be stored in the DICOM format.
+Data will be saved in the <code class="docutils literal notranslate"><span class="pre">h5</span></code> format.</p>
+<p>To segment a scan using the <code class="docutils literal notranslate"><span class="pre">stanford_v0.0.1</span></code> model with 1 gpu, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m abctseg.cli process --num-gpus <span class="m">1</span> <span class="se">\</span>
+    --dicoms /path/to/scan/file <span class="se">\</span>
+    --models stanford_v0.0.1
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="preferences.html" class="btn btn-neutral float-right" title="Configure Preferences" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="install.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Arjun Desai
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
