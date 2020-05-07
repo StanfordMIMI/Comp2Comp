@@ -34,3 +34,7 @@
 
 #ignore cross validation files
 *.cv
+
+
+# preferences file
+abctseg/preferences.yaml
