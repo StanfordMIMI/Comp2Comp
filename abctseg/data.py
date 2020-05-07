@@ -92,6 +92,53 @@ class Dataset(k_utils.Sequence):
         return xs, params
 
 
+def _swap_muscle_imap(xs, ys, muscle_idx: int, imat_idx: int, threshold=-30.0):
+    """
+    If pixel labeled as muscle but has HU < threshold, change label to imat.
+    """
+    labels = ys.copy()
+
+    muscle_mask = labels[..., muscle_idx]
+    imat_mask = labels[..., imat_idx]
+
+    imat_mask[muscle_mask.astype(np.bool) & (xs < threshold)] = 1
+    muscle_mask[xs < threshold] = 0
+
+    labels[..., muscle_idx] = muscle_mask
+    labels[..., imat_idx] = imat_mask
+
+    return labels
+
+
+def postprocess(xs: np.ndarray, ys: np.ndarray, params: dict):
+    """Built-in post-processing.
+
+    TODO: Make this configurable.
+
+    Args:
+        xs (ndarray): NxHxW
+        ys (ndarray): NxHxWxC
+        params (dictionary): Post-processing parameters. Must contain
+            "categories".
+
+    Returns:
+        ndarray: Post-processed labels.
+    """
+    assert params
+    categories = params["categories"]
+
+    # If muscle hu is < -30, assume it is imat.
+    if "muscle" in categories and "imat" in categories:
+        ys = _swap_muscle_imap(
+            xs,
+            ys,
+            muscle_idx=categories.index("muscle"),
+            imat_idx=categories.index("imat"),
+        )
+
+    return ys
+
+
 def predict(
     model,
     dataset: Dataset,
@@ -99,6 +146,8 @@ def predict(
     num_workers: int = 1,
     max_queue_size: int = 10,
     use_multiprocessing: bool = False,
+    use_postprocessing: bool = False,
+    postprocessing_params: dict = None,
 ):
     if num_workers > 0:
         enqueuer = OrderedEnqueuer(
@@ -114,10 +163,14 @@ def predict(
     ys = []
     params = []
     for _ in tqdm(range(num_scans)):
-        x, p = next(output_generator)
+        x, p_dicts = next(output_generator)
         y = model.predict(x, batch_size=batch_size)
 
-        params.extend(p)
+        if use_postprocessing:
+            image = np.stack([l["image"] for l in p_dicts], axis=0)
+            y = postprocess(image, y, postprocessing_params)
+
+        params.extend(p_dicts)
         xs.extend([x[i, ...] for i in range(len(x))])
         ys.extend([y[i, ...] for i in range(len(y))])
 

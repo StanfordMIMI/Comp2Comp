@@ -15,7 +15,7 @@ _C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
 _C.MODELS_DIR = ""
 
 _C.BATCH_SIZE = 16
-_C.NUM_WORKERS = 0
+_C.NUM_WORKERS = 1
 
 
 def save_preferences(filename=None):
