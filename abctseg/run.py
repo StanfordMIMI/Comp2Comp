@@ -77,7 +77,7 @@ def find_files(
     for d in root_dirs:
         out_files.extend(_get_files(0, d))
 
-    return sorted(list(set(out_files)))
+    return sorted(set(out_files))
 
 
 def compute_results(x, mask, categories, params: Dict):

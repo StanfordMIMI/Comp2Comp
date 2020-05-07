@@ -37,7 +37,7 @@ def add_config_file_argument(parser: argparse.ArgumentParser):
         "--config-file",
         type=str,
         required=False,
-        help="Preferences config file"
+        help="Preferences config file",
     )
 
 
@@ -100,13 +100,9 @@ def argument_parser():
     add_opts_argument(process_parser)
 
     # init parser.
-    init_parser = subparsers.add_parser(
-        "init", help="init abCTSeg library"
-    )
+    init_parser = subparsers.add_parser("init", help="init abCTSeg library")
     init_parser.add_argument(
-        "--ls", 
-        action="store_true", 
-        help="list out current preferences config"
+        "--ls", action="store_true", help="list out current preferences config"
     )
     add_config_file_argument(init_parser)
     add_opts_argument(init_parser)
@@ -194,7 +190,7 @@ def handle_process(args):
         masks = [model_type.preds_to_mask(p) for p in preds]
         assert len(masks) == len(params_dicts)
         assert len(masks) == len(files)
-        for f, pred, mask, params in tqdm(
+        for f, pred, mask, params in tqdm(  # noqa: B007
             zip(files, preds, masks, params_dicts), total=len(files)
         ):
             x = params["image"]
@@ -222,7 +218,7 @@ def main():
     elif args.action == "process":
         handle_process(args)
     else:
-        assert False, "{} command not supported".format(args.action)
+        raise AssertionError("{} command not supported".format(args.action))
 
 
 if __name__ == "__main__":

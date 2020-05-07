@@ -7,8 +7,6 @@ import pydicom
 from keras.utils.data_utils import OrderedEnqueuer
 from tqdm import tqdm
 
-from .models import Models
-
 
 def parse_windows(windows):
     """Parse windows provided by the user.
