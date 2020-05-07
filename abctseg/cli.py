@@ -25,7 +25,10 @@ def setup(args):
     config_file = args.config_file if "config_file" in args_dict else None
     if config_file:
         PREFERENCES.merge_from_file(args.config_file)
-    PREFERENCES.merge_from_list(args.opts)
+    opts = args.opts
+    if opts[0] == "--":
+        opts = opts[1:]
+    PREFERENCES.merge_from_list(opts)
     setup_logger(PREFERENCES.CACHE_DIR)
 
 
@@ -88,6 +91,7 @@ def argument_parser():
     process_parser.add_argument(
         "--models",
         nargs="+",
+        required=True,
         type=str,
         choices=[x.model_name for x in Models],
         help="models to use for inference",
@@ -100,7 +104,9 @@ def argument_parser():
         "init", help="init abCTSeg library"
     )
     init_parser.add_argument(
-        "ls", help="list out current preferences config"
+        "--ls", 
+        action="store_true", 
+        help="list out current preferences config"
     )
     add_config_file_argument(init_parser)
     add_opts_argument(init_parser)
@@ -113,18 +119,26 @@ def handle_init(args):
     else:
         setup(args)
         save_preferences()
+        print("\nUpdated Preferences:")
+        print("====================")
+        print(PREFERENCES.dump())
 
 
 def handle_process(args):
     setup(args)
-    logger = logging.getLogger("ihd_pipeline.cli.__main__")
+    if not PREFERENCES.MODELS_DIR:
+        raise ValueError(
+            "MODELS_DIR not initialized. "
+            "Use `python -m abctseg.cli init` to set MODELS_DIR"
+        )
+    logger = logging.getLogger("abctseg.cli.__main__")
     logger.info("\n\n======================================================")
     gpus = dl_utils.get_available_gpus(args.num_gpus)
+    num_gpus = len(gpus) if gpus is not None else 0
     if gpus is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(x) for x in gpus])
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = 0  # cpu
-    num_gpus = len(gpus) if gpus is not None else 0
 
     # Find files.
     files = []

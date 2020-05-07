@@ -40,7 +40,7 @@ def setup_logger(
     distributed_rank=0,
     *,
     color=True,
-    name="ihd_pipeline",
+    name="abctseg",
     abbrev_name=None
 ):
     """

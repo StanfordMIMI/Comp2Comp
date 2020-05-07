@@ -10,7 +10,7 @@ _HOME_DIR = os.path.expanduser("~")
 
 _C = CN()
 _C.DATA_DIR = ""
-_C.CACHE_DIR = os.path.join(_HOME_DIR, ".ihd_pipeline/cache")
+_C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
 _C.MODELS_DIR = ""  # TODO: UNDO THIS
 
 _C.BATCH_SIZE = 16
