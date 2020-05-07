@@ -89,6 +89,13 @@ def compute_results(x, mask, categories, params: Dict):
     hu_vals = hu(mask, x, category_dim=-1)
     csa_vals = csa(mask=mask, spacing=spacing, category_dim=-1)
 
+    assert mask.shape[-1] == len(categories), (
+        "{} categories found in mask, "
+        "but only {} categories specified".format(
+            mask.shape[-1], len(categories)
+        )
+    )
+
     results = {
         cat: {
             "mask": mask[..., idx],

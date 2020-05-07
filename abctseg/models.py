@@ -9,12 +9,18 @@ from abctseg.preferences import PREFERENCES
 
 
 class Models(enum.Enum):
-    ABCT_V_0_0_1 = (1, "abCT_v0.0.1", (), False, ("soft", "bone", "custom"))
+    ABCT_V_0_0_1 = (
+        1,
+        "abCT_v0.0.1",
+        ("muscle", "imat", "vat", "sat"),
+        False,
+        ("soft", "bone", "custom"),
+    )
     STANFORD_V_0_0_1 = (
         2,
         "stanford_v0.0.1",
-        ("muscle", "bone", "imat", "vat"),
-        False,
+        ("background", "muscle", "bone", "vat", "sat"),
+        True,
         ("soft", "bone", "custom"),
     )
 
@@ -48,7 +54,7 @@ class Models(enum.Enum):
             l_argmax = np.argmax(preds, axis=-1)
             for c in range(labels.shape[-1]):
                 labels[l_argmax == c, c] = 1
-            return labels.astype(np.uint)
+            return labels.astype(np.bool)
         else:
             # sigmoid
             return preds >= 0.5
