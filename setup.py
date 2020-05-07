@@ -11,14 +11,16 @@ import tensorflow as tf
 tf_ver = [int(x) for x in tf.__version__.split(".")[:2]]
 assert tf_ver >= [1, 8] and tf_ver < [2, 0], "Requires TensorFlow >=1.8,<2.0"
 keras_ver = [int(x) for x in keras.__version__.split(".")[:3]]
-assert keras_ver >= [2, 1, 6] and keras_ver < [2,2,0,], (
-    "Requires Keras >=2.1.6, <2.2.0"
-)
+assert keras_ver >= [2, 1, 6] and keras_ver < [
+    2,
+    2,
+    0,
+], "Requires Keras >=2.1.6, <2.2.0"
 
 
 def get_version():
     init_py_path = path.join(
-        path.abspath(path.dirname(__file__)), "ihd_pipeline", "__init__.py"
+        path.abspath(path.dirname(__file__)), "abctseg", "__init__.py"
     )
     init_py = open(init_py_path, "r").readlines()
     version_line = [l.strip() for l in init_py if l.startswith("__version__")][
@@ -28,7 +30,7 @@ def get_version():
 
     # The following is used to build release packages.
     # Users should never use it.
-    suffix = os.getenv("IHD_PIPELINE_VERSION_SUFFIX", "")
+    suffix = os.getenv("ABCTSEG_VERSION_SUFFIX", "")
     version = version + suffix
     if os.getenv("BUILD_NIGHTLY", "0") == "1":
         from datetime import datetime
@@ -44,7 +46,7 @@ def get_version():
 
 
 setup(
-    name="ihd_pipeline",
+    name="abctseg",
     version=get_version(),
     author="Arjun Desai",
     url="https://github.com/ad12/ihd-pipeline",
@@ -68,6 +70,7 @@ setup(
             "black==19.3b0",
             "flake8-bugbear",
             "flake8-comprehensions",
+            "mock",
         ],
     },
 )
