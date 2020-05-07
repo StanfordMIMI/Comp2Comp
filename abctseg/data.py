@@ -1,10 +1,10 @@
 import math
 from typing import List, Sequence
 
-from keras.utils.data_utils import OrderedEnqueuer
 import keras.utils as k_utils
 import numpy as np
 import pydicom
+from keras.utils.data_utils import OrderedEnqueuer
 from tqdm import tqdm
 
 from .models import Models
@@ -60,7 +60,7 @@ def _window(xs, bounds):
 
 
 class Dataset(k_utils.Sequence):
-    def __init__(self, files: List[str], batch_size: int=16, windows=None):
+    def __init__(self, files: List[str], batch_size: int = 16, windows=None):
         self._files = files
         self._batch_size = batch_size
         self.windows = windows
@@ -69,7 +69,9 @@ class Dataset(k_utils.Sequence):
         return math.ceil(len(self._files) / self._batch_size)
 
     def __getitem__(self, idx):
-        files = self._files[idx*self._batch_size:(idx+1)*self._batch_size]
+        files = self._files[
+            idx * self._batch_size : (idx + 1) * self._batch_size
+        ]
         dcms = [pydicom.read_file(f, force=True) for f in files]
 
         xs = [
@@ -78,10 +80,7 @@ class Dataset(k_utils.Sequence):
         ]
 
         params = [
-            {
-                "spacing": header.PixelSpacing,
-                "image": x,
-            }
+            {"spacing": header.PixelSpacing, "image": x}
             for header, x in zip(dcms, xs)
         ]
 
@@ -99,15 +98,13 @@ def predict(
     model,
     dataset: Dataset,
     batch_size: int = 16,
-    num_workers: int=1,
+    num_workers: int = 1,
     max_queue_size: int = 10,
     use_multiprocessing: bool = False,
 ):
     if num_workers > 0:
         enqueuer = OrderedEnqueuer(
-            dataset,
-            use_multiprocessing=use_multiprocessing,
-            shuffle=False
+            dataset, use_multiprocessing=use_multiprocessing, shuffle=False
         )
         enqueuer.start(workers=num_workers, max_queue_size=max_queue_size)
         output_generator = enqueuer.get()
@@ -118,7 +115,7 @@ def predict(
     xs = []
     ys = []
     params = []
-    for s in tqdm(range(num_scans)):
+    for _ in tqdm(range(num_scans)):
         x, p = next(output_generator)
         y = model.predict(x, batch_size=batch_size)
 

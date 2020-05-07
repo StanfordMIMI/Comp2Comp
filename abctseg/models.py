@@ -1,16 +1,22 @@
-import os
 import enum
-from typing import Dict, Optional, Sequence
+import os
+from typing import Sequence
 
 import numpy as np
 from keras.models import load_model
 
-from ihd_pipeline.preferences import PREFERENCES
+from abctseg.preferences import PREFERENCES
 
 
 class Models(enum.Enum):
     ABCT_V_0_0_1 = 1, "abct_v0.0.1", (), False, ("soft", "bone", "custom")
-    STANFORD_V_0_0_1 = 2, "stanford_v0.0.1", ("muscle", "bone", "imat", "vat"), False, ("soft", "bone", "custom")
+    STANFORD_V_0_0_1 = (
+        2,
+        "stanford_v0.0.1",
+        ("muscle", "bone", "imat", "vat"),
+        False,
+        ("soft", "bone", "custom"),
+    )
 
     def __new__(
         cls,
@@ -18,7 +24,7 @@ class Models(enum.Enum):
         model_name: str,
         categories: Sequence[str],
         use_softmax: bool,
-        windows: Sequence[str]
+        windows: Sequence[str],
     ):
         obj = object.__new__(cls)
         obj._value_ = value

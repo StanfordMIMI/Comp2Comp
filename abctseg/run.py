@@ -3,15 +3,13 @@ import os
 import re
 from typing import Dict, Sequence, Union
 
-from tabulate import tabulate
-
-from ihd_pipeline.metrics import HounsfieldUnits, CrossSectionalArea
-from ihd_pipeline.preferences import PREFERENCES
+from abctseg.metrics import CrossSectionalArea, HounsfieldUnits
+from abctseg.preferences import PREFERENCES
 
 logger = logging.getLogger(__name__)
 
 
-def format_output_path(file_path, save_dir: str=None):
+def format_output_path(file_path, save_dir: str = None):
     if not save_dir:
         save_dir = PREFERENCES.DATA_DIR
 
@@ -24,28 +22,26 @@ def format_output_path(file_path, save_dir: str=None):
 def find_files(
     root_dirs: Union[str, Sequence[str]],
     max_depth: int = None,
-    exist_ok: bool=False,
-    pattern: str=None,
+    exist_ok: bool = False,
+    pattern: str = None,
 ):
-    """Recursively search for experiments that are ready to be tested.
+    """Recursively search for files.
 
-    Different experiments live in different folders. Based on training protocol,
-    we assume that an valid experiment has completed training if its folder
-    contains files "config.ini" and "pik_data.dat".
-
-    To avoid recomputing experiments with results, `exist_ok=False` by default.
+    To avoid recomputing experiments with results, set `exist_ok=False`.
+    Results will be searched for in `PREFERENCES.DATA_DIR` (if non-empty).
 
     Args:
         root_dirs (`str(s)`): Root folder(s) to search.
         max_depth (int, optional): Maximum depth to search.
         exist_ok (bool, optional): If `True`, recompute results for
-            experiments.
+            scans.
         pattern (str, optional): If specified, looks for files with names
             matching the pattern.
 
     Return:
         List[str]: Experiment directories to test.
     """
+
     def _get_files(depth: int, dir_name: str):
         if dir_name is None or not os.path.isdir(dir_name):
             return []
@@ -58,7 +54,7 @@ def find_files(
         for file in files:
             possible_dir = os.path.join(dir_name, file)
             if os.path.isdir(possible_dir):
-                subfiles = _get_files(depth+1, possible_dir)
+                subfiles = _get_files(depth + 1, possible_dir)
                 ret_files.extend(subfiles)
             elif os.path.isfile(possible_dir):
                 if pattern and not re.match(pattern, possible_dir):
@@ -67,7 +63,7 @@ def find_files(
                 if not exist_ok and os.path.isfile(output_path):
                     logger.info(
                         "Skipping {} - results exist at {}".format(
-                            possible_dir, output_path,
+                            possible_dir, output_path
                         )
                     )
                     continue

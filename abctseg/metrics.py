@@ -87,16 +87,14 @@ class HounsfieldUnits(Metric):
         assert category_dim == -1
         num_classes = mask.shape[-1]
 
-        return np.array([
-            np.mean(x[mask[..., c]]) for c in range(num_classes)
-        ])
+        return np.array([np.mean(x[mask[..., c]]) for c in range(num_classes)])
 
     def name(self):
         return self.FULL_NAME
 
 
 class CrossSectionalArea(Metric):
-    def __call__(self, mask, spacing = None, category_dim: int = None):
+    def __call__(self, mask, spacing=None, category_dim: int = None):
         pixel_area = np.prod(spacing) if spacing else 1
         mask = mask.astype(np.bool)
         mask = flatten_non_category_dims(mask, category_dim)

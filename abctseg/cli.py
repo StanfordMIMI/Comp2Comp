@@ -4,52 +4,75 @@ import os
 import sys
 from time import perf_counter
 
+import silx.io.dictdump as sio
 from keras.models import K
 from tqdm import tqdm
 
-from ihd_pipeline.utils.logger import setup_logger
-from ihd_pipeline.utils import dl_utils
-from ihd_pipeline.models import Models
-from ihd_pipeline.preferences import PREFERENCES
-from ihd_pipeline.run import find_files, compute_results, format_output_path
-from ihd_pipeline.data import Dataset, predict
-from ihd_pipeline.metrics import HounsfieldUnits, CrossSectionalArea
-
-import silx.io.dictdump as sio
+from abctseg.data import Dataset, predict
+from abctseg.models import Models
+from abctseg.preferences import PREFERENCES
+from abctseg.run import compute_results, find_files, format_output_path
+from abctseg.utils import dl_utils
+from abctseg.utils.logger import setup_logger
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def argument_parser():
     parser = argparse.ArgumentParser("segment abdominal CT")
-    parser.add_argument(
-        "--dicoms", nargs="+", type=str, required=True,
-        help="path to dicom files(s)/directories to segment."
+    subparsers = parser.add_subparsers(dest="action")
+
+    seg_parser = subparsers.add_parser("segment", help="segment abCT scans")
+    seg_parser.add_argument(
+        "--dicoms",
+        nargs="+",
+        type=str,
+        required=True,
+        help="path to dicom files(s)/directories to segment.",
     )
-    parser.add_argument(
-        "--max-depth", nargs="?", type=str,
+    seg_parser.add_argument(
+        "--max-depth",
+        nargs="?",
+        type=str,
         default=None,
-        help="max depth to search directory. Default: None (recursive search)"
+        help="max depth to search directory. Default: None (recursive search)",
     )
-    parser.add_argument(
-        "--pattern", nargs="?", type=str,
+    seg_parser.add_argument(
+        "--pattern",
+        nargs="?",
+        type=str,
         default=None,
-        help="regex pattern for file names. Default: None"
+        help="regex pattern for file names. Default: None",
     )
-    parser.add_argument(
-        "--overwrite", action="store_true",
-        help="overwrite results for computed files. Default: False"
+    seg_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="overwrite results for computed files. Default: False",
     )
-    parser.add_argument(
-        "--num-gpus", default=1, type=int,
-        help="number of GPU(s) to use. Defaults to cpu if no gpu found."
+    seg_parser.add_argument(
+        "--num-gpus",
+        default=1,
+        type=int,
+        help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
     )
-    parser.add_argument(
-        "--models", nargs="+", type=str,
+    seg_parser.add_argument(
+        "--models",
+        nargs="+",
+        type=str,
         choices=[x.model_name for x in Models],
         help="models to use for inference",
     )
-    parser.add_argument(
+    seg_parser.add_argument(
+        "opts",
+        help="Modify preferences options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
+
+    pref_parser = subparsers.add_parser(
+        "configure", help="configure preferences"
+    )
+    pref_parser.add_argument(
         "opts",
         help="Modify preferences options using the command-line",
         default=None,
@@ -94,7 +117,7 @@ def main():
             dirs,
             max_depth=args.max_depth,
             exist_ok=args.overwrite,
-            pattern=args.pattern
+            pattern=args.pattern,
         )
     )
     logger.info("{} scans found".format(len(files)))
@@ -121,32 +144,38 @@ def main():
 
         logger.info("Computing segmentation masks...")
         start_time = perf_counter()
-        _, preds, params_dicts = predict(
-            model,
-            dataset,
-            batch_size=batch_size,
-        )
+        _, preds, params_dicts = predict(model, dataset, batch_size=batch_size)
         K.clear_session()
-        logger.info("<TIME>: Segmentation - count: {} - {:.4f} seconds".format(
-            len(files), perf_counter() - start_time
-        ))
+        logger.info(
+            "<TIME>: Segmentation - count: {} - {:.4f} seconds".format(
+                len(files), perf_counter() - start_time
+            )
+        )
 
         logger.info("Computing metrics...")
         start_time = perf_counter()
         masks = [model_type.preds_to_mask(p) for p in preds]
         assert len(masks) == len(params_dicts)
         assert len(masks) == len(files)
-        for f, pred, mask, params in tqdm(zip(files, preds, masks, params_dicts), total=len(files)):  # noqa
+        for f, pred, mask, params in tqdm(
+            zip(files, preds, masks, params_dicts), total=len(files)
+        ):  # noqa
             x = params["image"]
-            results = compute_results(
-                x, mask, categories, params
-            )
+            results = compute_results(x, mask, categories, params)
             output_file = format_output_path(f)
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
-            sio.dicttoh5(results, output_file, "/{}".format(m_name), mode="w", overwrite_data=True)
-        logger.info("<TIME>: Metrics - count: {} - {:.4f} seconds".format(
-            len(files), perf_counter() - start_time
-        ))
+            sio.dicttoh5(
+                results,
+                output_file,
+                "/{}".format(m_name),
+                mode="w",
+                overwrite_data=True,
+            )
+        logger.info(
+            "<TIME>: Metrics - count: {} - {:.4f} seconds".format(
+                len(files), perf_counter() - start_time
+            )
+        )
 
 
 if __name__ == "__main__":

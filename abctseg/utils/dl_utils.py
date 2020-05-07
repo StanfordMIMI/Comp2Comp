@@ -25,16 +25,16 @@ def get_available_gpus(num_gpus: int = None):
         return [-1]
 
     num_requested_gpus = num_gpus
-    num_gpus = (
-        len(
-            subprocess.check_output("nvidia-smi --list-gpus", shell=True)
-            .decode()
-            .split("\n")
-        )
-        - 1
-    )
-
     try:
+        num_gpus = (
+            len(
+                subprocess.check_output("nvidia-smi --list-gpus", shell=True)
+                .decode()
+                .split("\n")
+            )
+            - 1
+        )
+
         out_str = subprocess.check_output(
             "nvidia-smi | grep MiB", shell=True
         ).decode()
@@ -69,6 +69,7 @@ def get_available_gpus(num_gpus: int = None):
 
 class ModelMGPU(Model):
     """Wrapper for distributing model across multiple gpus"""
+
     def __init__(self, ser_model, gpus):
         pmodel = multi_gpu_model(ser_model, gpus)
         self.__dict__.update(pmodel.__dict__)
