@@ -94,9 +94,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#calculating-metrics">Calculating metrics</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#processing-scans-via-the-command-line">Processing scans via the Command Line</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#command-line-arguments-for-process">Command Line Arguments for <code class="docutils literal notranslate"><span class="pre">process</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#understanding-post-processing">Understanding post-processing</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#parsing-results">Parsing results</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#running-cli-py-as-a-module">Running <code class="docutils literal notranslate"><span class="pre">cli.py</span></code> as a module</a></li>
 </ul>
 </li>
@@ -213,7 +215,19 @@ Please defer to the list below for more details.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">--models</span> <span class="pre">[str</span> <span class="pre">...]</span></code>: Names of models to use for segmentation. If multiple models are specified,
 segmentation masks and metrics will be calculated using each model independently. i.e. no
 ensembling is done.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--pp</span></code>: Use built-in post-processing. See section below for details</p></li>
 </ul>
+</div>
+<div class="section" id="understanding-post-processing">
+<span id="understanding-post-processing"></span><h3>Understanding post-processing<a class="headerlink" href="#understanding-post-processing" title="Permalink to this headline">¶</a></h3>
+<p>The post-processing step is motivated by the underlying chemistry and spatial proximity of different tissues.
+In particular, the chemical composition of muscle and intramuscular fat (IMAT) is quite different. However,
+due to the sparse nature of IMAT, it can be difficult to segment between the two tissues.</p>
+<p>The post-processing step leverages the chemical difference between muscle and IMAT by the following filtration
+algorithm. If a pixel is labeled as muscle but has a hounsfield denisty &lt; -30, it is relabeled as IMAT. This may
+improve classification at boundary regions.</p>
+<p>From anecdotal experience, this post-processing step did not make a significant difference in accuracy among
+average Dice, hounsfield density, or cross-sectional area.</p>
 </div>
 <div class="section" id="examples">
 <span id="examples"></span><h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
@@ -242,6 +256,24 @@ python abctseg/cli.py <span class="se">\</span>
     BATCH_SIZE <span class="m">32</span> OUTPUT_DIR /path/to/dir
 </pre></div>
 </div>
+</div>
+</div>
+<div class="section" id="parsing-results">
+<span id="parsing-results"></span><h2>Parsing results<a class="headerlink" href="#parsing-results" title="Permalink to this headline">¶</a></h2>
+<p>After segmentation and metric calculation, the data is stored in the <code class="docutils literal notranslate"><span class="pre">h5</span></code> format per scan.
+The h5 format leverages a dictionary-like hierarchy to store data. abCTSeg stores data in
+the following top-down hierarchy - model -&gt; category -&gt; relevant data. A sample hierarchy is shown
+below. The three data keys are <code class="docutils literal notranslate"><span class="pre">&quot;mask&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Cross-sectional</span> <span class="pre">Area</span> <span class="pre">(mm^2)&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Hounsfield</span> <span class="pre">Unit&quot;</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">MODEL1_NAME</span><span class="o">&gt;</span>
+    <span class="o">|</span> <span class="o">&lt;</span><span class="n">CATEGORY1</span><span class="o">&gt;</span>
+        <span class="o">|</span> <span class="s2">&quot;mask&quot;</span><span class="p">:</span> <span class="n">binary</span> <span class="n">mask</span> <span class="k">for</span> <span class="n">this</span> <span class="n">category</span>
+        <span class="o">|</span> <span class="s2">&quot;Cross-sectional Area (mm^2)&quot;</span><span class="p">:</span> <span class="n">the</span> <span class="n">cross</span> <span class="n">sectional</span> <span class="n">area</span> <span class="n">of</span> <span class="n">this</span> <span class="n">category</span>
+        <span class="o">|</span> <span class="s2">&quot;Hounsfield Unit&quot;</span><span class="p">:</span> <span class="n">the</span> <span class="n">average</span> <span class="n">hounsfield</span> <span class="n">density</span> <span class="n">of</span> <span class="n">this</span> <span class="n">category</span>
+    <span class="o">|</span> <span class="o">&lt;</span><span class="n">CATEGORY2</span><span class="o">&gt;</span>
+    <span class="o">...</span>
+<span class="o">&lt;</span><span class="n">MODEL2_NAME</span><span class="o">&gt;</span>
+    <span class="o">|</span> <span class="o">...</span>
+</pre></div>
 </div>
 </div>
 <div class="section" id="running-cli-py-as-a-module">

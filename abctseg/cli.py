@@ -96,6 +96,11 @@ def argument_parser():
         choices=[x.model_name for x in Models],
         help="models to use for inference",
     )
+    process_parser.add_argument(
+        "--pp",
+        action="store_true",
+        help="use post-processing. Will be used for all specified models.",
+    )
     add_config_file_argument(process_parser)
     add_opts_argument(process_parser)
 
@@ -168,7 +173,10 @@ def handle_process(args):
         sys.exit(0)
 
     batch_size = PREFERENCES.BATCH_SIZE
+    use_pp = args.pp
+    num_workers = PREFERENCES.NUM_WORKERS
 
+    logger.info("Preferences:\n" + PREFERENCES.dump())
     for m_name in args.models:
         logger.info("Computing masks with model {}".format(m_name))
 
@@ -186,9 +194,17 @@ def handle_process(args):
             model = dl_utils.ModelMGPU(model, gpus=num_gpus)
 
         logger.info("<MODEL>: {}".format(m_name))
-        logger.info("Computing segmentation masks using...")
+        logger.info("Computing segmentation masks using {}...".format(m_name))
         start_time = perf_counter()
-        _, preds, params_dicts = predict(model, dataset, batch_size=batch_size)
+        _, preds, params_dicts = predict(
+            model,
+            dataset,
+            num_workers=num_workers,
+            use_multiprocessing=num_workers > 1,
+            batch_size=batch_size,
+            use_postprocessing=use_pp,
+            postprocessing_params={"categories": categories},
+        )
         K.clear_session()
         logger.info(
             "<TIME>: Segmentation - count: {} - {:.4f} seconds".format(
@@ -201,6 +217,9 @@ def handle_process(args):
         masks = [model_type.preds_to_mask(p) for p in preds]
         assert len(masks) == len(params_dicts)
         assert len(masks) == len(files)
+        m_save_name = "/{}".format(m_name)
+        if use_pp:
+            m_save_name += "+pp"
         for f, pred, mask, params in tqdm(  # noqa: B007
             zip(files, preds, masks, params_dicts), total=len(files)
         ):
@@ -209,11 +228,7 @@ def handle_process(args):
             output_file = format_output_path(f)
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             sio.dicttoh5(
-                results,
-                output_file,
-                "/{}".format(m_name),
-                mode="a",
-                overwrite_data=True,
+                results, output_file, m_save_name, mode="a", overwrite_data=True
             )
         logger.info(
             "<TIME>: Metrics - count: {} - {:.4f} seconds".format(
