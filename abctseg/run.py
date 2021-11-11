@@ -1,10 +1,9 @@
 import logging
 import os
 import re
-from typing import Dict, Sequence, Union
-
 from abctseg.metrics import CrossSectionalArea, HounsfieldUnits
 from abctseg.preferences import PREFERENCES
+from typing import Dict, Sequence, Union
 
 logger = logging.getLogger(__name__)
 

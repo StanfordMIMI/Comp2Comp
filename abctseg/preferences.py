@@ -1,7 +1,7 @@
+from yacs.config import CfgNode as CN
+
 import os
 import warnings
-
-from yacs.config import CfgNode as CN
 
 _PREFERENCES_FILE = os.path.join(
     os.path.join(os.path.dirname(__file__), "preferences.yaml")

@@ -1,26 +1,24 @@
-import argparse
-import logging
-import os
-import sys
-from time import perf_counter
-
-import silx.io.dictdump as sio
 from keras.models import K
 from tqdm import tqdm
 
+import argparse
+import logging
+import os
+import silx.io.dictdump as sio
+import sys
 from abctseg.data import Dataset, predict
 from abctseg.models import Models
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 from abctseg.run import compute_results, find_files, format_output_path
 from abctseg.utils import dl_utils
 from abctseg.utils.logger import setup_logger
+from time import perf_counter
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def setup(args):
-    """Load preferences and perform basic setups.
-    """
+    """Load preferences and perform basic setups."""
     args_dict = vars(args)
     config_file = args.config_file if "config_file" in args_dict else None
     if config_file:
@@ -150,7 +148,7 @@ def handle_process(args):
     if gpus is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(x) for x in gpus])
     else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = 0  # cpu
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cpu
 
     # Find files.
     files = []

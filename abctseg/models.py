@@ -1,11 +1,10 @@
-import enum
-import os
-from typing import Sequence
-
 import numpy as np
 from keras.models import load_model
 
+import enum
+import os
 from abctseg.preferences import PREFERENCES
+from typing import Sequence
 
 
 class Models(enum.Enum):
