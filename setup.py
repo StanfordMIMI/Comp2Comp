@@ -68,12 +68,16 @@ setup(
     extras_require={
         "all": ["shapely", "psutil"],
         "dev": [
+            # Formatting
             "flake8",
             "isort",
             "black",
             "flake8-bugbear",
             "flake8-comprehensions",
+            # Docs
             "mock",
+            "sphinx",
+            "sphinx-rtd-theme" "recommonmark",
         ],
     },
 )

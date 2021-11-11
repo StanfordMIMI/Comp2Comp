@@ -95,6 +95,9 @@ def argument_parser():
         help="models to use for inference",
     )
     process_parser.add_argument(
+        "--batch", action="store_true", help="run in batch mode"
+    )
+    process_parser.add_argument(
         "--pp",
         action="store_true",
         help="use post-processing. Will be used for all specified models.",
@@ -157,7 +160,7 @@ def handle_process(args):
         if os.path.isfile(f):
             files.append(f)
         elif os.path.isdir(f):
-            dirs.append(f)
+            dirs.append(os.path.abspath(f))
     files.extend(
         find_files(
             dirs,
@@ -223,7 +226,9 @@ def handle_process(args):
         ):
             x = params["image"]
             results = compute_results(x, mask, categories, params)
-            output_file = format_output_path(f)
+            output_file = format_output_path(
+                f, base_dirs=dirs if args.batch else None
+            )
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             sio.dicttoh5(
                 results, output_file, m_save_name, mode="a", overwrite_data=True

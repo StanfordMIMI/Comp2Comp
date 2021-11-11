@@ -8,14 +8,28 @@ from typing import Dict, Sequence, Union
 logger = logging.getLogger(__name__)
 
 
-def format_output_path(file_path, save_dir: str = None):
+def format_output_path(
+    file_path, save_dir: str = None, base_dirs: Sequence[str] = None
+):
     if not save_dir:
         save_dir = PREFERENCES.OUTPUT_DIR
 
-    return os.path.join(
-        os.path.dirname(file_path) if not save_dir else save_dir,
-        "{}.h5".format(os.path.splitext(os.path.basename(file_path))[0]),
-    )
+    dirname = os.path.dirname(file_path) if not save_dir else save_dir
+
+    if save_dir and base_dirs:
+        dirname: str = os.path.dirname(file_path)
+        relative_dirs = [
+            dirname.split(bdir, 1)[1]
+            for bdir in base_dirs
+            if dirname.startswith(bdir)
+        ]
+        dirname = os.path.join(save_dir, relative_dirs[0])
+        return os.path.dir
+    else:
+        return os.path.join(
+            dirname,
+            "{}.h5".format(os.path.splitext(os.path.basename(file_path))[0]),
+        )
 
 
 def find_files(
