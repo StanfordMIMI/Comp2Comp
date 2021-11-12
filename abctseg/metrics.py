@@ -63,8 +63,7 @@ class Metric(Callable, ABC):
         return type(self).__name__
 
     def display_name(self):
-        """Name to use for pretty printing and display purposes.
-        """
+        """Name to use for pretty printing and display purposes."""
         name = self.name()
         return "{} {}".format(name, self.units) if self.units else name
 

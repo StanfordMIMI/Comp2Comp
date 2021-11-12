@@ -12,6 +12,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
+
 import mock
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -33,8 +34,8 @@ DEPLOY = os.environ.get("READTHEDOCS") == "True"
 # -- Project information -----------------------------------------------------
 
 try:
-    import tensorflow  # noqa
     import keras  # noqa
+    import tensorflow  # noqa
 except ImportError:
     for m in []:
         sys.modules[m] = mock.Mock(name=m)
@@ -71,6 +72,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
+    "myst_parser"
 ]
 
 # -- Configurations for plugins ------------

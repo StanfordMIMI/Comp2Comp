@@ -46,8 +46,8 @@ def parse_windows(windows):
 
 def _window(xs, bounds):
     imgs = []
-    for l, u in bounds:
-        imgs.append(np.clip(xs, a_min=l, a_max=u))
+    for lb, ub in bounds:
+        imgs.append(np.clip(xs, a_min=lb, a_max=ub))
 
     if len(imgs) == 1:
         return imgs[0]
@@ -167,7 +167,7 @@ def predict(
         y = model.predict(x, batch_size=batch_size)
 
         if use_postprocessing:
-            image = np.stack([l["image"] for l in p_dicts], axis=0)
+            image = np.stack([out["image"] for out in p_dicts], axis=0)
             y = postprocess(image, y, postprocessing_params)
 
         params.extend(p_dicts)
