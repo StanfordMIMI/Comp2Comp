@@ -1,3 +1,5 @@
+import h5py
+import pandas as pd
 from keras.models import K
 from tqdm import tqdm
 
@@ -105,16 +107,32 @@ def argument_parser():
     add_config_file_argument(process_parser)
     add_opts_argument(process_parser)
 
+    # summarize parser.
+    summarize_parser = subparsers.add_parser(
+        "summarize", help="summarize results"
+    )
+    summarize_parser.add_argument(
+        "--results-dir",
+        "--results-path",
+        required=True,
+        help="path to results directory",
+    )
+    add_config_file_argument(summarize_parser)
+    add_opts_argument(summarize_parser)
+
     # init parser.
     cfg_parser = subparsers.add_parser("config", help="init abCTSeg library")
-    subparsers = cfg_parser.add_subparsers(
+    init_subparsers = cfg_parser.add_subparsers(
         title="config sub-commands", dest="cfg_action"
     )
-    subparsers.add_parser("ls", help="list default preferences config")
-    subparsers.add_parser("reset", help="reset to default config")
-    save_cfg_parser = subparsers.add_parser("save", help="set config defaults")
+    init_subparsers.add_parser("ls", help="list default preferences config")
+    init_subparsers.add_parser("reset", help="reset to default config")
+    save_cfg_parser = init_subparsers.add_parser(
+        "save", help="set config defaults"
+    )
     add_config_file_argument(save_cfg_parser)
     add_opts_argument(save_cfg_parser)
+
     return parser
 
 
@@ -240,12 +258,44 @@ def handle_process(args):
         )
 
 
+def handle_summarize(args):
+    metrics_file = os.path.join(args.results_dir, "abct-metrics.csv")
+    h5_files = sorted(
+        find_files(args.results_dir, pattern=".*h5$", exist_ok=True)
+    )
+
+    manifest = []
+    for h5_file in tqdm(h5_files, desc="Parsing metrics"):
+        with h5py.File(h5_file, "r") as f:
+            for model in f.keys():
+                scalar_metrics = {}
+                for tissue in f[model]:
+                    h5_group = f[model][tissue]
+                    scalar_metrics.update(
+                        {
+                            f"{metric} ({tissue})": h5_group[metric][()]
+                            for metric in h5_group
+                            if not h5_group[metric].shape
+                        }
+                    )
+
+                manifest.append(
+                    {"File": h5_file, "Model": model, **scalar_metrics}
+                )
+
+    df = pd.DataFrame(manifest)
+    df.to_csv(metrics_file, index=False)
+    return df
+
+
 def main():
     args = argument_parser().parse_args()
     if args.action == "config":
         handle_init(args)
     elif args.action == "process":
         handle_process(args)
+    elif args.action == "summarize":
+        handle_summarize(args)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 

@@ -64,6 +64,7 @@ setup(
         "tqdm",
         "silx",
         "yacs",
+        "pandas",
     ],
     extras_require={
         "all": ["shapely", "psutil"],
