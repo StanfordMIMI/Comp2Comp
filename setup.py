@@ -77,7 +77,9 @@ setup(
             # Docs
             "mock",
             "sphinx",
-            "sphinx-rtd-theme" "recommonmark",
+            "sphinx-rtd-theme",
+            "recommonmark",
+            "myst-parser",
         ],
     },
 )
