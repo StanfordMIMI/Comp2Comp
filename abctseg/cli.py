@@ -4,6 +4,8 @@ import os
 import sys
 from time import perf_counter
 
+import h5py
+import pandas as pd
 import silx.io.dictdump as sio
 from keras.models import K
 from tqdm import tqdm
@@ -19,8 +21,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def setup(args):
-    """Load preferences and perform basic setups.
-    """
+    """Load preferences and perform basic setups."""
     args_dict = vars(args)
     config_file = args.config_file if "config_file" in args_dict else None
     if config_file:
@@ -97,6 +98,9 @@ def argument_parser():
         help="models to use for inference",
     )
     process_parser.add_argument(
+        "--batch", action="store_true", help="run in batch mode"
+    )
+    process_parser.add_argument(
         "--pp",
         action="store_true",
         help="use post-processing. Will be used for all specified models.",
@@ -104,16 +108,32 @@ def argument_parser():
     add_config_file_argument(process_parser)
     add_opts_argument(process_parser)
 
+    # summarize parser.
+    summarize_parser = subparsers.add_parser(
+        "summarize", help="summarize results"
+    )
+    summarize_parser.add_argument(
+        "--results-dir",
+        "--results-path",
+        required=True,
+        help="path to results directory",
+    )
+    add_config_file_argument(summarize_parser)
+    add_opts_argument(summarize_parser)
+
     # init parser.
     cfg_parser = subparsers.add_parser("config", help="init abCTSeg library")
-    subparsers = cfg_parser.add_subparsers(
+    init_subparsers = cfg_parser.add_subparsers(
         title="config sub-commands", dest="cfg_action"
     )
-    subparsers.add_parser("ls", help="list default preferences config")
-    subparsers.add_parser("reset", help="reset to default config")
-    save_cfg_parser = subparsers.add_parser("save", help="set config defaults")
+    init_subparsers.add_parser("ls", help="list default preferences config")
+    init_subparsers.add_parser("reset", help="reset to default config")
+    save_cfg_parser = init_subparsers.add_parser(
+        "save", help="set config defaults"
+    )
     add_config_file_argument(save_cfg_parser)
     add_opts_argument(save_cfg_parser)
+
     return parser
 
 
@@ -150,7 +170,7 @@ def handle_process(args):
     if gpus is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(x) for x in gpus])
     else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = 0  # cpu
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cpu
 
     # Find files.
     files = []
@@ -159,7 +179,7 @@ def handle_process(args):
         if os.path.isfile(f):
             files.append(f)
         elif os.path.isdir(f):
-            dirs.append(f)
+            dirs.append(os.path.abspath(f))
     files.extend(
         find_files(
             dirs,
@@ -225,7 +245,9 @@ def handle_process(args):
         ):
             x = params["image"]
             results = compute_results(x, mask, categories, params)
-            output_file = format_output_path(f)
+            output_file = format_output_path(
+                f, base_dirs=dirs if args.batch else None
+            )
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             sio.dicttoh5(
                 results, output_file, m_save_name, mode="a", overwrite_data=True
@@ -237,12 +259,44 @@ def handle_process(args):
         )
 
 
+def handle_summarize(args):
+    metrics_file = os.path.join(args.results_dir, "abct-metrics.csv")
+    h5_files = sorted(
+        find_files(args.results_dir, pattern=".*h5$", exist_ok=True)
+    )
+
+    manifest = []
+    for h5_file in tqdm(h5_files, desc="Parsing metrics"):
+        with h5py.File(h5_file, "r") as f:
+            for model in f.keys():
+                scalar_metrics = {}
+                for tissue in f[model]:
+                    h5_group = f[model][tissue]
+                    scalar_metrics.update(
+                        {
+                            f"{metric} ({tissue})": h5_group[metric][()]
+                            for metric in h5_group
+                            if not h5_group[metric].shape
+                        }
+                    )
+
+                manifest.append(
+                    {"File": h5_file, "Model": model, **scalar_metrics}
+                )
+
+    df = pd.DataFrame(manifest)
+    df.to_csv(metrics_file, index=False)
+    return df
+
+
 def main():
     args = argument_parser().parse_args()
     if args.action == "config":
         handle_init(args)
     elif args.action == "process":
         handle_process(args)
+    elif args.action == "summarize":
+        handle_summarize(args)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 

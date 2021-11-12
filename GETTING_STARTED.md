@@ -38,3 +38,19 @@ python -m abctseg.cli process --num-gpus 1 \
     --dicoms /path/to/scan/file \
     --models stanford_v0.0.1
 ```
+
+To segment multiple scans using the `stanford_v0.0.1` model with 1 gpu, you
+run in `batch` mode:
+
+```bash
+python -m abctseg.cli process --batch --num-gpus 1 \
+    --dicoms /path/to/folder/with/dicoms \
+    --models stanford_v0.0.1
+```
+
+### Summarizing results
+To summarize parameters (HU and CSA) of a segmentation, run:
+
+```bash
+python -m abctseg.cli summarize --results-path /path/to/results/folder
+```

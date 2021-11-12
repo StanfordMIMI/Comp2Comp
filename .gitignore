@@ -1,6 +1,7 @@
 # Ignore project files
 **/.idea
 **/.DS_Store
+**/.vscode
 
 # Ignore cache
 **/__pycache__
@@ -35,6 +36,8 @@
 #ignore cross validation files
 *.cv
 
+# ignore any weights files
+weights/
 
 # preferences file
 abctseg/preferences.yaml
