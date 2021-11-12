@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from setuptools import find_packages, setup
+import os
+from os import path
 
 import keras
 import tensorflow as tf
-
-import os
-from os import path
+from setuptools import find_packages, setup
 
 tf_ver = [int(x) for x in tf.__version__.split(".")[:2]]
 assert tf_ver >= [1, 8] and tf_ver < [2, 0], "Requires TensorFlow >=1.8,<2.0"

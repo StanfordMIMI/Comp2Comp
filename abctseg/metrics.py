@@ -1,7 +1,7 @@
-import numpy as np
-
 from abc import ABC, abstractmethod
 from typing import Callable, Sequence, Union
+
+import numpy as np
 
 
 def flatten_non_category_dims(

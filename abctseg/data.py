@@ -1,11 +1,11 @@
+import math
+from typing import List, Sequence
+
 import keras.utils as k_utils
 import numpy as np
+import pydicom
 from keras.utils.data_utils import OrderedEnqueuer
 from tqdm import tqdm
-
-import math
-import pydicom
-from typing import List, Sequence
 
 
 def parse_windows(windows):

@@ -1,20 +1,21 @@
-import h5py
-import pandas as pd
-from keras.models import K
-from tqdm import tqdm
-
 import argparse
 import logging
 import os
-import silx.io.dictdump as sio
 import sys
+from time import perf_counter
+
+import h5py
+import pandas as pd
+import silx.io.dictdump as sio
+from keras.models import K
+from tqdm import tqdm
+
 from abctseg.data import Dataset, predict
 from abctseg.models import Models
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 from abctseg.run import compute_results, find_files, format_output_path
 from abctseg.utils import dl_utils
 from abctseg.utils.logger import setup_logger
-from time import perf_counter
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 

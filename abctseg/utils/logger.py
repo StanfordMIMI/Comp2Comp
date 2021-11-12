@@ -5,6 +5,7 @@ import os
 import sys
 import time
 from collections import Counter
+
 from termcolor import colored
 
 logging.captureWarnings(True)
