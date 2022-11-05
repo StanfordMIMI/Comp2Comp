@@ -7,8 +7,10 @@ from time import perf_counter
 import h5py
 import pandas as pd
 import silx.io.dictdump as sio
-from keras.models import K
+from keras import backend as K
 from tqdm import tqdm
+
+sys.path.append("/dataNAS/people/lblankem/abCTSeg")
 
 from abctseg.data import Dataset, predict
 from abctseg.models import Models

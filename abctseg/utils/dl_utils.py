@@ -1,7 +1,8 @@
 import subprocess
 
 from keras import Model
-from keras.utils import multi_gpu_model
+#from keras.utils import multi_gpu_model
+from tensorflow.python.keras.utils.multi_gpu_utils import multi_gpu_model
 
 
 def get_available_gpus(num_gpus: int = None):
