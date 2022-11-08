@@ -16,4 +16,4 @@ def python_submit(command, node = None):
 
 #python -m abctseg.cli summarize --results-path /bmrNAS/people/lblankem/abCTSeg
 
-python_submit("python abctseg/nn_unet.py", "siena")
+python_submit("bin/C2C process_3d", "siena")
