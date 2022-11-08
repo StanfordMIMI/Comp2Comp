@@ -1,4 +1,12 @@
+from time import perf_counter
+from keras import backend as K
+from tqdm import tqdm
+import os
+import silx.io.dictdump as sio
+
 from abctseg.models import Models
+from abctseg.data import Dataset, predict
+from abctseg.run import compute_results, find_files, format_output_path
 
 
 def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger):
@@ -53,6 +61,8 @@ def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger)
             output_file = format_output_path(
                 f, base_dirs=dirs if args.batch else None
             )
+            print("OUTPUT FILE")
+            print(output_file)
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             sio.dicttoh5(
                 results, output_file, m_save_name, mode="a", overwrite_data=True
