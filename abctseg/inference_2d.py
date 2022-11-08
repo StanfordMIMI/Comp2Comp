@@ -1,7 +1,7 @@
 from abctseg.models import Models
 
 
-def inference_2d(args, dataset, batch_size, use_pp, num_workers, files, num_gpus):
+def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger):
     for m_name in args.models:
         logger.info("Computing masks with model {}".format(m_name))
 
