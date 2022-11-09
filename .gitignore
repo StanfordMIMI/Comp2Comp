@@ -14,6 +14,7 @@
 
 # Ignore results
 **/pik_data
+**/preds
 
 # Ignore test_data
 **/test_data
@@ -32,6 +33,7 @@
 ._*
 # ignore checkpoint files
 **/.ipynb_checkpoints/
+**/.abctseg/
 
 #ignore cross validation files
 *.cv
@@ -41,3 +43,6 @@ weights/
 
 # preferences file
 abctseg/preferences.yaml
+
+# ignore slurm outputs
+**/slurm/
