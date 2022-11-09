@@ -13,7 +13,7 @@ def format_output_path(
     file_path, save_dir: str = None, base_dirs: Sequence[str] = None, file_name: Sequence[str] = None
 ):
     if not save_dir:
-        save_dir = PREFERENCES.OUTPUT_DIR
+        save_dir = os.path.join(PREFERENCES.OUTPUT_DIR, "segmentations")
 
     dirname = os.path.dirname(file_path) if not save_dir else save_dir
 
