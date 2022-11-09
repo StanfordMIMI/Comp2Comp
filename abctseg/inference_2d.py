@@ -3,10 +3,13 @@ from keras import backend as K
 from tqdm import tqdm
 import os
 import silx.io.dictdump as sio
+import matplotlib.pyplot as plt
 
 from abctseg.models import Models
 from abctseg.data import Dataset, predict
 from abctseg.run import compute_results, find_files, format_output_path
+from abctseg.utils.visualization import save_binary_segmentation_overlay
+from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 
 def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger, label_text):
     for m_name in args.models:
@@ -56,11 +59,14 @@ def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger,
         for f, pred, mask, params in tqdm(  # noqa: B007
             zip(files, preds, masks, params_dicts), total=len(files)
         ):
+            
             x = params["image"]
             results = compute_results(x, mask, categories, params)
 
             if label_text:
                 file_name = label_text[file_idx]
+                x = params["image"]
+                save_binary_segmentation_overlay(x, mask, PREFERENCES.OUTPUT_DIR, f"{file_name}.png")
             else:
                 file_name = None
             output_file = format_output_path(
