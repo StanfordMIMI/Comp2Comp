@@ -13,6 +13,7 @@ _C = CN()
 _C.OUTPUT_DIR = ""
 _C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
 _C.MODELS_DIR = ""
+_C.INPUT_DIR = ""
 
 _C.BATCH_SIZE = 16
 _C.NUM_WORKERS = 1
