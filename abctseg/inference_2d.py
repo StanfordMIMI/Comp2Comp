@@ -8,8 +8,7 @@ from abctseg.models import Models
 from abctseg.data import Dataset, predict
 from abctseg.run import compute_results, find_files, format_output_path
 
-
-def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger):
+def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger, label_text):
     for m_name in args.models:
         logger.info("Computing masks with model {}".format(m_name))
 
@@ -53,20 +52,25 @@ def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger)
         m_save_name = "/{}".format(m_name)
         if use_pp:
             m_save_name += "+pp"
+        file_idx = 0
         for f, pred, mask, params in tqdm(  # noqa: B007
             zip(files, preds, masks, params_dicts), total=len(files)
         ):
             x = params["image"]
             results = compute_results(x, mask, categories, params)
+
+            if label_text:
+                file_name = label_text[file_idx]
+            else:
+                file_name = None
             output_file = format_output_path(
-                f, base_dirs=dirs if args.batch else None
+                f, base_dirs=dirs if args.batch else None, file_name=file_name
             )
-            print("OUTPUT FILE")
-            print(output_file)
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             sio.dicttoh5(
                 results, output_file, m_save_name, mode="a", overwrite_data=True
             )
+            file_idx += 1
         logger.info(
             "<TIME>: Metrics - count: {} - {:.4f} seconds".format(
                 len(files), perf_counter() - start_time
