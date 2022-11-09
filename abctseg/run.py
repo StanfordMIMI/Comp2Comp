@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def format_output_path(
-    file_path, save_dir: str = None, base_dirs: Sequence[str] = None
+    file_path, save_dir: str = None, base_dirs: Sequence[str] = None, file_name: Sequence[str] = None
 ):
     if not save_dir:
         save_dir = PREFERENCES.OUTPUT_DIR
@@ -27,6 +27,13 @@ def format_output_path(
         # Trim path separator from the path
         relative_dir = relative_dir.lstrip(os.path.sep)
         dirname = os.path.join(save_dir, relative_dir)
+
+    if file_name is not None:
+        return os.path.join(
+            dirname,
+            "{}.h5".format(file_name),
+        )
+        
     return os.path.join(
         dirname,
         "{}.h5".format(os.path.splitext(os.path.basename(file_path))[0]),
