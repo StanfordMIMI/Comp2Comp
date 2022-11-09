@@ -1,0 +1,352 @@
+#!/usr/bin/env python
+import argparse
+import logging
+import os
+import sys
+from time import perf_counter
+from pathlib import Path
+
+import h5py
+import pandas as pd
+import silx.io.dictdump as sio
+from keras import backend as K
+from tqdm import tqdm
+import numpy as np
+import dosma as dm
+from pydicom.filereader import read_file_meta_info, dcmread
+from glob import glob
+
+sys.path.append("/dataNAS/people/lblankem/abCTSeg")
+
+from abctseg.data import Dataset, predict
+from abctseg.models import Models
+from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
+from abctseg.run import compute_results, find_files, format_output_path
+from abctseg.utils import dl_utils
+from abctseg.utils import spine_utils
+from abctseg.utils.logger import setup_logger
+from abctseg.nn_unet import spine_seg
+from abctseg.inference_2d import inference_2d
+
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+
+def setup(args):
+    """Load preferences and perform basic setups."""
+    args_dict = vars(args)
+    config_file = args.config_file if "config_file" in args_dict else None
+    if config_file:
+        PREFERENCES.merge_from_file(args.config_file)
+    opts = args.opts
+    if len(opts) and opts[0] == "--":
+        opts = opts[1:]
+    PREFERENCES.merge_from_list(opts)
+    setup_logger(PREFERENCES.CACHE_DIR)
+
+
+def add_config_file_argument(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "--config-file",
+        type=str,
+        required=False,
+        help="Preferences config file",
+    )
+
+
+def add_opts_argument(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "opts",
+        help="Modify preferences options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
+
+
+def argument_parser():
+    parser = argparse.ArgumentParser("abCTSeg command line interface")
+    subparsers = parser.add_subparsers(dest="action")
+
+    # Processing parser
+    process_parser = subparsers.add_parser("process", help="process abCT scans")
+    process_parser.add_argument(
+        "--dicoms",
+        nargs="+",
+        type=str,
+        required=True,
+        help="path to dicom files(s)/directories to segment.",
+    )
+    process_parser.add_argument(
+        "--max-depth",
+        nargs="?",
+        type=str,
+        default=None,
+        help="max depth to search directory. Default: None (recursive search)",
+    )
+    process_parser.add_argument(
+        "--pattern",
+        nargs="?",
+        type=str,
+        default=None,
+        help="regex pattern for file names. Default: None",
+    )
+    process_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="overwrite results for computed files. Default: False",
+    )
+    process_parser.add_argument(
+        "--num-gpus",
+        default=1,
+        type=int,
+        help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
+    )
+    process_parser.add_argument(
+        "--models",
+        nargs="+",
+        required=True,
+        type=str,
+        choices=[x.model_name for x in Models],
+        help="models to use for inference",
+    )
+    process_parser.add_argument(
+        "--batch", action="store_true", help="run in batch mode"
+    )
+    process_parser.add_argument(
+        "--pp",
+        action="store_true",
+        help="use post-processing. Will be used for all specified models.",
+    )
+
+    add_config_file_argument(process_parser)
+    add_opts_argument(process_parser)
+
+    process_3d_parser = subparsers.add_parser("process_3d", help="process abCT dicom series")
+    '''
+    process_parser.add_argument(
+        "--dicoms",
+        nargs="+",
+        type=str,
+        required=True,
+        help="path to dicom files(s)/directories to segment.",
+    )
+    '''
+    process_3d_parser.add_argument(
+        "--batch", action="store_true", help="run in batch mode"
+    )
+
+    process_3d_parser.add_argument(
+        "--pp",
+        action="store_true",
+        help="use post-processing. Will be used for all specified models.",
+    )
+
+    process_3d_parser.add_argument(
+        "--models",
+        default = ["stanford_v0.0.1"],
+        #nargs="+",
+        #required=True,
+        type=str,
+        choices=[x.model_name for x in Models],
+        help="models to use for inference",
+    )
+
+    process_3d_parser.add_argument(
+        "--max-depth",
+        nargs="?",
+        type=str,
+        default=None,
+        help="max depth to search directory. Default: None (recursive search)",
+    )
+    
+    process_3d_parser.add_argument(
+        "--num-gpus",
+        default=1,
+        type=int,
+        help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
+    )
+
+    add_config_file_argument(process_3d_parser)
+    add_opts_argument(process_3d_parser)
+
+    # summarize parser.
+    summarize_parser = subparsers.add_parser(
+        "summarize", help="summarize results"
+    )
+    summarize_parser.add_argument(
+        "--results-dir",
+        "--results-path",
+        required=True,
+        help="path to results directory",
+    )
+    add_config_file_argument(summarize_parser)
+    add_opts_argument(summarize_parser)
+
+    # init parser.
+    cfg_parser = subparsers.add_parser("config", help="init abCTSeg library")
+    init_subparsers = cfg_parser.add_subparsers(
+        title="config sub-commands", dest="cfg_action"
+    )
+    init_subparsers.add_parser("ls", help="list default preferences config")
+    init_subparsers.add_parser("reset", help="reset to default config")
+    save_cfg_parser = init_subparsers.add_parser(
+        "save", help="set config defaults"
+    )
+    add_config_file_argument(save_cfg_parser)
+    add_opts_argument(save_cfg_parser)
+
+    return parser
+
+
+def handle_init(args):
+    cfg_action = args.cfg_action
+    if cfg_action == "ls":
+        print("\n" + PREFERENCES.dump())
+    elif cfg_action == "reset":
+        print("\nResetting preferences...")
+        reset_preferences()
+        save_preferences()
+        print("\n" + PREFERENCES.dump())
+    elif cfg_action == "save":
+        setup(args)
+        save_preferences()
+        print("\nUpdated Preferences:")
+        print("====================")
+        print(PREFERENCES.dump())
+    else:
+        raise AssertionError("cfg_action {} not supported".format(cfg_action))
+
+
+def handle_process(args):
+    setup(args)
+    if not PREFERENCES.MODELS_DIR:
+        raise ValueError(
+            "MODELS_DIR not initialized. "
+            "Use `python -m abctseg.cli config` to set MODELS_DIR"
+        )
+    logger = logging.getLogger("abctseg.cli.__main__")
+    logger.info("\n\n======================================================")
+    gpus = dl_utils.get_available_gpus(args.num_gpus)
+    num_gpus = len(gpus) if gpus is not None else 0
+    if gpus is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(x) for x in gpus])
+    else:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cpu
+
+    # Find files.
+    files = []
+    dirs = []
+    for f in args.dicoms:
+        if os.path.isfile(f):
+            files.append(f)
+        elif os.path.isdir(f):
+            dirs.append(os.path.abspath(f))
+            
+    files.extend(
+        find_files(
+            dirs,
+            max_depth=args.max_depth,
+            exist_ok=args.overwrite,
+            pattern=args.pattern,
+        )
+    )
+
+    logger.info("{} scans found".format(len(files)))
+    if len(files) == 0:
+        sys.exit(0)
+
+    batch_size = PREFERENCES.BATCH_SIZE
+    use_pp = args.pp
+    num_workers = PREFERENCES.NUM_WORKERS
+    dataset = Dataset(files, windows=model_type.windows)
+
+    logger.info("Preferences:\n" + PREFERENCES.dump())
+
+    inference_2d(args, dataset, batch_size, use_pp, num_workers, files, num_gpus)
+    
+
+def handle_process_3d(args):
+    setup(args)
+
+    seg, mvs = spine_seg()
+    dicom_files, label_text = spine_utils.find_spine_dicoms(seg)
+
+    print(f"Dicom paths: {dicom_files}")
+
+    batch_size = PREFERENCES.BATCH_SIZE
+    use_pp = args.pp
+    num_workers = PREFERENCES.NUM_WORKERS
+
+    setup(args)
+    if not PREFERENCES.MODELS_DIR:
+        raise ValueError(
+            "MODELS_DIR not initialized. "
+            "Use `python -m abctseg.cli config` to set MODELS_DIR"
+        )
+    logger = logging.getLogger("abctseg.cli.__main__")
+    logger.info("\n\n======================================================")
+
+    '''
+    gpus = dl_utils.get_available_gpus(args.num_gpus)
+    num_gpus = len(gpus) if gpus is not None else 0
+    if gpus is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(x) for x in gpus])
+    else:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cpu
+    '''
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    num_gpus = 1
+    logger.info("Preferences:\n" + PREFERENCES.dump())
+
+    inference_2d(args, batch_size, use_pp, num_workers, dicom_files, num_gpus, logger, label_text)
+    handle_summarize(PREFERENCES.OUTPUT_DIR)
+
+
+def handle_summarize(results_dir):
+    results_dir_sub = Path(results_dir) / "metrics"
+    results_dir_sub.mkdir(exist_ok=True)
+    metrics_file = os.path.join(results_dir_sub, "abct-metrics.csv")
+    h5_files = sorted(
+        find_files(results_dir, pattern=".*h5$", exist_ok=True)
+    )
+
+    manifest = []
+    for h5_file in tqdm(h5_files, desc="Parsing metrics"):
+        with h5py.File(h5_file, "r") as f:
+            for model in f.keys():
+                scalar_metrics = {}
+                for tissue in f[model]:
+                    h5_group = f[model][tissue]
+                    scalar_metrics.update(
+                        {
+                            f"{metric} ({tissue})": h5_group[metric][()]
+                            for metric in h5_group
+                            if not h5_group[metric].shape
+                        }
+                    )
+
+                manifest.append(
+                    {"File": h5_file, "Model": model, **scalar_metrics}
+                )
+
+    df = pd.DataFrame(manifest)
+    df.to_csv(metrics_file, index=False)
+    return df
+
+
+def main():
+    args = argument_parser().parse_args()
+    if args.action == "config":
+        handle_init(args)
+    elif args.action == "process":
+        handle_process(args)
+    elif args.action == "process_3d":
+        handle_process_3d(args)
+    elif args.action == "summarize":
+        handle_summarize(args)
+    else:
+        raise AssertionError("{} command not supported".format(args.action))
+
+
+if __name__ == "__main__":
+    main()
