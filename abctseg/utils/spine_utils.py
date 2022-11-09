@@ -7,7 +7,7 @@ from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 def find_spine_dicoms(seg):
     vertical_positions = []
     for label_idx in range(18, 24):
-        pos = compute_centroid("axial", label_idx)
+        pos = compute_centroid(seg, "axial", label_idx)
         vertical_positions.append(pos)
 
     print(f"Instance numbers: {vertical_positions}")
@@ -27,20 +27,17 @@ def find_spine_dicoms(seg):
 
     return (dicom_files, label_text)
 
-def compute_centroid(plane: str, label: int):
+def compute_centroid(seg, plane, label):
     if plane == "axial":
         sum_out_axes = (0, 1)
         sum_axis = 2
-
     elif plane == "coronal":
         sum_out_axes = (0, 2)
         sum_axis = 1
-
     elif plane == "sagittal":
         sum_out_axes = (1, 2)
         sum_axis = 0
-
-    sums = np.sum(seg == label, axis = sum_axes)
+    sums = np.sum(seg == label, axis = sum_out_axes)
     normalized_sums = sums / np.sum(sums)
     pos = int(np.sum(np.arange(0, seg.shape[sum_axis]) * normalized_sums))
     return pos
