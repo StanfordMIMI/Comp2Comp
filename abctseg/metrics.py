@@ -105,3 +105,20 @@ class CrossSectionalArea(Metric):
             return "Cross-sectional Area ({})".format(self.units)
         else:
             return "Cross-sectional Area"
+
+
+def manifest_to_map(manifest):
+    figure_text_key = {}
+    for manifest_dict in manifest:
+        key = (manifest_dict['File'].split('/')[-1]).split('_')[0]
+        bone_hu = f"{manifest_dict['Hounsfield Unit (bone)']:.2f}"
+        bone_area = f"{manifest_dict['Cross-sectional Area (mm^2) (bone)']:.2f}"
+        muscle_hu = f"{manifest_dict['Hounsfield Unit (muscle)']:.2f}"
+        muscle_area = f"{manifest_dict['Cross-sectional Area (mm^2) (muscle)']:.2f}"
+        sat_hu = f"{manifest_dict['Hounsfield Unit (sat)']:.2f}"
+        sat_area = f"{manifest_dict['Cross-sectional Area (mm^2) (sat)']:.2f}"
+        vat_hu = f"{manifest_dict['Hounsfield Unit (vat)']:.2f}"
+        vat_area = f"{manifest_dict['Cross-sectional Area (mm^2) (vat)']:.2f}"
+        figure_text_key[key] = [muscle_hu, muscle_area, bone_hu, bone_area, vat_hu, vat_area, sat_hu, sat_area]
+    return figure_text_key
+
