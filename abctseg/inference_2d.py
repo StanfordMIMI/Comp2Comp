@@ -12,6 +12,9 @@ from abctseg.utils.visualization import save_binary_segmentation_overlay
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 
 def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger, label_text):
+    inputs = []
+    masks = []
+    file_names = []
     for m_name in args.models:
         logger.info("Computing masks with model {}".format(m_name))
 
@@ -66,7 +69,10 @@ def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger,
             if label_text:
                 file_name = label_text[file_idx]
                 x = params["image"]
-                save_binary_segmentation_overlay(x, mask, PREFERENCES.OUTPUT_DIR, f"{file_name}.png")
+                inputs.append(x)
+                masks.append(mask)
+                file_names.append(file_name)
+                #save_binary_segmentation_overlay(x, mask, PREFERENCES.OUTPUT_DIR, f"{file_name}.png")
             else:
                 file_name = None
             output_file = format_output_path(
@@ -82,3 +88,4 @@ def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger,
                 len(files), perf_counter() - start_time
             )
         )
+    return (inputs, masks, file_names)
