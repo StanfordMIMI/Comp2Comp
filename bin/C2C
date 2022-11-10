@@ -29,6 +29,7 @@ from abctseg.utils.logger import setup_logger
 from abctseg.nn_unet import spine_seg
 from abctseg.inference_2d import inference_2d
 from abctseg.utils.visualization import save_binary_segmentation_overlay
+from abctseg import metrics
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -319,11 +320,13 @@ def handle_process_3d(args):
     logger.info("Preferences:\n" + PREFERENCES.dump())
     (inputs, masks, file_names) = inference_2d(args, batch_size, use_pp, num_workers, dicom_files, num_gpus, logger, label_text)
 
+    df, manifest = handle_summarize(PREFERENCES.OUTPUT_DIR)
+
+    figure_text_map = metrics.manifest_to_map(manifest)
+
     # Save images
     for num_2d in range(len(inputs)):
-        save_binary_segmentation_overlay(inputs[num_2d], masks[num_2d], PREFERENCES.OUTPUT_DIR, f"{file_names[num_2d]}.png")
-
-    handle_summarize(PREFERENCES.OUTPUT_DIR)
+        save_binary_segmentation_overlay(inputs[num_2d], masks[num_2d], PREFERENCES.OUTPUT_DIR, f"{file_names[num_2d]}.png", figure_text_key = figure_text_map)
 
     end = time()
 
@@ -358,7 +361,7 @@ def handle_summarize(results_dir):
 
     df = pd.DataFrame(manifest)
     df.to_csv(metrics_file, index=False)
-    return df
+    return df, manifest
 
 
 def main():

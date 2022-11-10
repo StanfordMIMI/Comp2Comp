@@ -72,7 +72,6 @@ def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger,
                 inputs.append(x)
                 masks.append(mask)
                 file_names.append(file_name)
-                #save_binary_segmentation_overlay(x, mask, PREFERENCES.OUTPUT_DIR, f"{file_name}.png")
             else:
                 file_name = None
             output_file = format_output_path(
