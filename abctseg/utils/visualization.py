@@ -30,6 +30,13 @@ _COLOR_MAP = {
     "T12": 5
 }
 
+_TISSUES = [
+    "Muscle",
+    "Bone",
+    "VAT",
+    "SAT"
+]
+
 def save_binary_segmentation_overlay(img_in, mask, base_path, file_name, centroids = None, figure_text_key = None):
     # Window image to retain most information
     img_in = np.clip(img_in, -300, 1800)
@@ -49,9 +56,11 @@ def save_binary_segmentation_overlay(img_in, mask, base_path, file_name, centroi
     vis = Visualizer(img_rgb)
     for num_bin_masks in range(1, mask.shape[2]):
         if centroids:
-            alpha_val = 0.3
+            alpha_val = 0.2
         else:
             alpha_val = 1
+            if num_bin_masks == 2:
+                continue
         vis.draw_binary_mask(mask[:, :, num_bin_masks].astype(int), color = _COLORS[num_bin_masks - 1], alpha=alpha_val)
         if centroids:
             #print(centroids)
@@ -60,8 +69,10 @@ def save_binary_segmentation_overlay(img_in, mask, base_path, file_name, centroi
             #print(figure_text_key)
             vis.draw_box(box_coord = (1, 1, mask.shape[0] - 1, mask.shape[1] - 1), alpha = 1, edge_color = _COLORS[_COLOR_MAP[file_name.split('_')[0]]])
             if figure_text_key:
-                vis.draw_text(text="HU: " + figure_text_key[file_name.split('_')[0]][(num_bin_masks - 1) * 2], position=(mask.shape[1] - 48, text_spacing * (num_bin_masks - 1) + text_start_offset), color=_COLORS[num_bin_masks - 1], font_size = 7)
-                vis.draw_text(text="AREA: " + figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1], position=(mask.shape[1] - 48, text_spacing * (num_bin_masks - 1) + text_start_offset + (text_spacing / 2)), color=_COLORS[num_bin_masks - 1], font_size = 7)
+                if num_bin_masks == 3:
+                    text_start_offset -= text_spacing
+                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} HU: " + figure_text_key[file_name.split('_')[0]][(num_bin_masks - 1) * 2], position=(mask.shape[1] - 68, text_spacing * (num_bin_masks - 1) + text_start_offset), color=_COLORS[num_bin_masks - 1], font_size = 7)
+                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1], position=(mask.shape[1] - 68, text_spacing * (num_bin_masks - 1) + text_start_offset + (text_spacing / 2)), color=_COLORS[num_bin_masks - 1], font_size = 7)
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(images_base_path, file_name))
     
