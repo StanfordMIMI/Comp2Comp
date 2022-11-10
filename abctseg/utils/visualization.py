@@ -2,6 +2,12 @@ from detectron2.utils.visualizer import Visualizer, VisImage
 from pathlib import Path
 import numpy as np
 import os
+from PIL import Image
+from os import listdir
+from os.path import isfile, join
+from glob import glob
+
+_image_files = ["spine_coronal.png", "spine_sagittal.png", "T12_seg.png", "L3_seg.png", "L1_seg.png", "L4_seg.png", "L2_seg.png", "L5_seg.png"]
 
 _COLORS = np.array(
     [
@@ -11,6 +17,7 @@ _COLORS = np.array(
         1.000, 1.000, 0.000,
         0.000, 1.000, 1.000,
         1.000, 0.000, 1.000
+
     ]
 ).astype(np.float32).reshape(-1, 3)
 
@@ -57,6 +64,20 @@ def save_binary_segmentation_overlay(img_in, mask, base_path, file_name, centroi
                 vis.draw_text(text="AREA: " + figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1], position=(mask.shape[1] - 48, text_spacing * (num_bin_masks - 1) + text_start_offset + (text_spacing / 2)), color=_COLORS[num_bin_masks - 1], font_size = 7)
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(images_base_path, file_name))
+    
 
 def normalize_img(img):
     return (img - img.min()) / (img.max() - img.min())
+
+
+def generate_panel(image_dir):
+    image_files = [os.path.join(image_dir, path) for path in _image_files]
+    new_im = Image.new('RGB', (2080, 1040))
+    index = 0
+    for i in range(0,2080,520):
+        for j in range(0,1040,520):
+            im = Image.open(image_files[index])
+            im.thumbnail((512,512))
+            new_im.paste(im, (i,j))
+            index += 1
+    new_im.save(os.path.join(image_dir, "panel.png"))

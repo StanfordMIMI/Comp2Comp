@@ -28,7 +28,7 @@ from abctseg.utils import spine_utils
 from abctseg.utils.logger import setup_logger
 from abctseg.nn_unet import spine_seg
 from abctseg.inference_2d import inference_2d
-from abctseg.utils.visualization import save_binary_segmentation_overlay
+from abctseg.utils.visualization import save_binary_segmentation_overlay, generate_panel
 from abctseg import metrics
 
 
@@ -327,6 +327,8 @@ def handle_process_3d(args):
     # Save images
     for num_2d in range(len(inputs)):
         save_binary_segmentation_overlay(inputs[num_2d], masks[num_2d], PREFERENCES.OUTPUT_DIR, f"{file_names[num_2d]}.png", figure_text_key = figure_text_map)
+
+    generate_panel(os.path.join(PREFERENCES.OUTPUT_DIR, "images"))
 
     end = time()
 
