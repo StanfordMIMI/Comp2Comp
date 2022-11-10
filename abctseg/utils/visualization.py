@@ -41,7 +41,11 @@ def save_binary_segmentation_overlay(img_in, mask, base_path, file_name, centroi
     img_rgb = np.tile(img_in, (1, 1, 3))
     vis = Visualizer(img_rgb)
     for num_bin_masks in range(1, mask.shape[2]):
-        vis.draw_binary_mask(mask[:, :, num_bin_masks].astype(int), color = _COLORS[num_bin_masks - 1], alpha=0.3)
+        if centroids:
+            alpha_val = 0.3
+        else:
+            alpha_val = 1
+        vis.draw_binary_mask(mask[:, :, num_bin_masks].astype(int), color = _COLORS[num_bin_masks - 1], alpha=alpha_val)
         if centroids:
             #print(centroids)
             vis.draw_line(x_data = (0, mask.shape[1] - 1), y_data = (centroids[num_bin_masks - 1], centroids[num_bin_masks - 1]), color = _COLORS[num_bin_masks - 1], linestyle="dashed", linewidth = 0.5)
