@@ -7,7 +7,6 @@ from keras.models import load_model
 
 from abctseg.preferences import PREFERENCES
 
-
 class Models(enum.Enum):
     ABCT_V_0_0_1 = (
         1,
