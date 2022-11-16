@@ -5,6 +5,7 @@ from typing import Union, List
 import numpy as np
 import matplotlib.pyplot as plt
 import dosma as dm
+import logging
 
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 from abctseg.utils import visualization 
@@ -22,7 +23,8 @@ def find_spine_dicoms(seg: np.ndarray):
         pos = compute_centroid(seg, "axial", label_idx)
         vertical_positions.append(pos)
 
-    print(f"Instance numbers: {vertical_positions}")
+    # Log vertical positions
+    logging.info(f"Instance numbers: {vertical_positions}")
 
     folder_in = PREFERENCES.INPUT_DIR
     instance_numbers = []
