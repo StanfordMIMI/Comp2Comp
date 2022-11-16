@@ -90,7 +90,11 @@ def delete_right_most_connected_component(mask: np.ndarray):
     """
     mask = mask.astype(np.uint8)
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity = 8)
-    right_most_connected_component = np.argmax(centroids[:, 0])
+    #print("INSIDE DELETE RIGHT MOST")
+    #print(centroids)
+    #plt.imshow(mask)
+    #plt.savefig("./mask_before_delete_right_most.png")
+    right_most_connected_component = np.argmax(centroids[1:, 1]) + 1
     mask[labels == right_most_connected_component] = 0
     return mask
 
@@ -105,7 +109,7 @@ def compute_center_of_mass(mask: np.ndarray):
     """
     mask = mask.astype(np.uint8)
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity = 8)
-    center_of_mass = np.mean(centroids, axis = 0)
+    center_of_mass = np.mean(centroids[1:, :], axis = 0)
     return center_of_mass
 
 
@@ -121,7 +125,8 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray):
         Centroid.
     """
     roi = np.zeros(img.shape)
-    roi[int(centroid[0] - 10):int(centroid[0] + 10), int(centroid[1] - 10):int(centroid[1] + 10), int(centroid[2] - 10):int(centroid[2] + 10)] = 1
+    length = 5
+    roi[int(centroid[0] - length):int(centroid[0] + length), int(centroid[1] - length):int(centroid[1] + length), int(centroid[2] - length):int(centroid[2] + length)] = 1
     return roi
 
 
@@ -166,7 +171,7 @@ def compute_rois(seg, img):
     centroids_3d = []
     for i, slice in enumerate(slices):
         center_of_mass = compute_center_of_mass(slice)
-        centroid = np.array([center_of_mass[0], centroids[i], center_of_mass[1]])
+        centroid = np.array([center_of_mass[1], centroids[i], center_of_mass[0]])
         roi = roi_from_mask(img, centroid)
         spine_hus.append(mean_img_mask(img, roi))
         rois.append(roi)
@@ -218,7 +223,7 @@ def to_one_hot(label: np.ndarray):
     return one_hot_label
 
 
-def visualize_coronal_sagittal_spine(seg: np.ndarray, mvs: dm.MedicalVolume, centroids: List[int], label_text: List[str], output_dir: str):
+def visualize_coronal_sagittal_spine(seg: np.ndarray, rois: List[np.ndarray], mvs: dm.MedicalVolume, centroids: List[int], label_text: List[str], output_dir: str):
     """
     Visualize the coronal and sagittal planes of the spine.
     Parameters
@@ -242,10 +247,16 @@ def visualize_coronal_sagittal_spine(seg: np.ndarray, mvs: dm.MedicalVolume, cen
     sagittal_image = mvs.volume[:, sagittal_centroid, :]
     sagittal_label = seg[:, sagittal_centroid, :]
     one_hot_sag_label = to_one_hot(sagittal_label)
+    for roi in rois:
+        one_hot_roi_label = roi[:, sagittal_centroid, :]
+        one_hot_sag_label = np.concatenate((one_hot_sag_label, one_hot_roi_label.reshape((one_hot_roi_label.shape[0], one_hot_roi_label.shape[1], 1))), axis = 2)
     
     coronal_image = mvs.volume[coronal_centroid, :, :]
     coronal_label = seg[coronal_centroid, :, :]
     one_hot_cor_label = to_one_hot(coronal_label)
+    for roi in rois:
+        one_hot_roi_label = roi[coronal_centroid, :, :]
+        one_hot_cor_label = np.concatenate((one_hot_cor_label, one_hot_roi_label.reshape((one_hot_roi_label.shape[0], one_hot_roi_label.shape[1], 1))), axis = 2)
 
     visualization.save_binary_segmentation_overlay(np.transpose(coronal_image), np.transpose(one_hot_cor_label, (1, 0, 2)), output_dir, "spine_coronal.png", centroids)
     visualization.save_binary_segmentation_overlay(np.transpose(sagittal_image), np.transpose(one_hot_sag_label, (1, 0, 2)), output_dir, "spine_sagittal.png", centroids)

@@ -17,8 +17,13 @@ _COLORS = np.array(
         0.000, 1.000, 0.000, 
         1.000, 1.000, 0.000,
         0.000, 1.000, 1.000,
-        1.000, 0.000, 1.000
-
+        1.000, 0.000, 1.000,
+        1.000, 0.340, 0.200,
+        1.000, 0.340, 0.200,
+        1.000, 0.340, 0.200,
+        1.000, 0.340, 0.200,
+        1.000, 0.340, 0.200,
+        1.000, 0.340, 0.200
     ]
 ).astype(np.float32).reshape(-1, 3)
 
@@ -82,6 +87,8 @@ def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, 
                 continue
         vis.draw_binary_mask(mask[:, :, num_bin_masks].astype(int), color = _COLORS[num_bin_masks - 1], alpha=alpha_val)
         if centroids:
+            if num_bin_masks > 6:
+                continue
             #print(centroids)
             vis.draw_line(x_data = (0, mask.shape[1] - 1), y_data = (centroids[num_bin_masks - 1], centroids[num_bin_masks - 1]), color = _COLORS[num_bin_masks - 1], linestyle="dashed", linewidth = 0.5)
         else:
