@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import dosma as dm
 import logging
 import cv2
+import sys
+import random
 
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 from abctseg.utils import visualization 
@@ -143,8 +145,22 @@ def mean_img_mask(img: np.ndarray, mask: np.ndarray):
     """
     img = img.astype(np.float32)
     mask = mask.astype(np.float32)
-    img_masked = img * mask
+    img_masked = (img * mask)[mask > 0]
     mean = np.mean(img_masked)
+    '''
+    for i in range(mask.shape[0]):
+        for j in range(mask.shape[1]):
+            for k in range(mask.shape[2]):
+                if mask[i, j, k] == 1:
+                    plt.imshow(img[:, j, :] + (mask[:, j, :] * 1000))
+                    #generate random int
+                    random_int = random.randint(0, 100000000)
+                    plt.savefig(f"./img_{random_int}.png")
+                    #plt.imshow(mask[i, :, :])
+                    #plt.savefig("./mask.png")
+                    #sys.exit()
+                    return mean
+    '''
     return mean
 
 
@@ -223,7 +239,7 @@ def to_one_hot(label: np.ndarray):
     return one_hot_label
 
 
-def visualize_coronal_sagittal_spine(seg: np.ndarray, rois: List[np.ndarray], mvs: dm.MedicalVolume, centroids: List[int], label_text: List[str], output_dir: str):
+def visualize_coronal_sagittal_spine(seg: np.ndarray, rois: List[np.ndarray], mvs: dm.MedicalVolume, centroids: List[int], label_text: List[str], output_dir: str, spine_hus = None):
     """
     Visualize the coronal and sagittal planes of the spine.
     Parameters
@@ -258,5 +274,5 @@ def visualize_coronal_sagittal_spine(seg: np.ndarray, rois: List[np.ndarray], mv
         one_hot_roi_label = roi[coronal_centroid, :, :]
         one_hot_cor_label = np.concatenate((one_hot_cor_label, one_hot_roi_label.reshape((one_hot_roi_label.shape[0], one_hot_roi_label.shape[1], 1))), axis = 2)
 
-    visualization.save_binary_segmentation_overlay(np.transpose(coronal_image), np.transpose(one_hot_cor_label, (1, 0, 2)), output_dir, "spine_coronal.png", centroids)
-    visualization.save_binary_segmentation_overlay(np.transpose(sagittal_image), np.transpose(one_hot_sag_label, (1, 0, 2)), output_dir, "spine_sagittal.png", centroids)
+    visualization.save_binary_segmentation_overlay(np.transpose(coronal_image), np.transpose(one_hot_cor_label, (1, 0, 2)), output_dir, "spine_coronal.png", centroids, spine_hus = spine_hus)
+    visualization.save_binary_segmentation_overlay(np.transpose(sagittal_image), np.transpose(one_hot_sag_label, (1, 0, 2)), output_dir, "spine_sagittal.png", centroids, spine_hus = spine_hus)

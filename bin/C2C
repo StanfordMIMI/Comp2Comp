@@ -300,7 +300,7 @@ def handle_process_3d(args):
         (spine_hus, rois, centroids) = spine_utils.compute_rois(seg, mvs.volume)
         dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(seg, path)
         logger.info("{} scans found".format(len(dicom_files)))
-        spine_utils.visualize_coronal_sagittal_spine(seg, rois, mvs, centroids, label_text, output_path)
+        spine_utils.visualize_coronal_sagittal_spine(seg, rois, mvs, centroids, label_text, output_path, spine_hus = spine_hus)
 
         # Print dicom paths to logger
         logger.info(f"Dicom paths: {dicom_files}")
