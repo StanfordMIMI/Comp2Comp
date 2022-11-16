@@ -43,8 +43,17 @@ _TISSUES = [
     "SAT"
 ]
 
+_SPINE_LEVELS = [
+    "L5",
+    "L4",
+    "L3",
+    "L2",
+    "L1",
+    "T12"
+]
 
-def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, Path], base_path: Union[str, Path], file_name: str, centroids = None, figure_text_key = None):
+
+def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, Path], base_path: Union[str, Path], file_name: str, centroids = None, figure_text_key = None, spine_hus = None):
     """
     Save binary segmentation overlay.
     Parameters
@@ -90,6 +99,7 @@ def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, 
             if num_bin_masks > 6:
                 continue
             #print(centroids)
+            vis.draw_text(text=f"{_SPINE_LEVELS[num_bin_masks - 1]} ROI HU: {spine_hus[num_bin_masks - 1]:.2f}", position=(mask.shape[1] - 68, int(text_spacing / 2.0) * (num_bin_masks - 1) + text_start_offset), color=_COLORS[num_bin_masks - 1], font_size = 7)
             vis.draw_line(x_data = (0, mask.shape[1] - 1), y_data = (centroids[num_bin_masks - 1], centroids[num_bin_masks - 1]), color = _COLORS[num_bin_masks - 1], linestyle="dashed", linewidth = 0.5)
         else:
             #print(figure_text_key)
