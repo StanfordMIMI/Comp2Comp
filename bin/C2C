@@ -2,6 +2,7 @@
 import argparse
 import logging
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import sys
 from time import perf_counter
 from time import time
@@ -22,7 +23,7 @@ sys.path.append("/dataNAS/people/lblankem/abCTSeg")
 from abctseg.data import Dataset, predict
 from abctseg.models import Models
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
-from abctseg.run import compute_results, find_files, format_output_path
+from abctseg.run import compute_results, find_files, format_output_path, get_dicom_paths
 from abctseg.utils import dl_utils
 from abctseg.utils import spine_utils
 from abctseg.utils.logger import setup_logger
@@ -137,14 +138,6 @@ def argument_parser():
         type=str,
         choices=[x.model_name for x in Models],
         help="models to use for inference",
-    )
-
-    process_3d_parser.add_argument(
-        "--max-depth",
-        nargs="?",
-        type=str,
-        default=None,
-        help="max depth to search directory. Default: None (recursive search)",
     )
     
     process_3d_parser.add_argument(

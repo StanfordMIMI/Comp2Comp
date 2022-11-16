@@ -111,17 +111,13 @@ def normalize_img(img: np.ndarray) -> np.ndarray:
     return (img - img.min()) / (img.max() - img.min())
 
 
-def generate_panel(image_dir: Union[str, Path], output_dir: Union[str, Path], figure_text_key = None):
+def generate_panel(image_dir: Union[str, Path]):
     """
     Generate panel.
     Parameters
     ----------
     image_dir: str, Path
         Path to the input image directory.
-    output_dir: str, Path
-        Path to the output directory.
-    figure_text_key: str
-        Key to the figure text.
     """
     image_files = [os.path.join(image_dir, path) for path in _image_files]
     new_im = Image.new('RGB', (2080, 1040))

@@ -1,10 +1,19 @@
 import numpy as np
 from pydicom.filereader import read_file_meta_info, dcmread
 from glob import glob
+from typing import Union, List
+import numpy as np
 
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 
-def find_spine_dicoms(seg):
+def find_spine_dicoms(seg: np.ndarray):
+    """
+    Find the dicom files corresponding to the spine T12 - L5 levels.
+    Parameters
+    ----------
+    seg: np.ndarray
+        Segmentation volume.
+    """
     vertical_positions = []
     for label_idx in range(18, 24):
         pos = compute_centroid(seg, "axial", label_idx)
@@ -28,7 +37,19 @@ def find_spine_dicoms(seg):
 
     return (dicom_files, label_text, instance_numbers)
 
-def compute_centroid(seg, plane, label):
+
+def compute_centroid(seg: np.ndarray, plane: str, label: int):
+    """
+    Compute the centroid of a label in a given plane.
+    Parameters
+    ----------
+    seg: np.ndarray
+        Segmentation volume.
+    plane: str
+        Plane to compute the centroid.
+    label: int
+        Label to compute the centroid.
+    """
     if plane == "axial":
         sum_out_axes = (0, 1)
         sum_axis = 2
@@ -43,7 +64,14 @@ def compute_centroid(seg, plane, label):
     pos = int(np.sum(np.arange(0, seg.shape[sum_axis]) * normalized_sums))
     return pos
 
-def to_one_hot(label):
+def to_one_hot(label: np.ndarray):
+    """
+    Convert a label to one-hot encoding.
+    Parameters
+    ----------
+    label: np.ndarray
+        Label volume.
+    """
     one_hot_label = np.zeros((label.shape[0], label.shape[1], 7))
     one_hot_label[:, :, 1] = (label == 18).astype(int)
     one_hot_label[:, :, 2] = (label == 19).astype(int)
