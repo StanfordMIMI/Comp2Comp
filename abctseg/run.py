@@ -127,3 +127,12 @@ def compute_results(x, mask, categories, params: Dict):
     }
 
     return results
+
+# Function that has as input a path and returns all paths under that path that contain only dicom files
+def get_dicom_paths(path):
+    dicom_paths = []
+    for root, dirs, files in os.walk(path):
+        if len(files) > 0:
+            if all([file.endswith('.dcm') for file in files]):
+                dicom_paths.append(root)
+    return dicom_paths
