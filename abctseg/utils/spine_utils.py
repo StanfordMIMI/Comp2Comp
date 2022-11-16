@@ -3,8 +3,11 @@ from pydicom.filereader import read_file_meta_info, dcmread
 from glob import glob
 from typing import Union, List
 import numpy as np
+import matplotlib.pyplot as plt
+import dosma as dm
 
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
+from abctseg.utils import visualization 
 
 def find_spine_dicoms(seg: np.ndarray):
     """
@@ -80,3 +83,36 @@ def to_one_hot(label: np.ndarray):
     one_hot_label[:, :, 5] = (label == 22).astype(int)
     one_hot_label[:, :, 6] = (label == 23).astype(int)
     return one_hot_label
+
+
+def visualize_coronal_sagittal_spine(seg: np.ndarray, mvs: dm.MedicalVolume, centroids: List[int], label_text: List[str], output_dir: str):
+    """
+    Visualize the coronal and sagittal planes of the spine.
+    Parameters
+    ----------
+    seg: np.ndarray
+        Segmentation volume.
+    mvs: dm.MedicalVolume
+        MVS volume.
+    centroids: List[int]
+        Centroids of the labels.
+    label_text: List[str]
+        Labels text.
+    output_dir: str
+        Output directory.
+    """
+    for_centroid = np.logical_and(seg >= 18, seg <= 23).astype(int) 
+    sagittal_centroid = compute_centroid(for_centroid, 'sagittal', 1)
+    coronal_centroid = compute_centroid(for_centroid, 'coronal', 1)
+
+    #Spine visualizations 
+    sagittal_image = mvs.volume[:, sagittal_centroid, :]
+    sagittal_label = seg[:, sagittal_centroid, :]
+    one_hot_sag_label = to_one_hot(sagittal_label)
+    
+    coronal_image = mvs.volume[coronal_centroid, :, :]
+    coronal_label = seg[coronal_centroid, :, :]
+    one_hot_cor_label = to_one_hot(coronal_label)
+
+    visualization.save_binary_segmentation_overlay(np.transpose(coronal_image), np.transpose(one_hot_cor_label, (1, 0, 2)), output_dir, "spine_coronal.png", centroids)
+    visualization.save_binary_segmentation_overlay(np.transpose(sagittal_image), np.transpose(one_hot_sag_label, (1, 0, 2)), output_dir, "spine_sagittal.png", centroids)
