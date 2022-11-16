@@ -133,7 +133,7 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray):
 
 
 #Function that takes a 3d image and a 3d binary mask and returns that average value of the image inside the mask
-def mean_img_mask(img: np.ndarray, mask: np.ndarray):
+def mean_img_mask(img: np.ndarray, mask: np.ndarray, rescale_intercept: float):
     """
     Compute the mean of an image inside a mask.
     Parameters
@@ -146,7 +146,7 @@ def mean_img_mask(img: np.ndarray, mask: np.ndarray):
     img = img.astype(np.float32)
     mask = mask.astype(np.float32)
     img_masked = (img * mask)[mask > 0]
-    mean = np.mean(img_masked)
+    mean = np.mean(img_masked) + rescale_intercept
     '''
     for i in range(mask.shape[0]):
         for j in range(mask.shape[1]):
@@ -164,7 +164,7 @@ def mean_img_mask(img: np.ndarray, mask: np.ndarray):
     return mean
 
 
-def compute_rois(seg, img):
+def compute_rois(seg, img, rescale_intercept):
     """
     Compute the ROIs for the spine.
     Parameters
@@ -189,7 +189,7 @@ def compute_rois(seg, img):
         center_of_mass = compute_center_of_mass(slice)
         centroid = np.array([center_of_mass[1], centroids[i], center_of_mass[0]])
         roi = roi_from_mask(img, centroid)
-        spine_hus.append(mean_img_mask(img, roi))
+        spine_hus.append(mean_img_mask(img, roi, rescale_intercept))
         rois.append(roi)
         centroids_3d.append(centroid)
     return (spine_hus, rois, centroids_3d)

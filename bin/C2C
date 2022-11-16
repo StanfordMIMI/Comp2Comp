@@ -297,7 +297,7 @@ def handle_process_3d(args):
         # Perform spine segmentation inference
         seg, mvs = spine_seg(logger, seg_input_path, seg_output_dir)
 
-        (spine_hus, rois, centroids) = spine_utils.compute_rois(seg, mvs.volume)
+        (spine_hus, rois, centroids) = spine_utils.compute_rois(seg, mvs.volume, mvs.get_metadata("RescaleIntercept"))
         dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(seg, path)
         logger.info("{} scans found".format(len(dicom_files)))
         spine_utils.visualize_coronal_sagittal_spine(seg, rois, mvs, centroids, label_text, output_path, spine_hus = spine_hus)
