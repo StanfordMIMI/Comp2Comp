@@ -10,7 +10,7 @@ import logging
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 from abctseg.utils import visualization 
 
-def find_spine_dicoms(seg: np.ndarray):
+def find_spine_dicoms(seg: np.ndarray, path: str):
     """
     Find the dicom files corresponding to the spine T12 - L5 levels.
     Parameters
@@ -26,7 +26,7 @@ def find_spine_dicoms(seg: np.ndarray):
     # Log vertical positions
     logging.info(f"Instance numbers: {vertical_positions}")
 
-    folder_in = PREFERENCES.INPUT_DIR
+    folder_in = path
     instance_numbers = []
     label_text = ['T12_seg', 'L1_seg', 'L2_seg', 'L3_seg', 'L4_seg', 'L5_seg']
 

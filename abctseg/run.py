@@ -12,8 +12,6 @@ logger = logging.getLogger(__name__)
 def format_output_path(
     file_path, save_dir: str = None, base_dirs: Sequence[str] = None, file_name: Sequence[str] = None
 ):
-    if not save_dir:
-        save_dir = os.path.join(PREFERENCES.OUTPUT_DIR, "segmentations")
 
     dirname = os.path.dirname(file_path) if not save_dir else save_dir
 
@@ -128,11 +126,11 @@ def compute_results(x, mask, categories, params: Dict):
 
     return results
 
-# Function that has as input a path and returns all paths under that path that contain only dicom files
-def get_dicom_paths(path):
+# Function that has as input a path and returns all paths under that path that contain only dicom files as well as the number of dicoms
+def get_dicom_paths_and_num(path):
     dicom_paths = []
     for root, dirs, files in os.walk(path):
         if len(files) > 0:
             if all([file.endswith('.dcm') for file in files]):
-                dicom_paths.append(root)
+                dicom_paths.append((root, len(files)))
     return dicom_paths
