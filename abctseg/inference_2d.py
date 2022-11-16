@@ -4,6 +4,9 @@ from tqdm import tqdm
 import os
 import silx.io.dictdump as sio
 import matplotlib.pyplot as plt
+import logging
+import argparse
+from typing import List
 
 from abctseg.models import Models
 from abctseg.data import Dataset, predict
@@ -11,7 +14,28 @@ from abctseg.run import compute_results, find_files, format_output_path
 from abctseg.utils.visualization import save_binary_segmentation_overlay
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 
-def inference_2d(args, batch_size, use_pp, num_workers, files, num_gpus, logger, label_text):
+def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_workers: int, files: list, num_gpus: int, logger: logging.Logger, label_text: List[str]):
+    """
+    Run inference on 2D images.
+    Parameters
+    ----------
+    args: argparse.Namespace
+        Arguments.
+    batch_size: int
+        Batch size.
+    use_pp: bool
+        Use multiprocessing.
+    num_workers: int
+        Number of workers.
+    files: list
+        List of files.
+    num_gpus: int
+        Number of GPUs.
+    logger: logging.Logger
+        Logger object.
+    label_text: str
+        Label text.
+    """
     inputs = []
     masks = []
     file_names = []

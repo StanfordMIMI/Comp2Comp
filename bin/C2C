@@ -154,6 +154,10 @@ def argument_parser():
         help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
     )
 
+    process_3d_parser.add_argument(
+        "--batch", action="store_true", help="run in batch mode"
+    )
+
     add_config_file_argument(process_3d_parser)
     add_opts_argument(process_3d_parser)
 

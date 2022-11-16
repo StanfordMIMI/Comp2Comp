@@ -6,6 +6,7 @@ from PIL import Image
 from os import listdir
 from os.path import isfile, join
 from glob import glob
+from typing import Union, List
 
 _image_files = ["spine_coronal.png", "spine_sagittal.png", "T12_seg.png", "L3_seg.png", "L1_seg.png", "L4_seg.png", "L2_seg.png", "L5_seg.png"]
 
@@ -37,7 +38,25 @@ _TISSUES = [
     "SAT"
 ]
 
-def save_binary_segmentation_overlay(img_in, mask, base_path, file_name, centroids = None, figure_text_key = None):
+
+def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, Path], base_path: Union[str, Path], file_name: str, centroids = None, figure_text_key = None):
+    """
+    Save binary segmentation overlay.
+    Parameters
+    ----------
+    img_in: str, Path
+        Path to the input image.
+    mask: str, Path
+        Path to the mask.
+    base_path: str, Path
+        Path to the output directory.
+    file_name: str
+        Name of the output file.
+    centroids: list
+        List of centroids.
+    figure_text_key: str
+        Key to the figure text.
+    """
     # Window image to retain most information
     img_in = np.clip(img_in, -300, 1800)
 
@@ -77,11 +96,33 @@ def save_binary_segmentation_overlay(img_in, mask, base_path, file_name, centroi
     vis_obj.save(os.path.join(images_base_path, file_name))
     
 
-def normalize_img(img):
+def normalize_img(img: np.ndarray) -> np.ndarray:
+    """
+    Normalize the image.
+    Parameters
+    ----------
+    img: np.ndarray
+        Image to normalize.
+    Returns
+    -------
+    np.ndarray
+        Normalized image.
+    """
     return (img - img.min()) / (img.max() - img.min())
 
 
-def generate_panel(image_dir):
+def generate_panel(image_dir: Union[str, Path], output_dir: Union[str, Path], figure_text_key = None):
+    """
+    Generate panel.
+    Parameters
+    ----------
+    image_dir: str, Path
+        Path to the input image directory.
+    output_dir: str, Path
+        Path to the output directory.
+    figure_text_key: str
+        Key to the figure text.
+    """
     image_files = [os.path.join(image_dir, path) for path in _image_files]
     new_im = Image.new('RGB', (2080, 1040))
     index = 0
