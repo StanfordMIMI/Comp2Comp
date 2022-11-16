@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dosma as dm
 import logging
+import cv2
 
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 from abctseg.utils import visualization 
@@ -41,6 +42,136 @@ def find_spine_dicoms(seg: np.ndarray, path: str):
     instance_numbers.sort(reverse = True)
 
     return (dicom_files, label_text, instance_numbers)
+
+# Function that takes a numpy array as input, computes the sagittal centroid of each label
+# and returns a list of the centroids
+def compute_centroids(seg: np.ndarray):
+    """
+    Compute the centroids of the labels.
+    Parameters
+    ----------
+    seg: np.ndarray
+        Segmentation volume.
+    """
+    centroids = []
+    for label_idx in range(18, 24):
+        pos = compute_centroid(seg, "sagittal", label_idx)
+        centroids.append(pos)
+    return centroids
+
+# Function that takes a numpy array as input, as well as a list of centroids, takes a slice through the centroid on axis = 1 for each centroid
+# and returns a list of the slices
+def get_slices(seg: np.ndarray, centroids: List[int]):
+    """
+    Get the slices corresponding to the centroids.
+    Parameters
+    ----------
+    seg: np.ndarray
+        Segmentation volume.
+    centroids: List[int]
+        List of centroids.
+    """
+    slices = []
+    label_idxs = list(range(18, 24))
+    for i, centroid in enumerate(centroids):
+        label_idx = label_idxs[i]
+        slices.append((seg[:, centroid, :] == label_idx).astype(int))
+    return slices
+
+# Function that takes a mask and for each deletes the right most connected component
+# Returns the mask with the right most connected component deleted
+def delete_right_most_connected_component(mask: np.ndarray):
+    """
+    Delete the right most connected component.
+    Parameters
+    ----------
+    mask: np.ndarray
+        Mask volume.
+    """
+    mask = mask.astype(np.uint8)
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity = 8)
+    right_most_connected_component = np.argmax(centroids[:, 0])
+    mask[labels == right_most_connected_component] = 0
+    return mask
+
+#compute center of mass of 2d mask
+def compute_center_of_mass(mask: np.ndarray):
+    """
+    Compute the center of mass of a 2D mask.
+    Parameters
+    ----------
+    mask: np.ndarray
+        Mask volume.
+    """
+    mask = mask.astype(np.uint8)
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity = 8)
+    center_of_mass = np.mean(centroids, axis = 0)
+    return center_of_mass
+
+
+#Function that takes a 3d centroid and retruns a binary mask with a 3d roi around the centroid
+def roi_from_mask(img: np.ndarray, centroid: np.ndarray):
+    """
+    Compute a 3D ROI from a 3D mask.
+    Parameters
+    ----------
+    img: np.ndarray
+        Image volume.
+    centroid: np.ndarray
+        Centroid.
+    """
+    roi = np.zeros(img.shape)
+    roi[int(centroid[0] - 10):int(centroid[0] + 10), int(centroid[1] - 10):int(centroid[1] + 10), int(centroid[2] - 10):int(centroid[2] + 10)] = 1
+    return roi
+
+
+#Function that takes a 3d image and a 3d binary mask and returns that average value of the image inside the mask
+def mean_img_mask(img: np.ndarray, mask: np.ndarray):
+    """
+    Compute the mean of an image inside a mask.
+    Parameters
+    ----------
+    img: np.ndarray
+        Image volume.
+    mask: np.ndarray
+        Mask volume.
+    """
+    img = img.astype(np.float32)
+    mask = mask.astype(np.float32)
+    img_masked = img * mask
+    mean = np.mean(img_masked)
+    return mean
+
+
+def compute_rois(seg, img):
+    """
+    Compute the ROIs for the spine.
+    Parameters
+    ----------
+    seg: np.ndarray
+        Segmentation volume.
+    img: np.ndarray
+        Image volume.
+    """
+    # Compute centroids
+    centroids = compute_centroids(seg)
+    # Get slices
+    slices = get_slices(seg, centroids)
+    # Delete right most connected component
+    for i, slice in enumerate(slices):
+        slices[i] = delete_right_most_connected_component(slice)
+    # Compute ROIs
+    rois = []
+    spine_hus = []
+    centroids_3d = []
+    for i, slice in enumerate(slices):
+        center_of_mass = compute_center_of_mass(slice)
+        centroid = np.array([center_of_mass[0], centroids[i], center_of_mass[1]])
+        roi = roi_from_mask(img, centroid)
+        spine_hus.append(mean_img_mask(img, roi))
+        rois.append(roi)
+        centroids_3d.append(centroid)
+    return (spine_hus, rois, centroids_3d)
 
 
 def compute_centroid(seg: np.ndarray, plane: str, label: int):
