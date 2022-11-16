@@ -110,7 +110,7 @@ class CrossSectionalArea(Metric):
 def manifest_to_map(manifest):
     figure_text_key = {}
     for manifest_dict in manifest:
-        key = (manifest_dict['File'].split('/')[-1]).split('_')[0]
+        key = manifest_dict['Level']
         bone_hu = f"{manifest_dict['Hounsfield Unit (bone)']:.2f}"
         bone_area = f"{manifest_dict['Cross-sectional Area (mm^2) (bone)']:.2f}"
         muscle_hu = f"{manifest_dict['Hounsfield Unit (muscle)']:.2f}"

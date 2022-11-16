@@ -307,7 +307,7 @@ def handle_process_3d(args):
         num_workers = PREFERENCES.NUM_WORKERS
         (inputs, masks, file_names) = inference_2d(args, batch_size, use_pp, num_workers, dicom_files, num_gpus, logger, label_text, segmentations_path)
 
-        df, manifest = handle_summarize(output_path)
+        df, manifest = handle_summarize(output_path, dicom_files, label_text)
         figure_text_map = metrics.manifest_to_map(manifest)
 
         # Save images
@@ -319,7 +319,7 @@ def handle_process_3d(args):
         # Log total time for 3d processing
         logger.info(f"Total time for 3D processing: {end-st:.2f}s.")
 
-def handle_summarize(results_dir):
+def handle_summarize(results_dir, dicom_files = None, label_text = None):
     results_dir_sub = Path(results_dir) / "metrics"
     results_dir_sub.mkdir(exist_ok=True)
     metrics_file = os.path.join(results_dir_sub, "abct-metrics.csv")
@@ -329,6 +329,11 @@ def handle_summarize(results_dir):
 
     manifest = []
     for h5_file in tqdm(h5_files, desc="Parsing metrics"):
+        if dicom_files:
+            # Get the index of label_text such that the label_text matches the h5_file
+            index = [i for i, s in enumerate(label_text) if s in h5_file][0]
+            level = label_text[index]
+            dicom_file = dicom_files[index]
         with h5py.File(h5_file, "r") as f:
             for model in f.keys():
                 scalar_metrics = {}
@@ -341,10 +346,14 @@ def handle_summarize(results_dir):
                             if not h5_group[metric].shape
                         }
                     )
-
-                manifest.append(
+                if dicom_file:
+                    manifest.append(
+                    {"Dicom File": dicom_file, "Level": level.split('_')[0], "Model": model, **scalar_metrics}
+                    )
+                else:
+                    manifest.append(
                     {"File": h5_file, "Model": model, **scalar_metrics}
-                )
+                    )
 
     df = pd.DataFrame(manifest)
     df.to_csv(metrics_file, index=False)
