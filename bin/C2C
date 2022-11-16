@@ -124,18 +124,6 @@ def argument_parser():
     add_opts_argument(process_parser)
 
     process_3d_parser = subparsers.add_parser("process_3d", help="process abCT dicom series")
-    '''
-    process_parser.add_argument(
-        "--dicoms",
-        nargs="+",
-        type=str,
-        required=True,
-        help="path to dicom files(s)/directories to segment.",
-    )
-    '''
-    process_3d_parser.add_argument(
-        "--batch", action="store_true", help="run in batch mode"
-    )
 
     process_3d_parser.add_argument(
         "--pp",
@@ -146,8 +134,6 @@ def argument_parser():
     process_3d_parser.add_argument(
         "--models",
         default = ["stanford_v0.0.1"],
-        #nargs="+",
-        #required=True,
         type=str,
         choices=[x.model_name for x in Models],
         help="models to use for inference",
@@ -285,9 +271,21 @@ def handle_process_3d(args):
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"  
 
-    seg, mvs = spine_seg()
+    logger.info("Preferences:\n" + PREFERENCES.dump())
+
+    seg_input_path = PREFERENCES.INPUT_DIR
+
+    segmentations_path = Path(PREFERENCES.OUTPUT_DIR) / "segmentations"
+    segmentations_path.mkdir(parents=True, exist_ok=True)
+
+    seg_output_dir = str(segmentations_path / "spine.nii.gz")
+
+    # Perform spine segmentation inference
+    seg, mvs = spine_seg(logger, seg_input_path, seg_output_dir)
 
     dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(seg)
+    logger.info("{} scans found".format(len(dicom_files)))
+
 
     for_centroid = np.logical_and(seg >= 18, seg <= 23).astype(int) 
     sagittal_centroid = spine_utils.compute_centroid(for_centroid, 'sagittal', 1)
@@ -305,13 +303,13 @@ def handle_process_3d(args):
     save_binary_segmentation_overlay(np.transpose(coronal_image), np.transpose(one_hot_cor_label, (1, 0, 2)), PREFERENCES.OUTPUT_DIR, "spine_coronal.png", centroids)
     save_binary_segmentation_overlay(np.transpose(sagittal_image), np.transpose(one_hot_sag_label, (1, 0, 2)), PREFERENCES.OUTPUT_DIR, "spine_sagittal.png", centroids)
 
-    print(f"Dicom paths: {dicom_files}")
+    # Print dicom paths to logger
+    logger.info(f"Dicom paths: {dicom_files}")
 
     batch_size = PREFERENCES.BATCH_SIZE
     use_pp = args.pp
     num_workers = PREFERENCES.NUM_WORKERS
-
-    logger.info("Preferences:\n" + PREFERENCES.dump())
+    
     (inputs, masks, file_names) = inference_2d(args, batch_size, use_pp, num_workers, dicom_files, num_gpus, logger, label_text)
 
     df, manifest = handle_summarize(PREFERENCES.OUTPUT_DIR)
@@ -326,7 +324,8 @@ def handle_process_3d(args):
 
     end = time()
 
-    print(f"\n========== Total time for 3D processing: {end-st:.2f}s. ========== ")
+    # Log total time for 3d processing
+    logger.info(f"Total time for 3D processing: {end-st:.2f}s.")
 
 def handle_summarize(results_dir):
     results_dir_sub = Path(results_dir) / "metrics"

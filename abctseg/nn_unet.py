@@ -11,20 +11,31 @@ import numpy as np
 import nibabel as nib
 from time import time
 import dosma as dm
+import logging
+from typing import Union
 
 from totalsegmentator.libs import setup_nnunet, download_pretrained_weights
 from totalsegmentator.libs import nostdout
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 
-def spine_seg():
+def spine_seg(logger: logging.Logger, input_path: Union[str, Path], output_path: Union[str, Path]):
+    """
+    Segment the spine.
+    Parameters
+    ----------
+    logger: logging.Logger
+        Logger object.  
+    input_path: str, Path
+        Path to the input image.
+    output_path: str, Path
+        Path to the output directory.
+    """
+
+    logger.info("Segmenting spine...")
     st = time()
     os.environ["SCRATCH"] = PREFERENCES.CACHE_DIR
-    input_dir = PREFERENCES.INPUT_DIR
 
-    segmentations_path = Path(PREFERENCES.OUTPUT_DIR) / "segmentations"
-    segmentations_path.mkdir(exist_ok=True)
-    output_dir = str(segmentations_path / "spine.nii.gz")
-
+    # Setup nnunet
     task_id = [252]
     model = "3d_fullres"
     folds = [0]
@@ -35,15 +46,17 @@ def spine_seg():
     download_pretrained_weights(task_id[0])
 
     from totalsegmentator.nnunet import nnUNet_predict_image
-
+    
     with nostdout():
 
-        seg, mvs = nnUNet_predict_image(input_dir, output_dir, task_id, model=model, folds=folds,
+        seg, mvs = nnUNet_predict_image(input_path, output_path, task_id, model=model, folds=folds,
                                 trainer=trainer, tta=False, multilabel_image=True, resample=1.5,
                                 crop=None, crop_path=crop_path, task_name="total", nora_tag=None, preview=False, 
                                 nr_threads_resampling=1, nr_threads_saving=6, 
                                 quiet=False, verbose=False, test=0)
     end = time()
-    print(f"\nTotal time for spine segmentation: {end-st:.2f}s.\n")
+
+    # Log total time for spine segmentation
+    logger.info(f"Total time for spine segmentation: {end-st:.2f}s.")
 
     return seg, mvs
