@@ -269,8 +269,22 @@ def handle_process(args):
 
 def handle_process_3d(args):
     st = time()
-
     setup(args)
+    if not PREFERENCES.MODELS_DIR:
+        raise ValueError(
+            "MODELS_DIR not initialized. "
+            "Use `python -m abctseg.cli config` to set MODELS_DIR"
+        )
+    logger = logging.getLogger("abctseg.cli.__main__")
+    logger.info("\n\n======================================================")
+
+    gpus = dl_utils.get_available_gpus(args.num_gpus)
+    num_gpus = len(gpus) if gpus is not None else 0
+    if gpus is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(x) for x in gpus])
+    else:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  
+
     seg, mvs = spine_seg()
 
     dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(seg)
@@ -297,26 +311,6 @@ def handle_process_3d(args):
     use_pp = args.pp
     num_workers = PREFERENCES.NUM_WORKERS
 
-    setup(args)
-    if not PREFERENCES.MODELS_DIR:
-        raise ValueError(
-            "MODELS_DIR not initialized. "
-            "Use `python -m abctseg.cli config` to set MODELS_DIR"
-        )
-    logger = logging.getLogger("abctseg.cli.__main__")
-    logger.info("\n\n======================================================")
-
-    '''
-    gpus = dl_utils.get_available_gpus(args.num_gpus)
-    num_gpus = len(gpus) if gpus is not None else 0
-    if gpus is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(x) for x in gpus])
-    else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cpu
-    '''
-
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-    num_gpus = 1
     logger.info("Preferences:\n" + PREFERENCES.dump())
     (inputs, masks, file_names) = inference_2d(args, batch_size, use_pp, num_workers, dicom_files, num_gpus, logger, label_text)
 
