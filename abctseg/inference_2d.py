@@ -14,7 +14,7 @@ from abctseg.run import compute_results, find_files, format_output_path
 from abctseg.utils.visualization import save_binary_segmentation_overlay
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 
-def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_workers: int, files: list, num_gpus: int, logger: logging.Logger, label_text: List[str]):
+def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_workers: int, files: list, num_gpus: int, logger: logging.Logger, label_text: List[str], output_dir: str):
     """
     Run inference on 2D images.
     Parameters
@@ -35,6 +35,8 @@ def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_wo
         Logger object.
     label_text: str
         Label text.
+    output_dir: str
+        Output directory.
     """
     inputs = []
     masks = []
@@ -98,9 +100,10 @@ def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_wo
                 file_names.append(file_name)
             else:
                 file_name = None
-            output_file = format_output_path(
-                f, base_dirs=dirs if args.batch else None, file_name=file_name
-            )
+            #output_file = format_output_path(
+            #    output_dir, file_name=file_name
+            #)
+            output_file = os.path.join(output_dir, file_name + ".h5")
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             sio.dicttoh5(
                 results, output_file, m_save_name, mode="a", overwrite_data=True
