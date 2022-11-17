@@ -15,7 +15,7 @@ import silx.io.dictdump as sio
 from keras import backend as K
 from tqdm import tqdm
 import numpy as np
-import dosma as dm
+#import voxel as vx
 from pydicom.filereader import read_file_meta_info, dcmread
 from glob import glob
 
@@ -297,7 +297,7 @@ def handle_process_3d(args):
         # Perform spine segmentation inference
         seg, mvs = spine_seg(logger, seg_input_path, seg_output_dir)
 
-        (spine_hus, rois, centroids) = spine_utils.compute_rois(seg, mvs.volume, mvs.get_metadata("RescaleIntercept"))
+        (spine_hus, rois, centroids) = spine_utils.compute_rois(seg, mvs.volume, mvs.get_metadata("RescaleSlope"), mvs.get_metadata("RescaleIntercept"))
         dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(seg, path)
         logger.info("{} scans found".format(len(dicom_files)))
         spine_utils.visualize_coronal_sagittal_spine(seg, rois, mvs, centroids, label_text, output_path, spine_hus = spine_hus)
