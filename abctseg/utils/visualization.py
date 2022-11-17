@@ -7,6 +7,7 @@ from os import listdir
 from os.path import isfile, join
 from glob import glob
 from typing import Union, List
+import matplotlib.pyplot as plt
 
 _image_files = ["spine_coronal.png", "spine_sagittal.png", "T12_seg.png", "L3_seg.png", "L1_seg.png", "L4_seg.png", "L2_seg.png", "L5_seg.png"]
 
@@ -40,7 +41,8 @@ _TISSUES = [
     "Muscle",
     "Bone",
     "VAT",
-    "SAT"
+    "SAT",
+    "IMAT"
 ]
 
 _SPINE_LEVELS = [
@@ -84,7 +86,8 @@ def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, 
     # Create the folder to save the images
     images_base_path = Path(base_path) / "images"
     images_base_path.mkdir(exist_ok=True)
-    
+
+    text_start_vertical_offset = _TEXT_START_VERTICAL_OFFSET
 
     img_in = img_in.reshape((img_in.shape[0], img_in.shape[1], 1))
     img_rgb = np.tile(img_in, (1, 1, 3))
@@ -97,6 +100,12 @@ def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, 
             if num_bin_masks == 2:
                 continue
         vis.draw_binary_mask(mask[:, :, num_bin_masks].astype(int), color = _COLORS[num_bin_masks - 1], alpha=alpha_val)
+        # Debug imat mask
+        '''
+        if num_bin_masks == 5:
+            plt.imshow(mask[:, :, num_bin_masks].astype(int))
+            plt.savefig("./imat_mask.png")
+        '''
         if centroids:
             if num_bin_masks > 6:
                 continue
@@ -108,9 +117,9 @@ def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, 
             vis.draw_box(box_coord = (1, 1, mask.shape[0] - 1, mask.shape[1] - 1), alpha = 1, edge_color = _COLORS[_COLOR_MAP[file_name.split('_')[0]]])
             if figure_text_key:
                 if num_bin_masks == 3:
-                    text_start_offset -= text_spacing
-                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} HU: " + figure_text_key[file_name.split('_')[0]][(num_bin_masks - 1) * 2], position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + _TEXT_START_VERTICAL_OFFSET), color=_COLORS[num_bin_masks - 1], font_size = 7)
-                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1], position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + _TEXT_START_VERTICAL_OFFSET + (_TEXT_SPACING / 2)), color=_COLORS[num_bin_masks - 1], font_size = 7)
+                    text_start_vertical_offset -= _TEXT_SPACING
+                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} HU: " + figure_text_key[file_name.split('_')[0]][(num_bin_masks - 1) * 2], position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset), color=_COLORS[num_bin_masks - 1], font_size = 7)
+                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1], position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset + (_TEXT_SPACING / 2)), color=_COLORS[num_bin_masks - 1], font_size = 7)
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(images_base_path, file_name))
     

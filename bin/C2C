@@ -22,7 +22,7 @@ from glob import glob
 # Get rid of this before release
 sys.path.append("/dataNAS/people/lblankem/abCTSeg")
 
-from abctseg.data import Dataset, predict
+from abctseg.data import Dataset, predict, fill_holes
 from abctseg.models import Models
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
 from abctseg.run import compute_results, find_files, format_output_path, get_dicom_paths_and_num
@@ -119,7 +119,7 @@ def argument_parser():
     )
     process_parser.add_argument(
         "--pp",
-        action="store_true",
+        action="store_false",
         help="use post-processing. Will be used for all specified models.",
     )
 
@@ -130,7 +130,7 @@ def argument_parser():
 
     process_3d_parser.add_argument(
         "--pp",
-        action="store_true",
+        action="store_false",
         help="use post-processing. Will be used for all specified models.",
     )
 

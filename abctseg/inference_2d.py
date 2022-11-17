@@ -9,7 +9,7 @@ import argparse
 from typing import List
 
 from abctseg.models import Models
-from abctseg.data import Dataset, predict
+from abctseg.data import Dataset, predict, fill_holes, _swap_muscle_imap
 from abctseg.run import compute_results, find_files, format_output_path
 from abctseg.utils.visualization import save_binary_segmentation_overlay
 from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
@@ -53,6 +53,9 @@ def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_wo
 
         dataset = Dataset(files, windows=model_type.windows)
         categories = model_type.categories
+        #print categories
+        #print("Categories: {}".format(categories))
+        # don't use softmax
         model = model_type.load_model()
         if num_gpus > 1:
             model = dl_utils.ModelMGPU(model, gpus=num_gpus)
@@ -79,11 +82,19 @@ def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_wo
         logger.info("Computing metrics...")
         start_time = perf_counter()
         masks = [model_type.preds_to_mask(p) for p in preds]
+        if args.pp:
+            masks = fill_holes(masks)
+            if "muscle" in categories and "imat" in categories:
+                # subtract imat from muscle
+                for i in range(len(masks)):
+                    masks[i][..., categories.index("muscle")] -= masks[i][..., categories.index("imat")]
+                    masks[i][masks[i] < 0] = 0
+
         assert len(masks) == len(params_dicts)
         assert len(masks) == len(files)
         m_save_name = "/{}".format(m_name)
-        if use_pp:
-            m_save_name += "+pp"
+        #if use_pp:
+        #    m_save_name += "+pp"
         file_idx = 0
         for f, pred, mask, params in tqdm(  # noqa: B007
             zip(files, preds, masks, params_dicts), total=len(files)

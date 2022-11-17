@@ -1,11 +1,13 @@
 import math
 from typing import List, Sequence
+import matplotlib.pyplot as plt
 
 import keras.utils as k_utils
 import numpy as np
 import pydicom
 from keras.utils.data_utils import OrderedEnqueuer
 from tqdm import tqdm
+import cv2
 
 
 def parse_windows(windows):
@@ -91,6 +93,33 @@ class Dataset(k_utils.Sequence):
 
         return xs, params
 
+# function that fills in holes in a segmentation mask
+def _fill_holes(mask, mask_id):
+    components, output, stats, centroids = cv2.connectedComponentsWithStats(((1 - mask) > 0.5).astype(np.int8), connectivity=8)
+    sizes = stats[1:, -1]
+    components = components - 1
+    # Larger threshold for SAT
+    if mask_id == 4:
+        min_size = 400
+    else:
+        min_size = 50 #Smaller threshold for everything else
+    img_out = np.ones_like(mask)
+    for i in range(0, components):
+        if sizes[i] > min_size:
+            img_out[output == i + 1] = 0
+    return img_out
+
+# Take an array of size NxHxWxC and for each channel and each image, fill in holes
+def fill_holes(ys):
+    # print the shape of y
+    #print("IN HOLES")
+    #print(ys.shape)
+    segs = []
+    for n in range(len(ys)):
+        ys_out = [_fill_holes(ys[n][..., i], i) for i in range(ys[n].shape[-1])]
+        segs.append(np.stack(ys_out, axis=2).astype(float))
+    return segs
+
 
 def _swap_muscle_imap(xs, ys, muscle_idx: int, imat_idx: int, threshold=-30.0):
     """
@@ -98,7 +127,7 @@ def _swap_muscle_imap(xs, ys, muscle_idx: int, imat_idx: int, threshold=-30.0):
     """
     labels = ys.copy()
 
-    muscle_mask = labels[..., muscle_idx]
+    muscle_mask = (labels[..., muscle_idx] > 0.5).astype(int)
     imat_mask = labels[..., imat_idx]
 
     imat_mask[muscle_mask.astype(np.bool) & (xs < threshold)] = 1
@@ -127,7 +156,11 @@ def postprocess(xs: np.ndarray, ys: np.ndarray, params: dict):
     assert params
     categories = params["categories"]
 
+    # Add another channel full of zeros to ys
+    ys = np.concatenate([ys, np.zeros_like(ys[..., :1])], axis=-1)
+
     # If muscle hu is < -30, assume it is imat.
+
     if "muscle" in categories and "imat" in categories:
         ys = _swap_muscle_imap(
             xs,
