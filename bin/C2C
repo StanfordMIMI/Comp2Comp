@@ -19,6 +19,7 @@ import numpy as np
 from pydicom.filereader import read_file_meta_info, dcmread
 from glob import glob
 
+# Get rid of this before release
 sys.path.append("/dataNAS/people/lblankem/abCTSeg")
 
 from abctseg.data import Dataset, predict
