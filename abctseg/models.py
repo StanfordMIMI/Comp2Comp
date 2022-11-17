@@ -18,7 +18,7 @@ class Models(enum.Enum):
     STANFORD_V_0_0_1 = (
         2,
         "stanford_v0.0.1",
-        ("background", "muscle", "bone", "vat", "sat"),
+        ("background", "muscle", "bone", "vat", "sat", "imat"),
         True,
         ("soft", "bone", "custom"),
     )

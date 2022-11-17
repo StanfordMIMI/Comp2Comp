@@ -119,6 +119,8 @@ def manifest_to_map(manifest):
         sat_area = f"{manifest_dict['Cross-sectional Area (mm^2) (sat)']:.2f}"
         vat_hu = f"{manifest_dict['Hounsfield Unit (vat)']:.2f}"
         vat_area = f"{manifest_dict['Cross-sectional Area (mm^2) (vat)']:.2f}"
-        figure_text_key[key] = [muscle_hu, muscle_area, bone_hu, bone_area, vat_hu, vat_area, sat_hu, sat_area]
+        imat_hu =  f"{manifest_dict['Hounsfield Unit (imat)']:.2f}"
+        imat_area = f"{manifest_dict['Cross-sectional Area (mm^2) (imat)']:.2f}"
+        figure_text_key[key] = [muscle_hu, muscle_area, bone_hu, bone_area, vat_hu, vat_area, sat_hu, sat_area, imat_hu, imat_area]
     return figure_text_key
 
