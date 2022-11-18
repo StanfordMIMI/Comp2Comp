@@ -1,9 +1,10 @@
 import enum
 import os
 from typing import Sequence
-
+from huggingface_hub import hf_hub_download
 import numpy as np
 from keras.models import load_model
+import logging
 
 from abctseg.preferences import PREFERENCES
 
@@ -40,10 +41,21 @@ class Models(enum.Enum):
         obj.windows = windows
         return obj
 
-    def load_model(self):
-        filename = os.path.join(
-            PREFERENCES.MODELS_DIR, "{}.h5".format(self.model_name)
-        )
+    def find_model_weights():
+        for root, dirs, files in os.walk(PREFERENCES.MODELS_DIR):
+            for file in files:
+                if file.endswith(".h5"):
+                    filename = os.path.join(root, file)
+        return filename
+
+    def load_model(self, logger):
+        hf_hub_download(repo_id="lblankem/stanford_abct_v0.0.1", filename="stanford_v0.0.1.h5", cache_dir = PREFERENCES.MODELS_DIR)
+        logger.info("Downloading muscle/fat model from hugging face")
+        #filename = os.path.join(
+        #    PREFERENCES.MODELS_DIR, "{}.h5".format(self.model_name)
+        #)
+        filename = Models.find_model_weights()
+        logger.info("Loading muscle/fat model from {}".format(filename))
         return load_model(filename)
 
     def preds_to_mask(self, preds):

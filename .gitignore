@@ -38,6 +38,9 @@
 #ignore cross validation files
 *.cv
 
+#ignore images
+*.png
+
 # ignore any weights files
 weights/
 
