@@ -1,30 +1,26 @@
-import os
-import sys
-import random
-import string
-import time
-import shutil
-import subprocess
-from pathlib import Path
-from os.path import join
-import numpy as np
-import nibabel as nib
-from time import time
-import dosma as dm
 import logging
+import os
+import time
+from pathlib import Path
+from time import time
 from typing import Union
 
-from totalsegmentator.libs import setup_nnunet, download_pretrained_weights
-from totalsegmentator.libs import nostdout
-from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
+from abctseg.preferences import PREFERENCES
+from totalsegmentator.libs import (download_pretrained_weights, nostdout,
+                                   setup_nnunet)
 
-def spine_seg(logger: logging.Logger, input_path: Union[str, Path], output_path: Union[str, Path]):
+
+def spine_seg(
+    logger: logging.Logger,
+    input_path: Union[str, Path],
+    output_path: Union[str, Path]
+):
     """
     Segment the spine.
     Parameters
     ----------
     logger: logging.Logger
-        Logger object.  
+        Logger object.
     input_path: str, Path
         Path to the input image.
     output_path: str, Path
@@ -46,14 +42,19 @@ def spine_seg(logger: logging.Logger, input_path: Union[str, Path], output_path:
     download_pretrained_weights(task_id[0])
 
     from totalsegmentator.nnunet import nnUNet_predict_image
-    
+
     with nostdout():
 
-        seg, mvs = nnUNet_predict_image(input_path, output_path, task_id, model=model, folds=folds,
-                                trainer=trainer, tta=False, multilabel_image=True, resample=1.5,
-                                crop=None, crop_path=crop_path, task_name="total", nora_tag=None, preview=False, 
-                                nr_threads_resampling=1, nr_threads_saving=6, 
-                                quiet=False, verbose=False, test=0)
+        seg, mvs = nnUNet_predict_image(input_path, output_path,
+                                        task_id, model=model,
+                                        folds=folds, trainer=trainer,
+                                        tta=False, multilabel_image=True,
+                                        resample=1.5, crop=None,
+                                        crop_path=crop_path, task_name="total",
+                                        nora_tag=None, preview=False,
+                                        nr_threads_resampling=1,
+                                        nr_threads_saving=6,
+                                        quiet=False, verbose=False, test=0)
     end = time()
 
     # Log total time for spine segmentation
