@@ -201,7 +201,7 @@ def handle_init(args):
         raise AssertionError("cfg_action {} not supported".format(cfg_action))
 
 
-def handle_process(args):
+def handle_process_2d(args):
     setup(args)
     if not PREFERENCES.MODELS_DIR:
         raise ValueError(
@@ -342,13 +342,9 @@ def handle_process_3d(args):
             segmentations_path
         )
 
-        _, manifest = handle_summarize(output_path, dicom_files, label_text)
+        _, manifest = handle_summarize(output_path, dicom_files, label_text, spine_hus)
 
-        # print("Manifest: ", manifest)
         figure_text_map = metrics.manifest_to_map(manifest)
-
-        # print("FIGURE TEXT MAP")
-        # print(figure_text_map)
 
         # Save images
         for num_2d in range(len(inputs)):
@@ -366,7 +362,7 @@ def handle_process_3d(args):
         logger.info(f"Total time for 3D processing: {end-st:.2f}s.")
 
 
-def handle_summarize(results_dir, dicom_files=None, label_text=None):
+def handle_summarize(results_dir, dicom_files=None, label_text=None, spine_hus=None):
     results_dir_sub = Path(results_dir) / "metrics"
     results_dir_sub.mkdir(exist_ok=True)
     metrics_file = os.path.join(results_dir_sub, "abct-metrics.csv")
@@ -382,6 +378,7 @@ def handle_summarize(results_dir, dicom_files=None, label_text=None):
             # Get the index of label_text such that the label_text matches the h5_file
             index = [i for i, s in enumerate(label_text) if s in h5_file][0]
             level = label_text[index]
+            spine_hu = spine_hus[index]
             dicom_file = dicom_files[index]
             
         with h5py.File(h5_file, "r") as f:
@@ -402,6 +399,7 @@ def handle_summarize(results_dir, dicom_files=None, label_text=None):
                             "Dicom File": dicom_file,
                             "Level": level.split('_')[0],
                             "Model": model,
+                            f"Hounsfield Unit (spine roi)": spine_hu,
                             **scalar_metrics
                         }
                     )
@@ -423,7 +421,7 @@ def main():
     if args.action == "config":
         handle_init(args)
     elif args.action == "process_2d":
-        handle_process(args)
+        handle_process_2d(args)
     elif args.action == "process_3d":
         handle_process_3d(args)
     elif args.action == "summarize":
