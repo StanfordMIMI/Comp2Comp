@@ -112,8 +112,11 @@ def manifest_to_map(manifest):
     figure_text_key = {}
     for manifest_dict in manifest:
         key = manifest_dict['Level']
-        bone_hu = f"{manifest_dict['Hounsfield Unit (bone)']:.2f}"
-        bone_area = f"{manifest_dict['Cross-sectional Area (mm^2) (bone)']:.2f}"
+        # bone_hu = f"{manifest_dict['Hounsfield Unit (bone)']:.2f}"
+        # bone_area = f"{manifest_dict['Cross-sectional Area (mm^2) (bone)']:.2f}"
+        # TODO: edit visualization code so that we can remove these values
+        bone_hu = 0.0
+        bone_area = 0.0
         muscle_hu = f"{manifest_dict['Hounsfield Unit (muscle)']:.2f}"
         muscle_area = f"{manifest_dict['Cross-sectional Area (mm^2) (muscle)']:.2f}"
         sat_hu = f"{manifest_dict['Hounsfield Unit (sat)']:.2f}"
