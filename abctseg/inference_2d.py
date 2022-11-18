@@ -56,7 +56,7 @@ def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_wo
         #print categories
         #print("Categories: {}".format(categories))
         # don't use softmax
-        model = model_type.load_model()
+        model = model_type.load_model(logger)
         if num_gpus > 1:
             model = dl_utils.ModelMGPU(model, gpus=num_gpus)
 
