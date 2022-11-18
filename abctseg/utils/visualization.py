@@ -1,21 +1,27 @@
-from detectron2.utils.visualizer import Visualizer, VisImage
-from pathlib import Path
-import numpy as np
 import os
-from PIL import Image
-from os import listdir
-from os.path import isfile, join
-from glob import glob
-from typing import Union, List
-import matplotlib.pyplot as plt
+from pathlib import Path
+from typing import Union
 
-_image_files = ["spine_coronal.png", "spine_sagittal.png", "T12_seg.png", "L3_seg.png", "L1_seg.png", "L4_seg.png", "L2_seg.png", "L5_seg.png"]
+import numpy as np
+from detectron2.utils.visualizer import Visualizer
+from PIL import Image
+
+_image_files = [
+    "spine_coronal.png",
+    "spine_sagittal.png",
+    "T12_seg.png",
+    "L3_seg.png",
+    "L1_seg.png",
+    "L4_seg.png",
+    "L2_seg.png",
+    "L5_seg.png"
+]
 
 _COLORS = np.array(
     [
         1.000, 0.000, 0.000,
-        0.000, 0.000, 1.000, 
-        0.000, 1.000, 0.000, 
+        0.000, 0.000, 1.000,
+        0.000, 1.000, 0.000,
         1.000, 1.000, 0.000,
         0.000, 1.000, 1.000,
         1.000, 0.000, 1.000,
@@ -59,7 +65,15 @@ _TEXT_START_VERTICAL_OFFSET = 10.0
 _TEXT_OFFSET_FROM_RIGHT = 68
 
 
-def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, Path], base_path: Union[str, Path], file_name: str, centroids = None, figure_text_key = None, spine_hus = None):
+def save_binary_segmentation_overlay(
+    img_in: Union[str, Path],
+    mask: Union[str, Path],
+    base_path: Union[str, Path],
+    file_name: str,
+    centroids=None,
+    figure_text_key=None,
+    spine_hus=None
+):
     """
     Save binary segmentation overlay.
     Parameters
@@ -99,30 +113,46 @@ def save_binary_segmentation_overlay(img_in: Union[str, Path], mask: Union[str, 
             alpha_val = 1
             if num_bin_masks == 2:
                 continue
-        vis.draw_binary_mask(mask[:, :, num_bin_masks].astype(int), color = _COLORS[num_bin_masks - 1], alpha=alpha_val)
+        vis.draw_binary_mask(mask[:, :, num_bin_masks].astype(int),
+                             color=_COLORS[num_bin_masks - 1],
+                             alpha=alpha_val)
         # Debug imat mask
-        '''
-        if num_bin_masks == 5:
-            plt.imshow(mask[:, :, num_bin_masks].astype(int))
-            plt.savefig("./imat_mask.png")
-        '''
         if centroids:
             if num_bin_masks > 6:
                 continue
-            #print(centroids)
-            vis.draw_text(text=f"{_SPINE_LEVELS[num_bin_masks - 1]} ROI HU: {spine_hus[num_bin_masks - 1]:.2f}", position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, int(_TEXT_SPACING / 2.0) * (num_bin_masks - 1) + _TEXT_START_VERTICAL_OFFSET), color=_COLORS[num_bin_masks - 1], font_size = 7)
-            vis.draw_line(x_data = (0, mask.shape[1] - 1), y_data = (centroids[num_bin_masks - 1], centroids[num_bin_masks - 1]), color = _COLORS[num_bin_masks - 1], linestyle="dashed", linewidth = 0.5)
+            # print(centroids)
+            vis.draw_text(text=f"{_SPINE_LEVELS[num_bin_masks - 1]} ROI HU: {spine_hus[num_bin_masks - 1]:.2f}",
+                          position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT,
+                                    int(_TEXT_SPACING / 2.0) * (num_bin_masks - 1) + _TEXT_START_VERTICAL_OFFSET),
+                          color=_COLORS[num_bin_masks - 1],
+                          font_size=7)
+
+            vis.draw_line(x_data=(0, mask.shape[1] - 1),
+                          y_data=(centroids[num_bin_masks - 1],
+                          centroids[num_bin_masks - 1]),
+                          color=_COLORS[num_bin_masks - 1],
+                          linestyle="dashed",
+                          linewidth=0.5)
         else:
-            #print(figure_text_key)
-            vis.draw_box(box_coord = (1, 1, mask.shape[0] - 1, mask.shape[1] - 1), alpha = 1, edge_color = _COLORS[_COLOR_MAP[file_name.split('_')[0]]])
+            # print(figure_text_key)
+            vis.draw_box(box_coord=(1, 1, mask.shape[0] - 1, mask.shape[1] - 1),
+                         alpha=1,
+                         edge_color=_COLORS[_COLOR_MAP[file_name.split('_')[0]]])
+
             if figure_text_key:
                 if num_bin_masks == 3:
                     text_start_vertical_offset -= _TEXT_SPACING
-                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} HU: " + figure_text_key[file_name.split('_')[0]][(num_bin_masks - 1) * 2], position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset), color=_COLORS[num_bin_masks - 1], font_size = 7)
-                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1], position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset + (_TEXT_SPACING / 2)), color=_COLORS[num_bin_masks - 1], font_size = 7)
+                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} HU: " + figure_text_key[file_name.split('_')[0]][(num_bin_masks - 1) * 2],
+                              position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset),
+                              color=_COLORS[num_bin_masks - 1],
+                              font_size=7)
+                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1],
+                              position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset + (_TEXT_SPACING / 2)),
+                              color=_COLORS[num_bin_masks - 1],
+                              font_size=7)
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(images_base_path, file_name))
-    
+
 
 def normalize_img(img: np.ndarray) -> np.ndarray:
     """
@@ -150,10 +180,10 @@ def generate_panel(image_dir: Union[str, Path]):
     image_files = [os.path.join(image_dir, path) for path in _image_files]
     new_im = Image.new('RGB', (2080, 1040))
     index = 0
-    for i in range(0,2080,520):
-        for j in range(0,1040,520):
+    for i in range(0, 2080, 520):
+        for j in range(0, 1040, 520):
             im = Image.open(image_files[index])
-            im.thumbnail((512,512))
-            new_im.paste(im, (i,j))
+            im.thumbnail((512, 512))
+            new_im.paste(im, (i, j))
             index += 1
     new_im.save(os.path.join(image_dir, "panel.png"))

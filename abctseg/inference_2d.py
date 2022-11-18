@@ -1,20 +1,29 @@
-from time import perf_counter
-from keras import backend as K
-from tqdm import tqdm
-import os
-import silx.io.dictdump as sio
-import matplotlib.pyplot as plt
-import logging
 import argparse
+import logging
+import os
+from time import perf_counter
 from typing import List
 
+import silx.io.dictdump as sio
+from abctseg.data import Dataset, fill_holes, predict
 from abctseg.models import Models
-from abctseg.data import Dataset, predict, fill_holes, _swap_muscle_imap
-from abctseg.run import compute_results, find_files, format_output_path
-from abctseg.utils.visualization import save_binary_segmentation_overlay
-from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
+from abctseg.run import compute_results
+from abctseg.utils import dl_utils
+from keras import backend as K
+from tqdm import tqdm
 
-def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_workers: int, files: list, num_gpus: int, logger: logging.Logger, label_text: List[str], output_dir: str):
+
+def inference_2d(
+    args: argparse.Namespace,
+    batch_size: int,
+    use_pp: bool,
+    num_workers: int,
+    files: list,
+    num_gpus: int,
+    logger: logging.Logger,
+    label_text: List[str],
+    output_dir: str
+):
     """
     Run inference on 2D images.
     Parameters
@@ -53,8 +62,8 @@ def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_wo
 
         dataset = Dataset(files, windows=model_type.windows)
         categories = model_type.categories
-        #print categories
-        #print("Categories: {}".format(categories))
+        # print categories
+        # print("Categories: {}".format(categories))
         # don't use softmax
         model = model_type.load_model(logger)
         if num_gpus > 1:
@@ -87,19 +96,20 @@ def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_wo
             if "muscle" in categories and "imat" in categories:
                 # subtract imat from muscle
                 for i in range(len(masks)):
-                    masks[i][..., categories.index("muscle")] -= masks[i][..., categories.index("imat")]
+                    masks[i][..., categories.index("muscle")] -= \
+                        masks[i][..., categories.index("imat")]
                     masks[i][masks[i] < 0] = 0
 
         assert len(masks) == len(params_dicts)
         assert len(masks) == len(files)
         m_save_name = "/{}".format(m_name)
-        #if use_pp:
+        # if use_pp:
         #    m_save_name += "+pp"
         file_idx = 0
         for f, pred, mask, params in tqdm(  # noqa: B007
             zip(files, preds, masks, params_dicts), total=len(files)
         ):
-            
+
             x = params["image"]
             results = compute_results(x, mask, categories, params)
 
@@ -111,9 +121,6 @@ def inference_2d(args: argparse.Namespace, batch_size: int, use_pp: bool, num_wo
                 file_names.append(file_name)
             else:
                 file_name = None
-            #output_file = format_output_path(
-            #    output_dir, file_name=file_name
-            #)
             output_file = os.path.join(output_dir, file_name + ".h5")
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             sio.dicttoh5(

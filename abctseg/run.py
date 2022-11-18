@@ -4,13 +4,15 @@ import re
 from typing import Dict, Sequence, Union
 
 from abctseg.metrics import CrossSectionalArea, HounsfieldUnits
-from abctseg.preferences import PREFERENCES
 
 logger = logging.getLogger(__name__)
 
 
 def format_output_path(
-    file_path, save_dir: str = None, base_dirs: Sequence[str] = None, file_name: Sequence[str] = None
+    file_path,
+    save_dir: str = None,
+    base_dirs: Sequence[str] = None,
+    file_name: Sequence[str] = None
 ):
 
     dirname = os.path.dirname(file_path) if not save_dir else save_dir
@@ -31,7 +33,7 @@ def format_output_path(
             dirname,
             "{}.h5".format(file_name),
         )
-        
+
     return os.path.join(
         dirname,
         "{}.h5".format(os.path.splitext(os.path.basename(file_path))[0]),
@@ -126,8 +128,9 @@ def compute_results(x, mask, categories, params: Dict):
 
     return results
 
-# Function that has as input a path and returns all paths under that path that contain only dicom files as well as the number of dicoms
+
 def get_dicom_paths_and_num(path):
+    """Get all paths under a path that contain only dicom files."""
     dicom_paths = []
     for root, dirs, files in os.walk(path):
         if len(files) > 0:

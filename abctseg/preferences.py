@@ -14,6 +14,7 @@ _C.OUTPUT_DIR = "../abCTSeg/preds"
 _C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
 _C.MODELS_DIR = "../../abCTSeg_scratch"
 _C.INPUT_DIR = ""
+_C.HF_TOKEN = ""
 
 _C.BATCH_SIZE = 16
 _C.NUM_WORKERS = 1
