@@ -133,4 +133,4 @@ def manifest_to_map(manifest):
                                 imat_hu,
                                 imat_area
                                 ]
-        return figure_text_key
+    return figure_text_key

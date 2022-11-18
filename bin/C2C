@@ -69,40 +69,40 @@ def argument_parser():
     subparsers = parser.add_subparsers(dest="action")
 
     # Processing parser
-    process_parser = subparsers.add_parser("process", help="process abCT scans")
-    process_parser.add_argument(
+    process_2d_parser = subparsers.add_parser("process_2d", help="process abCT scans")
+    process_2d_parser.add_argument(
         "--dicoms",
         nargs="+",
         type=str,
         required=True,
         help="path to dicom files(s)/directories to segment.",
     )
-    process_parser.add_argument(
+    process_2d_parser.add_argument(
         "--max-depth",
         nargs="?",
         type=str,
         default=None,
         help="max depth to search directory. Default: None (recursive search)",
     )
-    process_parser.add_argument(
+    process_2d_parser.add_argument(
         "--pattern",
         nargs="?",
         type=str,
         default=None,
         help="regex pattern for file names. Default: None",
     )
-    process_parser.add_argument(
+    process_2d_parser.add_argument(
         "--overwrite",
         action="store_true",
         help="overwrite results for computed files. Default: False",
     )
-    process_parser.add_argument(
+    process_2d_parser.add_argument(
         "--num-gpus",
         default=1,
         type=int,
         help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
     )
-    process_parser.add_argument(
+    process_2d_parser.add_argument(
         "--models",
         nargs="+",
         required=True,
@@ -110,17 +110,17 @@ def argument_parser():
         choices=[x.model_name for x in Models],
         help="models to use for inference",
     )
-    process_parser.add_argument(
+    process_2d_parser.add_argument(
         "--batch", action="store_true", help="run in batch mode"
     )
-    process_parser.add_argument(
+    process_2d_parser.add_argument(
         "--pp",
         action="store_false",
         help="use post-processing. Will be used for all specified models.",
     )
 
-    add_config_file_argument(process_parser)
-    add_opts_argument(process_parser)
+    add_config_file_argument(process_2d_parser)
+    add_opts_argument(process_2d_parser)
 
     process_3d_parser = subparsers.add_parser("process_3d",
                                               help="process abCT dicom series")
@@ -342,8 +342,13 @@ def handle_process_3d(args):
             segmentations_path
         )
 
-        df, manifest = handle_summarize(output_path, dicom_files, label_text)
+        _, manifest = handle_summarize(output_path, dicom_files, label_text)
+
+        # print("Manifest: ", manifest)
         figure_text_map = metrics.manifest_to_map(manifest)
+
+        # print("FIGURE TEXT MAP")
+        # print(figure_text_map)
 
         # Save images
         for num_2d in range(len(inputs)):
@@ -378,6 +383,7 @@ def handle_summarize(results_dir, dicom_files=None, label_text=None):
             index = [i for i, s in enumerate(label_text) if s in h5_file][0]
             level = label_text[index]
             dicom_file = dicom_files[index]
+            
         with h5py.File(h5_file, "r") as f:
             for model in f.keys():
                 scalar_metrics = {}
@@ -416,7 +422,7 @@ def main():
     args = argument_parser().parse_args()
     if args.action == "config":
         handle_init(args)
-    elif args.action == "process":
+    elif args.action == "process_2d":
         handle_process(args)
     elif args.action == "process_3d":
         handle_process_3d(args)
