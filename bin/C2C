@@ -70,15 +70,12 @@ def argument_parser():
 
     # Processing parser
     process_2d_parser = subparsers.add_parser("process_2d", help="process abCT scans")
-    '''
+
     process_2d_parser.add_argument(
-        "--dicoms",
-        nargs="+",
-        type=str,
-        required=True,
-        help="path to dicom files(s)/directories to segment.",
+        "--pp",
+        action="store_false",
+        help="use post-processing.",
     )
-    '''
     process_2d_parser.add_argument(
         "--max-depth",
         nargs="?",
@@ -110,43 +107,28 @@ def argument_parser():
         type=str,
         help="muscle + fat segmentation model to use for inference",
     )
-    process_2d_parser.add_argument(
-        "--batch", action="store_true", help="run in batch mode"
-    )
-    process_2d_parser.add_argument(
-        "--pp",
-        action="store_false",
-        help="use post-processing. Will be used for all specified models.",
-    )
 
     add_config_file_argument(process_2d_parser)
     add_opts_argument(process_2d_parser)
 
     process_3d_parser = subparsers.add_parser("process_3d",
                                               help="process abCT dicom series")
-
     process_3d_parser.add_argument(
         "--pp",
         action="store_false",
-        help="use post-processing. Will be used for all specified models.",
+        help="use post-processing.",
     )
-
     process_3d_parser.add_argument(
         "--muscle_fat_model",
         default="stanford_v0.0.1",
         type=str,
         help="muscle + fat segmentation model to use for inference",
     )
-
     process_3d_parser.add_argument(
         "--num-gpus",
         default=1,
         type=int,
         help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
-    )
-
-    process_3d_parser.add_argument(
-        "--batch", action="store_true", help="run in batch mode"
     )
 
     add_config_file_argument(process_3d_parser)
