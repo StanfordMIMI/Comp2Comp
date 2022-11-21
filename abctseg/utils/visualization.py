@@ -72,7 +72,8 @@ def save_binary_segmentation_overlay(
     file_name: str,
     centroids=None,
     figure_text_key=None,
-    spine_hus=None
+    spine_hus=None,
+    spine = True
 ):
     """
     Save binary segmentation overlay.
@@ -135,18 +136,26 @@ def save_binary_segmentation_overlay(
                           linewidth=0.5)
         else:
             # print(figure_text_key)
-            vis.draw_box(box_coord=(1, 1, mask.shape[0] - 1, mask.shape[1] - 1),
-                         alpha=1,
-                         edge_color=_COLORS[_COLOR_MAP[file_name.split('_')[0]]])
+            if spine:
+                vis.draw_box(box_coord=(1, 1, mask.shape[0] - 1, mask.shape[1] - 1),
+                            alpha=1,
+                            edge_color=_COLORS[_COLOR_MAP[file_name.split('_')[0]]])
 
             if figure_text_key:
                 if num_bin_masks == 3:
                     text_start_vertical_offset -= _TEXT_SPACING
-                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} HU: " + figure_text_key[file_name.split('_')[0]][(num_bin_masks - 1) * 2],
+                if spine:
+                    hu_val = figure_text_key[file_name.split('_')[0]][(num_bin_masks - 1) * 2]
+                    area_val = figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1]
+                else:
+                    hu_val = figure_text_key['.'.join(file_name.split('.')[:-1])][(num_bin_masks - 1) * 2]
+                    area_val = figure_text_key['.'.join(file_name.split('.')[:-1])][((num_bin_masks - 1) * 2) + 1]
+
+                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} HU: " + hu_val,
                               position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset),
                               color=_COLORS[num_bin_masks - 1],
                               font_size=7)
-                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1],
+                vis.draw_text(text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + area_val,
                               position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT, _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset + (_TEXT_SPACING / 2)),
                               color=_COLORS[num_bin_masks - 1],
                               font_size=7)
