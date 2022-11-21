@@ -10,10 +10,10 @@ _HOME_DIR = os.path.expanduser("~")
 
 
 _C = CN()
-_C.OUTPUT_DIR = "../abCTSeg/preds"
+_C.OUTPUT_PATH = "../abCTSeg/preds"
 _C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
 _C.MODELS_DIR = "../../abCTSeg_scratch"
-_C.INPUT_DIR = ""
+_C.INPUT_PATH = ""
 _C.HF_TOKEN = ""
 
 _C.BATCH_SIZE = 16

@@ -105,6 +105,7 @@ def argument_parser():
     process_2d_parser.add_argument(
         "--models",
         nargs="+",
+        default = ['stanford_v0.0.1'],
         required=True,
         type=str,
         choices=[x.model_name for x in Models],
@@ -277,7 +278,7 @@ def handle_process_3d(args):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     logger.info("Preferences:\n" + PREFERENCES.dump())
 
-    for path, num in get_dicom_paths_and_num(PREFERENCES.INPUT_DIR):
+    for path, num in get_dicom_paths_and_num(PREFERENCES.INPUT_PATH):
         logger.info("\n\n======================================================")
         logger.info("Processing the DICOM series from {}".format(path))
         logger.info("======================================================")
@@ -290,7 +291,7 @@ def handle_process_3d(args):
 
         # Get parent directory name not path
         parent_dir = os.path.basename(os.path.dirname(path))
-        output_path = Path(os.path.join(PREFERENCES.OUTPUT_DIR, parent_dir))
+        output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, parent_dir))
         output_path.mkdir(parents=True, exist_ok=True)
         output_path = str(output_path)
 
