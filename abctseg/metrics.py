@@ -111,7 +111,11 @@ def manifest_to_map(manifest):
     """Converts a manifest to a map of metric name to metric instance."""
     figure_text_key = {}
     for manifest_dict in manifest:
-        key = manifest_dict['Level']
+        try:
+            key = manifest_dict['Level']
+        except:
+            key = '.'.join((manifest_dict['File'].split('/')[-1]).split('.')[:-1])
+            
         # bone_hu = f"{manifest_dict['Hounsfield Unit (bone)']:.2f}"
         # bone_area = f"{manifest_dict['Cross-sectional Area (mm^2) (bone)']:.2f}"
         # TODO: edit visualization code so that we can remove these values

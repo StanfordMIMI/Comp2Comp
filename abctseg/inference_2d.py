@@ -21,8 +21,8 @@ def inference_2d(
     files: list,
     num_gpus: int,
     logger: logging.Logger,
-    label_text: List[str],
-    output_dir: str
+    label_text: List[str] = None,
+    output_dir: str = None
 ):
     """
     Run inference on 2D images.
@@ -50,86 +50,86 @@ def inference_2d(
     inputs = []
     masks = []
     file_names = []
-    for m_name in args.models:
-        logger.info("Computing masks with model {}".format(m_name))
+    m_name = args.muscle_fat_model
+    logger.info("Computing masks with model {}".format(m_name))
 
-        model_type: Models = None
-        for m_type in Models:
-            if m_type.model_name == m_name:
-                model_type = m_type
-                break
-        assert model_type is not None
+    model_type: Models = None
+    for m_type in Models:
+        if m_type.model_name == m_name:
+            model_type = m_type
+            break
+    assert model_type is not None
 
-        dataset = Dataset(files, windows=model_type.windows)
-        categories = model_type.categories
-        # print categories
-        # print("Categories: {}".format(categories))
-        # don't use softmax
-        model = model_type.load_model(logger)
-        if num_gpus > 1:
-            model = dl_utils.ModelMGPU(model, gpus=num_gpus)
+    dataset = Dataset(files, windows=model_type.windows)
+    categories = model_type.categories
+    # print categories
+    # print("Categories: {}".format(categories))
+    # don't use softmax
+    model = model_type.load_model(logger)
+    if num_gpus > 1:
+        model = dl_utils.ModelMGPU(model, gpus=num_gpus)
 
-        logger.info("<MODEL>: {}".format(m_name))
-        logger.info("Computing segmentation masks using {}...".format(m_name))
-        start_time = perf_counter()
-        _, preds, params_dicts = predict(
-            model,
-            dataset,
-            num_workers=num_workers,
-            use_multiprocessing=num_workers > 1,
-            batch_size=batch_size,
-            use_postprocessing=use_pp,
-            postprocessing_params={"categories": categories},
+    logger.info("<MODEL>: {}".format(m_name))
+    logger.info("Computing segmentation masks using {}...".format(m_name))
+    start_time = perf_counter()
+    _, preds, params_dicts = predict(
+        model,
+        dataset,
+        num_workers=num_workers,
+        use_multiprocessing=num_workers > 1,
+        batch_size=batch_size,
+        use_postprocessing=use_pp,
+        postprocessing_params={"categories": categories},
+    )
+    K.clear_session()
+    logger.info(
+        "<TIME>: Segmentation - count: {} - {:.4f} seconds".format(
+            len(files), perf_counter() - start_time
         )
-        K.clear_session()
-        logger.info(
-            "<TIME>: Segmentation - count: {} - {:.4f} seconds".format(
-                len(files), perf_counter() - start_time
-            )
-        )
+    )
 
-        logger.info("Computing metrics...")
-        start_time = perf_counter()
-        masks = [model_type.preds_to_mask(p) for p in preds]
-        if args.pp:
-            masks = fill_holes(masks)
-            if "muscle" in categories and "imat" in categories:
-                # subtract imat from muscle
-                for i in range(len(masks)):
-                    masks[i][..., categories.index("muscle")] -= \
-                        masks[i][..., categories.index("imat")]
-                    masks[i][masks[i] < 0] = 0
+    logger.info("Computing metrics...")
+    start_time = perf_counter()
+    masks = [model_type.preds_to_mask(p) for p in preds]
+    if args.pp:
+        masks = fill_holes(masks)
+        if "muscle" in categories and "imat" in categories:
+            # subtract imat from muscle
+            for i in range(len(masks)):
+                masks[i][..., categories.index("muscle")] -= \
+                    masks[i][..., categories.index("imat")]
+                masks[i][masks[i] < 0] = 0
 
-        assert len(masks) == len(params_dicts)
-        assert len(masks) == len(files)
-        m_save_name = "/{}".format(m_name)
-        # if use_pp:
-        #    m_save_name += "+pp"
-        file_idx = 0
-        for f, pred, mask, params in tqdm(  # noqa: B007
-            zip(files, preds, masks, params_dicts), total=len(files)
-        ):
+    assert len(masks) == len(params_dicts)
+    assert len(masks) == len(files)
+    m_save_name = "/{}".format(m_name)
+    # if use_pp:
+    #    m_save_name += "+pp"
+    file_idx = 0
+    for _, _, mask, params in tqdm(  # noqa: B007
+        zip(files, preds, masks, params_dicts), total=len(files)
+    ):
 
+        x = params["image"]
+        results = compute_results(x, mask, categories, params)
+
+        if label_text:
+            file_name = label_text[file_idx]
             x = params["image"]
-            results = compute_results(x, mask, categories, params)
-
-            if label_text:
-                file_name = label_text[file_idx]
-                x = params["image"]
-                inputs.append(x)
-                masks.append(mask)
-                file_names.append(file_name)
-            else:
-                file_name = None
-            output_file = os.path.join(output_dir, file_name + ".h5")
-            os.makedirs(os.path.dirname(output_file), exist_ok=True)
-            sio.dicttoh5(
-                results, output_file, m_save_name, mode="a", overwrite_data=True
-            )
-            file_idx += 1
-        logger.info(
-            "<TIME>: Metrics - count: {} - {:.4f} seconds".format(
-                len(files), perf_counter() - start_time
-            )
+            inputs.append(x)
+            masks.append(mask)
+            file_names.append(file_name)
+        else:
+            file_name = None
+        output_file = os.path.join(output_dir, file_name + ".h5")
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        sio.dicttoh5(
+            results, output_file, m_save_name, mode="a", overwrite_data=True
         )
+        file_idx += 1
+    logger.info(
+        "<TIME>: Metrics - count: {} - {:.4f} seconds".format(
+            len(files), perf_counter() - start_time
+        )
+    )
     return (inputs, masks, file_names)

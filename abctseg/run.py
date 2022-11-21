@@ -39,6 +39,14 @@ def format_output_path(
         "{}.h5".format(os.path.splitext(os.path.basename(file_path))[0]),
     )
 
+# Function the returns a list of file names exluding the extention from the list of file paths
+def get_file_names(files):
+    file_names = []
+    for file in files:
+        file_name = os.path.splitext(os.path.basename(file))[0]
+        file_names.append(file_name)
+    return file_names
+
 
 def find_files(
     root_dirs: Union[str, Sequence[str]],
