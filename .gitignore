@@ -35,10 +35,13 @@
 **/.ipynb_checkpoints/
 **/.abctseg/
 
-#ignore cross validation files
+# ignore cross validation files
 *.cv
 
-#ignore images
+# ignore yml file
+*.yml
+
+# ignore images
 *.png
 
 # ignore any weights files
