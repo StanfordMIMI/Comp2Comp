@@ -25,6 +25,7 @@ from abctseg.preferences import (PREFERENCES, reset_preferences,
 from abctseg.run import find_files, get_dicom_paths_and_num, get_file_names
 from abctseg.utils import dl_utils, spine_utils
 from abctseg.utils.logger import setup_logger
+from abctseg.models import Models
 from abctseg.utils.visualization import (generate_panel,
                                          save_binary_segmentation_overlay)
 
@@ -236,7 +237,7 @@ def handle_process_2d(args):
     segmentations_path = Path(output_path) / "segmentations"
     segmentations_path.mkdir(parents=True, exist_ok=True)
 
-    (inputs, masks, file_names) = inference_2d(
+    (inputs, masks, file_names, model_type) = inference_2d(
         args,
         batch_size,
         use_pp,
@@ -284,6 +285,9 @@ def handle_process_3d(args):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     logger.info("Preferences:\n" + PREFERENCES.dump())
 
+    muscle_fat_model_type = Models.model_from_name()
+    spine_model_type = Models.model_from_name()
+
     for path, num in get_dicom_paths_and_num(PREFERENCES.INPUT_PATH):
         logger.info("\n\n======================================================")
         logger.info("Processing the DICOM series from {}".format(path))
@@ -316,7 +320,8 @@ def handle_process_3d(args):
             seg,
             mvs.volume,
             mvs.get_metadata("RescaleSlope"),
-            mvs.get_metadata("RescaleIntercept")
+            mvs.get_metadata("RescaleIntercept"),
+            spine_model_type
         )
         dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(
             seg,

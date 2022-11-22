@@ -132,4 +132,4 @@ def inference_2d(
             len(files), perf_counter() - start_time
         )
     )
-    return (inputs, masks, file_names)
+    return (inputs, masks, file_names, model_type)

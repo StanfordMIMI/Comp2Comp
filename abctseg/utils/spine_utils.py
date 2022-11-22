@@ -45,7 +45,7 @@ def find_spine_dicoms(seg: np.ndarray, path: str):
 # Function that takes a numpy array as input, computes the
 # sagittal centroid of each label and returns a list of the
 # centroids
-def compute_centroids(seg: np.ndarray):
+def compute_centroids(seg: np.ndarray, spine_model_type):
     """
     Compute the centroids of the labels.
     Parameters
@@ -53,8 +53,11 @@ def compute_centroids(seg: np.ndarray):
     seg: np.ndarray
         Segmentation volume.
     """
+    #take values of spine_model_type.categories dictionary
+    #and convert to list
+    label_idxs = list(spine_model_type.categories.values())
     centroids = []
-    for label_idx in range(18, 24):
+    for label_idx in label_idxs:
         pos = compute_centroid(seg, "sagittal", label_idx)
         centroids.append(pos)
     return centroids
@@ -63,7 +66,7 @@ def compute_centroids(seg: np.ndarray):
 # Function that takes a numpy array as input, as well as a list of centroids,
 # takes a slice through the centroid on axis = 1 for each centroid
 # and returns a list of the slices
-def get_slices(seg: np.ndarray, centroids: List[int]):
+def get_slices(seg: np.ndarray, centroids: List[int], spine_model_type):
     """
     Get the slices corresponding to the centroids.
     Parameters
@@ -73,8 +76,8 @@ def get_slices(seg: np.ndarray, centroids: List[int]):
     centroids: List[int]
         List of centroids.
     """
+    label_idxs = list(spine_model_type.categories.values())
     slices = []
-    label_idxs = list(range(18, 24))
     for i, centroid in enumerate(centroids):
         label_idx = label_idxs[i]
         slices.append((seg[:, centroid, :] == label_idx).astype(int))
@@ -164,7 +167,7 @@ def mean_img_mask(
     return mean
 
 
-def compute_rois(seg, img, rescale_slope, rescale_intercept):
+def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
     """
     Compute the ROIs for the spine.
     Parameters
@@ -175,9 +178,9 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept):
         Image volume.
     """
     # Compute centroids
-    centroids = compute_centroids(seg)
+    centroids = compute_centroids(seg, spine_model_type)
     # Get slices
-    slices = get_slices(seg, centroids)
+    slices = get_slices(seg, centroids, spine_model_type)
     # Delete right most connected component
     for i, slice in enumerate(slices):
         slices[i] = delete_right_most_connected_component(slice)
@@ -227,7 +230,7 @@ def compute_centroid(seg: np.ndarray, plane: str, label: int):
     return pos
 
 
-def to_one_hot(label: np.ndarray):
+def to_one_hot(label: np.ndarray, model_type):
     """
     Convert a label to one-hot encoding.
     Parameters
@@ -235,13 +238,10 @@ def to_one_hot(label: np.ndarray):
     label: np.ndarray
         Label volume.
     """
-    one_hot_label = np.zeros((label.shape[0], label.shape[1], 7))
-    one_hot_label[:, :, 1] = (label == 18).astype(int)
-    one_hot_label[:, :, 2] = (label == 19).astype(int)
-    one_hot_label[:, :, 3] = (label == 20).astype(int)
-    one_hot_label[:, :, 4] = (label == 21).astype(int)
-    one_hot_label[:, :, 5] = (label == 22).astype(int)
-    one_hot_label[:, :, 6] = (label == 23).astype(int)
+    label_idxs = list(model_type.categories.values())
+    one_hot_label = np.zeros((label.shape[0], label.shape[1], len(label_idxs)))
+    for i, idx in enumerate(label_idxs):
+        one_hot_label[:, :, i] = (label == idx).astype(int)
     return one_hot_label
 
 
@@ -252,7 +252,8 @@ def visualize_coronal_sagittal_spine(
     centroids: List[int],
     label_text: List[str],
     output_dir: str,
-    spine_hus=None
+    spine_hus=None,
+    model_type=None
 ):
     """
     Visualize the coronal and sagittal planes of the spine.
@@ -269,14 +270,17 @@ def visualize_coronal_sagittal_spine(
     output_dir: str
         Output directory.
     """
-    for_centroid = np.logical_and(seg >= 18, seg <= 23).astype(int)
+    # Get minimum and maximum values of the model_type.catogories dict values
+    min_val = min(model_type.categories.values())
+    max_val = max(model_type.categories.values())
+    for_centroid = np.logical_and(seg >= min_val, seg <= max_val).astype(int)
     sagittal_centroid = compute_centroid(for_centroid, 'sagittal', 1)
     coronal_centroid = compute_centroid(for_centroid, 'coronal', 1)
 
     # Spine visualizations
     sagittal_image = mvs.volume[:, sagittal_centroid, :]
     sagittal_label = seg[:, sagittal_centroid, :]
-    one_hot_sag_label = to_one_hot(sagittal_label)
+    one_hot_sag_label = to_one_hot(sagittal_label, model_type)
     for roi in rois:
         one_hot_roi_label = roi[:, sagittal_centroid, :]
         one_hot_sag_label = np.concatenate((one_hot_sag_label,
