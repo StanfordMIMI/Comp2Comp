@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
-from detectron2.utils.visualizer import Visualizer
+from abctseg.utils.visualizer import Visualizer
 from PIL import Image
 
 _image_files = [
