@@ -1,6 +1,6 @@
 import enum
 import os
-from typing import Sequence
+from typing import Sequence, Dict
 
 import numpy as np
 from abctseg.preferences import PREFERENCES
@@ -9,6 +9,7 @@ from keras.models import load_model
 
 
 class Models(enum.Enum):
+    '''
     ABCT_V_0_0_1 = (
         1,
         "abCT_v0.0.1",
@@ -16,19 +17,28 @@ class Models(enum.Enum):
         False,
         ("soft", "bone", "custom"),
     )
+    '''
     STANFORD_V_0_0_1 = (
         2,
         "stanford_v0.0.1",
-        ("background", "muscle", "bone", "vat", "sat", "imat"),
+        # ("background", "muscle", "bone", "vat", "sat", "imat"),
+        {"muscle": 1, "vat": 3, "sat": 4, "imat": 5},
         True,
         ("soft", "bone", "custom"),
+    )
+    TS_SPINE = (
+        3,
+        "ts_spine",
+        {"L5": 18, "L4": 19, "L3": 20, "L2": 21, "L1": 22, "T12": 23},
+        False,
+        (),
     )
 
     def __new__(
         cls,
         value: int,
         model_name: str,
-        categories: Sequence[str],
+        categories: Dict[str, int],
         use_softmax: bool,
         windows: Sequence[str],
     ):
@@ -36,7 +46,7 @@ class Models(enum.Enum):
         obj._value_ = value
 
         obj.model_name = model_name
-        obj.categories = [x.lower() for x in categories]
+        obj.categories = categories
         obj.use_softmax = use_softmax
         obj.windows = windows
         return obj
@@ -73,3 +83,9 @@ class Models(enum.Enum):
         else:
             # sigmoid
             return preds >= 0.5
+        
+    def model_from_name(model_name):
+        for model in Models:
+            if model.model_name == model_name:
+                return model
+        return None
