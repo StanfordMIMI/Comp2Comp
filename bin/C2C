@@ -14,13 +14,11 @@ from tqdm import tqdm
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-# Get rid of this before release
+# TODO: Get rid of this before release
 sys.path.append("/dataNAS/people/lblankem/abCTSeg")
 
 from abctseg import metrics
-from abctseg.data import Dataset
 from abctseg.inference_2d import inference_2d
-from abctseg.models import Models
 from abctseg.nn_unet import spine_seg
 from abctseg.preferences import (PREFERENCES, reset_preferences,
                                  save_preferences)
