@@ -41,7 +41,7 @@ def setup_logger(
     *,
     color=True,
     name="abctseg",
-    abbrev_name=None
+    abbrev_name=None,
 ):
     """
     Initialize the detectron2 logger and set its verbosity level to "INFO".
