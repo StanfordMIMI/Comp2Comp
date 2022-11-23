@@ -13,7 +13,7 @@ def format_output_path(
     file_path,
     save_dir: str = None,
     base_dirs: Sequence[str] = None,
-    file_name: Sequence[str] = None
+    file_name: Sequence[str] = None,
 ):
     if not save_dir:
         save_dir = PREFERENCES.OUTPUT_PATH
@@ -41,6 +41,7 @@ def format_output_path(
         dirname,
         "{}.h5".format(os.path.splitext(os.path.basename(file_path))[0]),
     )
+
 
 # Function the returns a list of file names exluding the extention from the list of file paths
 def get_file_names(files):
@@ -145,6 +146,6 @@ def get_dicom_paths_and_num(path):
     dicom_paths = []
     for root, dirs, files in os.walk(path):
         if len(files) > 0:
-            if all([file.endswith('.dcm') for file in files]):
+            if all([file.endswith(".dcm") for file in files]):
                 dicom_paths.append((root, len(files)))
     return dicom_paths

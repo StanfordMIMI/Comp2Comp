@@ -1,15 +1,16 @@
 import enum
 import os
-from typing import Sequence, Dict
+from typing import Dict, Sequence
 
 import numpy as np
-from abctseg.preferences import PREFERENCES
 from huggingface_hub import hf_hub_download
 from keras.models import load_model
 
+from abctseg.preferences import PREFERENCES
+
 
 class Models(enum.Enum):
-    '''
+    """
     ABCT_V_0_0_1 = (
         1,
         "abCT_v0.0.1",
@@ -17,7 +18,8 @@ class Models(enum.Enum):
         False,
         ("soft", "bone", "custom"),
     )
-    '''
+    """
+
     STANFORD_V_0_0_1 = (
         2,
         "stanford_v0.0.1",
@@ -59,10 +61,12 @@ class Models(enum.Enum):
         return filename
 
     def load_model(self, logger):
-        hf_hub_download(repo_id="lblankem/stanford_abct_v0.0.1",
-                        filename="stanford_v0.0.1.h5",
-                        cache_dir=PREFERENCES.MODELS_DIR,
-                        use_auth_token=PREFERENCES.HF_TOKEN)
+        hf_hub_download(
+            repo_id="lblankem/stanford_abct_v0.0.1",
+            filename="stanford_v0.0.1.h5",
+            cache_dir=PREFERENCES.MODELS_DIR,
+            use_auth_token=PREFERENCES.HF_TOKEN,
+        )
 
         logger.info("Downloading muscle/fat model from hugging face")
         # filename = os.path.join(

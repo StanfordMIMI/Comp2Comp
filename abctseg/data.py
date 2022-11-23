@@ -1,14 +1,14 @@
 import math
+import sys
 from typing import List, Sequence
 
 import cv2
 import keras.utils as k_utils
+import matplotlib.pyplot as plt
 import numpy as np
 import pydicom
 from keras.utils.data_utils import OrderedEnqueuer
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-import sys
 
 from abctseg.models import Models
 
@@ -100,8 +100,9 @@ class Dataset(k_utils.Sequence):
 # function that fills in holes in a segmentation mask
 def _fill_holes(mask, mask_id):
     int_mask = ((1 - mask) > 0.5).astype(np.int8)
-    components, output, stats, _ = cv2.connectedComponentsWithStats(int_mask,
-                                                                    connectivity=8)
+    components, output, stats, _ = cv2.connectedComponentsWithStats(
+        int_mask, connectivity=8
+    )
     sizes = stats[1:, -1]
     components = components - 1
     # Larger threshold for SAT
@@ -117,13 +118,12 @@ def _fill_holes(mask, mask_id):
 
 
 def fill_holes(ys):
-    """Take an array of size NxHxWxC and for each channel fill in holes.
-    """
+    """Take an array of size NxHxWxC and for each channel fill in holes."""
     segs = []
     for n in range(len(ys)):
         ys_out = [_fill_holes(ys[n][..., i], i) for i in range(ys[n].shape[-1])]
         segs.append(np.stack(ys_out, axis=2).astype(float))
-         
+
     return segs
 
 
@@ -204,11 +204,11 @@ def predict(
     for _ in tqdm(range(num_scans)):
         x, p_dicts = next(output_generator)
         y = model.predict(x, batch_size=batch_size)
-        
+
         if use_postprocessing:
             image = np.stack([out["image"] for out in p_dicts], axis=0)
             y = postprocess(image, y, postprocessing_params)
-        
+
         params.extend(p_dicts)
         xs.extend([x[i, ...] for i in range(len(x))])
         ys.extend([y[i, ...] for i in range(len(y))])
