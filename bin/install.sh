@@ -140,5 +140,6 @@ pip3 install git+https://github.com/StanfordMIMI/TotalSegmentator.git
 cd $currDir/..
 pip install -e .
 
-echo "\n\n"
+echo ""
+echo ""
 echo "Run 'conda activate ${ABCT_ENV_NAME}' to get started."

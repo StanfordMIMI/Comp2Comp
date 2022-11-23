@@ -114,14 +114,10 @@ def manifest_to_map(manifest):
     for manifest_dict in manifest:
         try:
             key = manifest_dict["Level"]
-        except:
-            key = ".".join(
-                (manifest_dict["File"].split("/")[-1]).split(".")[:-1]
-            )
+        except BaseException:
+            key = ".".join((manifest_dict["File"].split("/")[-1]).split(".")[:-1])
         muscle_hu = f"{manifest_dict['Hounsfield Unit (muscle)']:.2f}"
-        muscle_area = (
-            f"{manifest_dict['Cross-sectional Area (mm^2) (muscle)']:.2f}"
-        )
+        muscle_area = f"{manifest_dict['Cross-sectional Area (mm^2) (muscle)']:.2f}"
         vat_hu = f"{manifest_dict['Hounsfield Unit (vat)']:.2f}"
         vat_area = f"{manifest_dict['Cross-sectional Area (mm^2) (vat)']:.2f}"
         sat_hu = f"{manifest_dict['Hounsfield Unit (sat)']:.2f}"
