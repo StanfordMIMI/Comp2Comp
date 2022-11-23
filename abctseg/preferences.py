@@ -10,6 +10,7 @@ _HOME_DIR = os.path.expanduser("~")
 
 
 _C = CN()
+# FIXME: have a default output folder path
 _C.OUTPUT_PATH = "../abCTSeg/preds"
 _C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
 _C.MODELS_DIR = "../../abCTSeg_scratch"

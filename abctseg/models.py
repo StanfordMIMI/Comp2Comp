@@ -61,6 +61,7 @@ class Models(enum.Enum):
         return filename
 
     def load_model(self, logger):
+        # TODO: use wget to grab model from hf
         hf_hub_download(
             repo_id="lblankem/stanford_abct_v0.0.1",
             filename="stanford_v0.0.1.h5",
