@@ -8,13 +8,9 @@ from setuptools import find_packages, setup
 
 
 def get_version():
-    init_py_path = path.join(
-        path.abspath(path.dirname(__file__)), "abctseg", "__init__.py"
-    )
+    init_py_path = path.join(path.abspath(path.dirname(__file__)), "abctseg", "__init__.py")
     init_py = open(init_py_path, "r").readlines()
-    version_line = [
-        line.strip() for line in init_py if line.startswith("__version__")
-    ][0]
+    version_line = [line.strip() for line in init_py if line.startswith("__version__")][0]
     version = version_line.split("=")[-1].strip().strip("'\"")
 
     # The following is used to build release packages.
@@ -27,9 +23,7 @@ def get_version():
         date_str = datetime.today().strftime("%y%m%d")
         version = version + ".dev" + date_str
 
-        new_init_py = [
-            line for line in init_py if not line.startswith("__version__")
-        ]
+        new_init_py = [line for line in init_py if not line.startswith("__version__")]
         new_init_py.append('__version__ = "{}"\n'.format(version))
         with open(init_py_path, "w") as f:
             f.write("".join(new_init_py))

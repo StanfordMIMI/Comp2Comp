@@ -157,8 +157,7 @@ def save_binary_segmentation_overlay(
                 text=f"{_SPINE_LEVELS[num_bin_masks - 1]} ROI HU: {spine_hus[num_bin_masks - 1]:.2f}",
                 position=(
                     mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT,
-                    int(_TEXT_SPACING / 2.0) * (num_bin_masks - 1)
-                    + _TEXT_START_VERTICAL_OFFSET,
+                    int(_TEXT_SPACING / 2.0) * (num_bin_masks - 1) + _TEXT_START_VERTICAL_OFFSET,
                 ),
                 color=_COLORS[num_bin_masks - 1],
                 font_size=7,
@@ -184,26 +183,23 @@ def save_binary_segmentation_overlay(
 
             if figure_text_key:
                 if spine:
-                    hu_val = figure_text_key[file_name.split("_")[0]][
-                        (num_bin_masks - 1) * 2
-                    ]
+                    hu_val = figure_text_key[file_name.split("_")[0]][(num_bin_masks - 1) * 2]
                     area_val = figure_text_key[file_name.split("_")[0]][
                         ((num_bin_masks - 1) * 2) + 1
                     ]
                 else:
-                    hu_val = figure_text_key[
-                        ".".join(file_name.split(".")[:-1])
-                    ][(num_bin_masks - 1) * 2]
-                    area_val = figure_text_key[
-                        ".".join(file_name.split(".")[:-1])
-                    ][((num_bin_masks - 1) * 2) + 1]
+                    hu_val = figure_text_key[".".join(file_name.split(".")[:-1])][
+                        (num_bin_masks - 1) * 2
+                    ]
+                    area_val = figure_text_key[".".join(file_name.split(".")[:-1])][
+                        ((num_bin_masks - 1) * 2) + 1
+                    ]
 
                 vis.draw_text(
                     text=f"{_TISSUES[num_bin_masks - 1]} HU: " + hu_val,
                     position=(
                         mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT,
-                        _TEXT_SPACING * (num_bin_masks - 1)
-                        + text_start_vertical_offset,
+                        _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset,
                     ),
                     color=_COLORS[num_bin_masks - 1],
                     font_size=7,

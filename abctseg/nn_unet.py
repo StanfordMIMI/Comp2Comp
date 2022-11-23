@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 from pathlib import Path
 from time import time
 from typing import Union
