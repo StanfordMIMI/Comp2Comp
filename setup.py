@@ -60,7 +60,7 @@ setup(
             # Formatting
             "flake8",
             "isort",
-            "black",
+            "black==22.8.0",
             "flake8-bugbear",
             "flake8-comprehensions",
             # Docs
