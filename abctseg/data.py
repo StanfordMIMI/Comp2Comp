@@ -106,6 +106,7 @@ def _fill_holes(mask, mask_id):
     sizes = stats[1:, -1]
     components = components - 1
     # Larger threshold for SAT
+    # TODO make this configurable / parameter
     if mask_id == 2:
         min_size = 400
     else:
