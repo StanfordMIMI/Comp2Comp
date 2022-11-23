@@ -14,7 +14,7 @@ from keras import backend as K
 from tqdm import tqdm
 
 
-def inference_2d(
+def forward_pass_2d(
     args: argparse.Namespace,
     batch_size: int,
     use_pp: bool,
@@ -23,8 +23,6 @@ def inference_2d(
     num_gpus: int,
     logger: logging.Logger,
     model_type: Models,
-    label_text: List[str] = None,
-    output_dir: str = None
 ):
     """
     Run inference on 2D images.
@@ -49,9 +47,6 @@ def inference_2d(
     output_dir: str
         Output directory.
     """
-    inputs = []
-    masks = []
-    file_names = []
     m_name = args.muscle_fat_model
     logger.info("Computing masks with model {}".format(m_name))
 
@@ -79,8 +74,44 @@ def inference_2d(
             len(files), perf_counter() - start_time
         )
     )
+    return preds, params_dicts
 
+
+def compute_and_save_results(
+    args: argparse.Namespace,
+    preds: list,
+    params_dicts: list,
+    files: list,
+    label_text: List[str],
+    output_dir: str,
+    logger: logging.Logger,
+    model_type: Models,
+):
+    """
+    Compute and save results.
+    Parameters
+    ----------
+    args: argparse.Namespace
+        Arguments.
+    preds: list
+        Predictions.
+    params_dicts: list
+        Parameters dictionaries.
+    files: list
+        List of files.
+    label_text: str
+        Label text.
+    output_dir: str
+        Output directory.
+    logger: logging.Logger
+        Logger object.
+    """
+    inputs = []
+    masks = []
+    file_names = []
     logger.info("Computing metrics...")
+    m_name = args.muscle_fat_model
+    categories = model_type.categories
     start_time = perf_counter()
     masks = [model_type.preds_to_mask(p) for p in preds]
     for i, mask in enumerate(masks):
@@ -129,3 +160,38 @@ def inference_2d(
         )
     )
     return (inputs, masks, file_names, results)
+
+def inference_2d(
+    args: argparse.Namespace,
+    batch_size: int,
+    use_pp: bool,
+    num_workers: int,
+    files: list,
+    num_gpus: int,
+    logger: logging.Logger,
+    model_type: Models,
+    label_text: List[str] = None,
+    output_dir: str = None
+):
+    (preds, params_dict) = forward_pass_2d(
+        args,
+        batch_size,
+        use_pp,
+        num_workers,
+        files,
+        num_gpus,
+        logger,
+        model_type,
+    )
+    (inputs, masks, file_names, results) = compute_and_save_results(
+        args,
+        preds,
+        params_dict,
+        files,
+        label_text,
+        output_dir,
+        logger,
+        model_type,
+    )
+    return (inputs, masks, file_names, results)
+

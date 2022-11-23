@@ -363,6 +363,12 @@ def handle_process_3d(args):
 
         figure_text_map = metrics.manifest_to_map(manifest)
 
+        print("FIGURE TEXT MAP")
+        print(figure_text_map)
+
+        print("RESULTS")
+        print(results)
+
         # Save images
         for num_2d in range(len(inputs)):
             save_binary_segmentation_overlay(
