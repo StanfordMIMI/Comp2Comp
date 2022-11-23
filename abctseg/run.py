@@ -4,6 +4,7 @@ import re
 from typing import Dict, Sequence, Union
 
 from abctseg.metrics import CrossSectionalArea, HounsfieldUnits
+from abctseg.preferences import PREFERENCES
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,8 @@ def format_output_path(
     base_dirs: Sequence[str] = None,
     file_name: Sequence[str] = None
 ):
+    if not save_dir:
+        save_dir = PREFERENCES.OUTPUT_PATH
 
     dirname = os.path.dirname(file_path) if not save_dir else save_dir
 

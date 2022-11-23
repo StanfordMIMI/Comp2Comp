@@ -9,6 +9,9 @@
 # Ignore egg files
 **/*.egg-info
 
+# Docs build files
+docs/_build
+
 # Ignore tensorflow logs
 **/tf_log
 

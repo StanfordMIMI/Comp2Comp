@@ -186,7 +186,7 @@ def predict(
     max_queue_size: int = 10,
     use_multiprocessing: bool = False,
     use_postprocessing: bool = False,
-    postprocessing_params: dict = None
+    postprocessing_params: dict = None,
 ):
     if num_workers > 0:
         enqueuer = OrderedEnqueuer(
