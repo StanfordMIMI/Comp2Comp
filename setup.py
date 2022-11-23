@@ -4,19 +4,7 @@
 import os
 from os import path
 
-import keras
-import tensorflow as tf
 from setuptools import find_packages, setup
-
-tf_ver = [int(x) for x in tf.__version__.split(".")[:2]]
-assert tf_ver >= [1, 8] and tf_ver < [2, 0], "Requires TensorFlow >=1.8,<2.0"
-keras_ver = [int(x) for x in keras.__version__.split(".")[:3]]
-assert keras_ver >= [2, 1, 6] and keras_ver < [
-    2,
-    2,
-    0,
-], "Requires Keras >=2.1.6,<2.2.0"
-
 
 def get_version():
     init_py_path = path.join(
@@ -51,7 +39,7 @@ setup(
     name="abctseg",
     version=get_version(),
     author="Arjun Desai",
-    url="https://github.com/ad12/ihd-pipeline",
+    url="https://github.com/StanfordMIMI/abCTSeg",
     description="Abdominal CT segmentation pipeline.",
     packages=find_packages(exclude=("configs", "tests")),
     python_requires=">=3.6",
@@ -64,6 +52,12 @@ setup(
         "silx",
         "yacs",
         "pandas",
+        "dosma",
+        "opencv-python",
+        "huggingface_hub",
+        # Stanford MIMI fork of TotalSegmentor
+        # FIXME: Figure out how to add git-based dependendcies.
+        # "git+https://github.com/StanfordMIMI/TotalSegmentator.git",
     ],
     extras_require={
         "all": ["shapely", "psutil"],
