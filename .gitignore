@@ -52,6 +52,3 @@ weights/
 
 # preferences file
 abctseg/preferences.yaml
-
-# ignore slurm outputs
-**/slurm/
