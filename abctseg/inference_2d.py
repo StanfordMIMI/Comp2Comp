@@ -109,6 +109,7 @@ def compute_and_save_results(
     inputs = []
     masks = []
     file_names = []
+    results_dict = {}
     logger.info("Computing metrics...")
     m_name = args.muscle_fat_model
     categories = model_type.categories
@@ -139,6 +140,8 @@ def compute_and_save_results(
 
         x = params["image"]
         results = compute_results(x, mask, categories, params)
+        results_dict[label_text[file_idx]] = results
+
 
         if label_text:
             file_name = label_text[file_idx]
@@ -159,7 +162,7 @@ def compute_and_save_results(
             len(files), perf_counter() - start_time
         )
     )
-    return (inputs, masks, file_names, results)
+    return (inputs, masks, file_names, results_dict)
 
 def inference_2d(
     args: argparse.Namespace,
