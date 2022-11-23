@@ -7,7 +7,6 @@ from abctseg.preferences import PREFERENCES
 from huggingface_hub import hf_hub_download
 from keras.models import load_model
 
-
 class Models(enum.Enum):
     ABCT_V_0_0_1 = (
         1,
