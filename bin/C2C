@@ -285,8 +285,8 @@ def handle_process_3d(args):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     logger.info("Preferences:\n" + PREFERENCES.dump())
 
-    muscle_fat_model_type = Models.model_from_name()
-    spine_model_type = Models.model_from_name()
+    muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1")
+    spine_model_type = Models.model_from_name("ts_spine")
 
     for path, num in get_dicom_paths_and_num(PREFERENCES.INPUT_PATH):
         logger.info("\n\n======================================================")
@@ -335,14 +335,16 @@ def handle_process_3d(args):
             centroids,
             label_text,
             output_path,
-            spine_hus=spine_hus)
+            spine_hus=spine_hus,
+            model_type=spine_model_type
+        )
 
         # Print dicom paths to logger
         logger.info(f"Dicom paths: {dicom_files}")
         batch_size = PREFERENCES.BATCH_SIZE
         use_pp = args.pp
         num_workers = PREFERENCES.NUM_WORKERS
-        (inputs, masks, file_names) = inference_2d(
+        (inputs, masks, file_names, results) = inference_2d(
             args,
             batch_size,
             use_pp,
@@ -350,13 +352,14 @@ def handle_process_3d(args):
             dicom_files,
             num_gpus,
             logger,
+            muscle_fat_model_type,
             label_text,
             segmentations_path
         )
 
         _, manifest = handle_summarize(output_path, dicom_files, label_text, spine_hus)
 
-        print("MANIFEST", manifest)
+        # handle_summarize(output_path, dicom_files, label_text, spine_hus)
 
         figure_text_map = metrics.manifest_to_map(manifest)
 
@@ -367,7 +370,8 @@ def handle_process_3d(args):
                 masks[num_2d],
                 output_path,
                 f"{file_names[num_2d]}.png",
-                figure_text_key=figure_text_map
+                figure_text_key=figure_text_map,
+                model_type=muscle_fat_model_type
             )
         generate_panel(os.path.join(output_path, "images"))
         end = time()
@@ -402,8 +406,6 @@ def handle_summarize(results_dir, dicom_files=None, label_text=None, spine_hus=N
                 for tissue in f[model]:
                     # Leave 2d bone segmentations and background out for now 
                     # to be consistent with panel report
-                    if (tissue == "bone") or (tissue == 'background'):
-                        continue
                     h5_group = f[model][tissue]
                     scalar_metrics.update(
                         {

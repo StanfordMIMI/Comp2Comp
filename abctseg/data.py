@@ -7,6 +7,10 @@ import numpy as np
 import pydicom
 from keras.utils.data_utils import OrderedEnqueuer
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import sys
+
+from abctseg.models import Models
 
 
 def parse_windows(windows):
@@ -101,7 +105,7 @@ def _fill_holes(mask, mask_id):
     sizes = stats[1:, -1]
     components = components - 1
     # Larger threshold for SAT
-    if mask_id == 4:
+    if mask_id == 2:
         min_size = 400
     else:
         min_size = 50  # Smaller threshold for everything else
@@ -119,6 +123,7 @@ def fill_holes(ys):
     for n in range(len(ys)):
         ys_out = [_fill_holes(ys[n][..., i], i) for i in range(ys[n].shape[-1])]
         segs.append(np.stack(ys_out, axis=2).astype(float))
+         
     return segs
 
 
@@ -166,8 +171,8 @@ def postprocess(xs: np.ndarray, ys: np.ndarray, params: dict):
         ys = _swap_muscle_imap(
             xs,
             ys,
-            muscle_idx=categories.index("muscle"),
-            imat_idx=categories.index("imat"),
+            muscle_idx=categories["muscle"],
+            imat_idx=categories["imat"],
         )
 
     return ys
@@ -181,7 +186,7 @@ def predict(
     max_queue_size: int = 10,
     use_multiprocessing: bool = False,
     use_postprocessing: bool = False,
-    postprocessing_params: dict = None,
+    postprocessing_params: dict = None
 ):
     if num_workers > 0:
         enqueuer = OrderedEnqueuer(
@@ -199,11 +204,11 @@ def predict(
     for _ in tqdm(range(num_scans)):
         x, p_dicts = next(output_generator)
         y = model.predict(x, batch_size=batch_size)
-
+        
         if use_postprocessing:
             image = np.stack([out["image"] for out in p_dicts], axis=0)
             y = postprocess(image, y, postprocessing_params)
-
+        
         params.extend(p_dicts)
         xs.extend([x[i, ...] for i in range(len(x))])
         ys.extend([y[i, ...] for i in range(len(y))])

@@ -3,6 +3,7 @@ import logging
 import os
 from time import perf_counter
 from typing import List
+import matplotlib.pyplot as plt
 
 import silx.io.dictdump as sio
 from abctseg.data import Dataset, fill_holes, predict
@@ -21,6 +22,7 @@ def inference_2d(
     files: list,
     num_gpus: int,
     logger: logging.Logger,
+    model_type: Models,
     label_text: List[str] = None,
     output_dir: str = None
 ):
@@ -53,18 +55,8 @@ def inference_2d(
     m_name = args.muscle_fat_model
     logger.info("Computing masks with model {}".format(m_name))
 
-    model_type: Models = None
-    for m_type in Models:
-        if m_type.model_name == m_name:
-            model_type = m_type
-            break
-    assert model_type is not None
-
     dataset = Dataset(files, windows=model_type.windows)
     categories = model_type.categories
-    # print categories
-    # print("Categories: {}".format(categories))
-    # don't use softmax
     model = model_type.load_model(logger)
     if num_gpus > 1:
         model = dl_utils.ModelMGPU(model, gpus=num_gpus)
@@ -91,20 +83,24 @@ def inference_2d(
     logger.info("Computing metrics...")
     start_time = perf_counter()
     masks = [model_type.preds_to_mask(p) for p in preds]
+    for i, mask in enumerate(masks):
+        masks[i] = masks[i][..., [model_type.categories[cat] for cat in model_type.categories]]
     if args.pp:
         masks = fill_holes(masks)
         if "muscle" in categories and "imat" in categories:
             # subtract imat from muscle
+            cats = list(categories.keys())
+            # find index of muscle and imat
+            muscle_idx = cats.index("muscle")
+            imat_idx = cats.index("imat")
             for i in range(len(masks)):
-                masks[i][..., categories.index("muscle")] -= \
-                    masks[i][..., categories.index("imat")]
+                masks[i][..., muscle_idx] -= \
+                    masks[i][..., imat_idx]
                 masks[i][masks[i] < 0] = 0
 
     assert len(masks) == len(params_dicts)
     assert len(masks) == len(files)
     m_save_name = "/{}".format(m_name)
-    # if use_pp:
-    #    m_save_name += "+pp"
     file_idx = 0
     for _, _, mask, params in tqdm(  # noqa: B007
         zip(files, preds, masks, params_dicts), total=len(files)
@@ -132,4 +128,4 @@ def inference_2d(
             len(files), perf_counter() - start_time
         )
     )
-    return (inputs, masks, file_names, model_type)
+    return (inputs, masks, file_names, results)
