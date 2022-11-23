@@ -5,8 +5,9 @@ An awesome colormap for really neat visualizations.
 Copied from Detectron, and removed gray colors.
 """
 
-import numpy as np
 import random
+
+import numpy as np
 
 __all__ = ["colormap", "random_color", "random_colors"]
 
@@ -150,6 +151,8 @@ if __name__ == "__main__":
             idx = h * W + w
             if idx >= len(_COLORS):
                 break
-            canvas[h * size : (h + 1) * size, w * size : (w + 1) * size] = _COLORS[idx]
+            canvas[
+                h * size : (h + 1) * size, w * size : (w + 1) * size
+            ] = _COLORS[idx]
     cv2.imshow("a", canvas)
     cv2.waitKey(0)

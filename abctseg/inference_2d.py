@@ -3,15 +3,16 @@ import logging
 import os
 from time import perf_counter
 from typing import List
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
 import silx.io.dictdump as sio
+from keras import backend as K
+from tqdm import tqdm
+
 from abctseg.data import Dataset, fill_holes, predict
 from abctseg.models import Models
 from abctseg.run import compute_results
 from abctseg.utils import dl_utils
-from keras import backend as K
-from tqdm import tqdm
 
 
 def forward_pass_2d(
@@ -116,7 +117,9 @@ def compute_and_save_results(
     start_time = perf_counter()
     masks = [model_type.preds_to_mask(p) for p in preds]
     for i, mask in enumerate(masks):
-        masks[i] = masks[i][..., [model_type.categories[cat] for cat in model_type.categories]]
+        masks[i] = masks[i][
+            ..., [model_type.categories[cat] for cat in model_type.categories]
+        ]
     if args.pp:
         masks = fill_holes(masks)
         if "muscle" in categories and "imat" in categories:
@@ -126,8 +129,7 @@ def compute_and_save_results(
             muscle_idx = cats.index("muscle")
             imat_idx = cats.index("imat")
             for i in range(len(masks)):
-                masks[i][..., muscle_idx] -= \
-                    masks[i][..., imat_idx]
+                masks[i][..., muscle_idx] -= masks[i][..., imat_idx]
                 masks[i][masks[i] < 0] = 0
 
     assert len(masks) == len(params_dicts)
@@ -141,7 +143,6 @@ def compute_and_save_results(
         x = params["image"]
         results = compute_results(x, mask, categories, params)
         results_dict[label_text[file_idx]] = results
-
 
         if label_text:
             file_name = label_text[file_idx]
@@ -164,6 +165,7 @@ def compute_and_save_results(
     )
     return (inputs, masks, file_names, results_dict)
 
+
 def inference_2d(
     args: argparse.Namespace,
     batch_size: int,
@@ -174,7 +176,7 @@ def inference_2d(
     logger: logging.Logger,
     model_type: Models,
     label_text: List[str] = None,
-    output_dir: str = None
+    output_dir: str = None,
 ):
     (preds, params_dict) = forward_pass_2d(
         args,
@@ -197,4 +199,3 @@ def inference_2d(
         model_type,
     )
     return (inputs, masks, file_names, results)
-

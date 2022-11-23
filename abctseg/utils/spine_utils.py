@@ -5,8 +5,9 @@ from typing import List
 import cv2
 import dosma as dm
 import numpy as np
-from abctseg.utils import visualization
 from pydicom.filereader import dcmread
+
+from abctseg.utils import visualization
 
 
 def find_spine_dicoms(seg: np.ndarray, path: str):
@@ -27,7 +28,7 @@ def find_spine_dicoms(seg: np.ndarray, path: str):
 
     folder_in = path
     instance_numbers = []
-    label_text = ['T12_seg', 'L1_seg', 'L2_seg', 'L3_seg', 'L4_seg', 'L5_seg']
+    label_text = ["T12_seg", "L1_seg", "L2_seg", "L3_seg", "L4_seg", "L5_seg"]
 
     dicom_files = []
     for dicom_path in glob(folder_in + "/*.dcm"):
@@ -53,8 +54,8 @@ def compute_centroids(seg: np.ndarray, spine_model_type):
     seg: np.ndarray
         Segmentation volume.
     """
-    #take values of spine_model_type.categories dictionary
-    #and convert to list
+    # take values of spine_model_type.categories dictionary
+    # and convert to list
     label_idxs = list(spine_model_type.categories.values())
     centroids = []
     for label_idx in label_idxs:
@@ -97,8 +98,7 @@ def delete_right_most_connected_component(mask: np.ndarray):
     """
     mask = mask.astype(np.uint8)
     _, labels, _, centroids = cv2.connectedComponentsWithStats(
-        mask,
-        connectivity=8
+        mask, connectivity=8
     )
     right_most_connected_component = np.argmax(centroids[1:, 1]) + 1
     mask[labels == right_most_connected_component] = 0
@@ -115,10 +115,7 @@ def compute_center_of_mass(mask: np.ndarray):
         Mask volume.
     """
     mask = mask.astype(np.uint8)
-    _, _, _, centroids = cv2.connectedComponentsWithStats(
-        mask,
-        connectivity=8
-    )
+    _, _, _, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
     center_of_mass = np.mean(centroids[1:, :], axis=0)
     return center_of_mass
 
@@ -137,9 +134,11 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray):
     """
     roi = np.zeros(img.shape)
     length = 5
-    roi[int(centroid[0] - length):int(centroid[0] + length),
-        int(centroid[1] - length):int(centroid[1] + length),
-        int(centroid[2] - length):int(centroid[2] + length)] = 1
+    roi[
+        int(centroid[0] - length) : int(centroid[0] + length),
+        int(centroid[1] - length) : int(centroid[1] + length),
+        int(centroid[2] - length) : int(centroid[2] + length),
+    ] = 1
     return roi
 
 
@@ -149,7 +148,7 @@ def mean_img_mask(
     img: np.ndarray,
     mask: np.ndarray,
     rescale_slope: float,
-    rescale_intercept: float
+    rescale_intercept: float,
 ):
     """
     Compute the mean of an image inside a mask.
@@ -190,14 +189,13 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
     centroids_3d = []
     for i, slice in enumerate(slices):
         center_of_mass = compute_center_of_mass(slice)
-        centroid = np.array([center_of_mass[1],
-                             centroids[i],
-                             center_of_mass[0]])
+        centroid = np.array(
+            [center_of_mass[1], centroids[i], center_of_mass[0]]
+        )
         roi = roi_from_mask(img, centroid)
-        spine_hus.append(mean_img_mask(img,
-                                       roi,
-                                       rescale_slope,
-                                       rescale_intercept))
+        spine_hus.append(
+            mean_img_mask(img, roi, rescale_slope, rescale_intercept)
+        )
         rois.append(roi)
         centroids_3d.append(centroid)
     return (spine_hus, rois, centroids_3d)
@@ -253,7 +251,7 @@ def visualize_coronal_sagittal_spine(
     label_text: List[str],
     output_dir: str,
     spine_hus=None,
-    model_type=None
+    model_type=None,
 ):
     """
     Visualize the coronal and sagittal planes of the spine.
@@ -274,8 +272,8 @@ def visualize_coronal_sagittal_spine(
     min_val = min(model_type.categories.values())
     max_val = max(model_type.categories.values())
     for_centroid = np.logical_and(seg >= min_val, seg <= max_val).astype(int)
-    sagittal_centroid = compute_centroid(for_centroid, 'sagittal', 1)
-    coronal_centroid = compute_centroid(for_centroid, 'coronal', 1)
+    sagittal_centroid = compute_centroid(for_centroid, "sagittal", 1)
+    coronal_centroid = compute_centroid(for_centroid, "coronal", 1)
 
     # Spine visualizations
     sagittal_image = mvs.volume[:, sagittal_centroid, :]
@@ -283,22 +281,30 @@ def visualize_coronal_sagittal_spine(
     one_hot_sag_label = to_one_hot(sagittal_label, model_type)
     for roi in rois:
         one_hot_roi_label = roi[:, sagittal_centroid, :]
-        one_hot_sag_label = np.concatenate((one_hot_sag_label,
-                                            one_hot_roi_label.reshape((
-                                                one_hot_roi_label.shape[0],
-                                                one_hot_roi_label.shape[1], 1))),
-                                           axis=2)
+        one_hot_sag_label = np.concatenate(
+            (
+                one_hot_sag_label,
+                one_hot_roi_label.reshape(
+                    (one_hot_roi_label.shape[0], one_hot_roi_label.shape[1], 1)
+                ),
+            ),
+            axis=2,
+        )
 
     coronal_image = mvs.volume[coronal_centroid, :, :]
     coronal_label = seg[coronal_centroid, :, :]
     one_hot_cor_label = to_one_hot(coronal_label, model_type)
     for roi in rois:
         one_hot_roi_label = roi[coronal_centroid, :, :]
-        one_hot_cor_label = np.concatenate((one_hot_cor_label,
-                                            one_hot_roi_label.reshape((
-                                                one_hot_roi_label.shape[0],
-                                                one_hot_roi_label.shape[1], 1))),
-                                           axis=2)
+        one_hot_cor_label = np.concatenate(
+            (
+                one_hot_cor_label,
+                one_hot_roi_label.reshape(
+                    (one_hot_roi_label.shape[0], one_hot_roi_label.shape[1], 1)
+                ),
+            ),
+            axis=2,
+        )
 
     visualization.save_binary_segmentation_overlay(
         np.transpose(coronal_image),
@@ -307,7 +313,7 @@ def visualize_coronal_sagittal_spine(
         "spine_coronal.png",
         centroids,
         spine_hus=spine_hus,
-        model_type=model_type
+        model_type=model_type,
     )
     visualization.save_binary_segmentation_overlay(
         np.transpose(sagittal_image),
@@ -316,5 +322,5 @@ def visualize_coronal_sagittal_spine(
         "spine_sagittal.png",
         centroids,
         spine_hus=spine_hus,
-        model_type=model_type
+        model_type=model_type,
     )
