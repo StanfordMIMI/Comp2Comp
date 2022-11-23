@@ -10,7 +10,7 @@ from pydicom.filereader import dcmread
 from abctseg.utils import visualization
 
 
-def find_spine_dicoms(seg: np.ndarray, path: str):
+def find_spine_dicoms(seg: np.ndarray, path: str, model_type):
     """
     Find the dicom files corresponding to the spine T12 - L5 levels.
     Parameters
@@ -19,7 +19,8 @@ def find_spine_dicoms(seg: np.ndarray, path: str):
         Segmentation volume.
     """
     vertical_positions = []
-    for label_idx in range(18, 24):
+    label_idxs = list(model_type.categories.values())
+    for label_idx in label_idxs:
         pos = compute_centroid(seg, "axial", label_idx)
         vertical_positions.append(pos)
 
@@ -28,6 +29,8 @@ def find_spine_dicoms(seg: np.ndarray, path: str):
 
     folder_in = path
     instance_numbers = []
+
+    # TODO Make these names configurable
     label_text = ["T12_seg", "L1_seg", "L2_seg", "L3_seg", "L4_seg", "L5_seg"]
 
     dicom_files = []
