@@ -83,7 +83,7 @@ class Models(enum.Enum):
         else:
             # sigmoid
             return preds >= 0.5
-        
+
     def model_from_name(model_name):
         for model in Models:
             if model.model_name == model_name:
