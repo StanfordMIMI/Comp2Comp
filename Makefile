@@ -10,6 +10,9 @@ lint:
 	black --check --config pyproject.toml .
 	flake8
 
+dev-lint:
+	pip install --upgrade black coverage isort flake8 flake8-bugbear flake8-comprehensions pre-commit pooch
+
 build-docs:
 	set -e
 	mkdir -p docs/source/_static
