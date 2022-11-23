@@ -327,7 +327,8 @@ def handle_process_3d(args):
         )
         dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(
             seg,
-            path
+            path,
+            spine_model_type
         )
         logger.info("{} scans found".format(len(dicom_files)))
         spine_utils.visualize_coronal_sagittal_spine(
@@ -361,6 +362,7 @@ def handle_process_3d(args):
 
         _, manifest = handle_summarize(output_path, dicom_files, label_text, spine_hus)
 
+        # TODO: this is hacky, but it works. We need to refactor this
         figure_text_map = metrics.manifest_to_map(manifest)
 
         # Save images
@@ -404,8 +406,7 @@ def handle_summarize(results_dir, dicom_files=None, label_text=None, spine_hus=N
             for model in f.keys():
                 scalar_metrics = {}
                 for tissue in f[model]:
-                    # Leave 2d bone segmentations and background out for now 
-                    # to be consistent with panel report
+
                     h5_group = f[model][tissue]
                     scalar_metrics.update(
                         {
