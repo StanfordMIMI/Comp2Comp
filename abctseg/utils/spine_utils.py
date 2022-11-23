@@ -291,7 +291,7 @@ def visualize_coronal_sagittal_spine(
 
     coronal_image = mvs.volume[coronal_centroid, :, :]
     coronal_label = seg[coronal_centroid, :, :]
-    one_hot_cor_label = to_one_hot(coronal_label)
+    one_hot_cor_label = to_one_hot(coronal_label, model_type)
     for roi in rois:
         one_hot_roi_label = roi[coronal_centroid, :, :]
         one_hot_cor_label = np.concatenate((one_hot_cor_label,
@@ -306,7 +306,8 @@ def visualize_coronal_sagittal_spine(
         output_dir,
         "spine_coronal.png",
         centroids,
-        spine_hus=spine_hus
+        spine_hus=spine_hus,
+        model_type=model_type
     )
     visualization.save_binary_segmentation_overlay(
         np.transpose(sagittal_image),
@@ -314,4 +315,6 @@ def visualize_coronal_sagittal_spine(
         output_dir,
         "spine_sagittal.png",
         centroids,
-        spine_hus=spine_hus)
+        spine_hus=spine_hus,
+        model_type=model_type
+    )

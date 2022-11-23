@@ -109,7 +109,7 @@ def find_files(
     return sorted(set(out_files))
 
 
-def compute_results(x, mask, categories, params: Dict):
+def compute_results(x, mask, categories: Dict, params: Dict):
     hu = HounsfieldUnits()
     spacing = params.get("spacing", None)
     csa_units = "mm^2" if spacing else ""
@@ -131,7 +131,7 @@ def compute_results(x, mask, categories, params: Dict):
             hu.name(): hu_vals[idx],
             csa.name(): csa_vals[idx],
         }
-        for idx, cat in enumerate(categories)
+        for idx, cat in enumerate(categories.keys())
     }
 
     return results

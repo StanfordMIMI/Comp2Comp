@@ -5,6 +5,7 @@ from typing import Union
 import numpy as np
 from abctseg.utils.visualizer import Visualizer
 from PIL import Image
+import matplotlib.pyplot as plt
 
 _image_files = [
     "spine_coronal.png",
@@ -20,9 +21,9 @@ _image_files = [
 _COLORS = np.array(
     [
         1.000, 0.000, 0.000,
-        0.000, 0.000, 1.000,
         0.000, 1.000, 0.000,
         1.000, 1.000, 0.000,
+        0.000, 0.000, 1.000,
         0.000, 1.000, 1.000,
         1.000, 0.000, 1.000,
         1.000, 0.340, 0.200,
@@ -43,9 +44,10 @@ _COLOR_MAP = {
     "T12": 5
 }
 
+'''
+
 _TISSUES = [
     "Muscle",
-    "Bone",
     "VAT",
     "SAT",
     "IMAT"
@@ -59,6 +61,7 @@ _SPINE_LEVELS = [
     "L1",
     "T12"
 ]
+'''
 
 _TEXT_SPACING = 25.0
 _TEXT_START_VERTICAL_OFFSET = 10.0
@@ -73,7 +76,8 @@ def save_binary_segmentation_overlay(
     centroids=None,
     figure_text_key=None,
     spine_hus=None,
-    spine = True
+    spine=True,
+    model_type=None
 ):
     """
     Save binary segmentation overlay.
@@ -92,6 +96,12 @@ def save_binary_segmentation_overlay(
     figure_text_key: str
         Key to the figure text.
     """
+
+    if model_type.model_name == 'ts_spine':
+        _SPINE_LEVELS = list(model_type.categories.keys())
+    elif model_type.model_name == "stanford_v0.0.1":
+        _TISSUES = list(model_type.categories.keys())
+
     # Window image to retain most information
     img_in = np.clip(img_in, -300, 1800)
 
@@ -107,21 +117,18 @@ def save_binary_segmentation_overlay(
     img_in = img_in.reshape((img_in.shape[0], img_in.shape[1], 1))
     img_rgb = np.tile(img_in, (1, 1, 3))
     vis = Visualizer(img_rgb)
-    for num_bin_masks in range(1, mask.shape[2]):
+    for num_bin_masks in range(1, mask.shape[2] + 1):
         if centroids:
             alpha_val = 0.2
         else:
             alpha_val = 1
-            if num_bin_masks == 2:
-                continue
-        vis.draw_binary_mask(mask[:, :, num_bin_masks].astype(int),
+        vis.draw_binary_mask(mask[:, :, num_bin_masks - 1].astype(int),
                              color=_COLORS[num_bin_masks - 1],
                              alpha=alpha_val)
         # Debug imat mask
         if centroids:
             if num_bin_masks > 6:
                 continue
-            # print(centroids)
             vis.draw_text(text=f"{_SPINE_LEVELS[num_bin_masks - 1]} ROI HU: {spine_hus[num_bin_masks - 1]:.2f}",
                           position=(mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT,
                                     int(_TEXT_SPACING / 2.0) * (num_bin_masks - 1) + _TEXT_START_VERTICAL_OFFSET),
@@ -135,15 +142,12 @@ def save_binary_segmentation_overlay(
                           linestyle="dashed",
                           linewidth=0.5)
         else:
-            # print(figure_text_key)
             if spine:
                 vis.draw_box(box_coord=(1, 1, mask.shape[0] - 1, mask.shape[1] - 1),
                             alpha=1,
                             edge_color=_COLORS[_COLOR_MAP[file_name.split('_')[0]]])
 
             if figure_text_key:
-                if num_bin_masks == 3:
-                    text_start_vertical_offset -= _TEXT_SPACING
                 if spine:
                     hu_val = figure_text_key[file_name.split('_')[0]][(num_bin_masks - 1) * 2]
                     area_val = figure_text_key[file_name.split('_')[0]][((num_bin_masks - 1) * 2) + 1]
