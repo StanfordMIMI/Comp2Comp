@@ -66,25 +66,6 @@ _COLORS = (
 
 _COLOR_MAP = {"L5": 0, "L4": 1, "L3": 2, "L2": 3, "L1": 4, "T12": 5}
 
-"""
-
-_TISSUES = [
-    "Muscle",
-    "VAT",
-    "SAT",
-    "IMAT"
-]
-
-_SPINE_LEVELS = [
-    "L5",
-    "L4",
-    "L3",
-    "L2",
-    "L1",
-    "T12"
-]
-"""
-
 _TEXT_SPACING = 25.0
 _TEXT_START_VERTICAL_OFFSET = 10.0
 _TEXT_OFFSET_FROM_RIGHT = 68
@@ -101,22 +82,18 @@ def save_binary_segmentation_overlay(
     spine=True,
     model_type=None,
 ):
-    """
-    Save binary segmentation overlay.
-    Parameters
-    ----------
-    img_in: str, Path
-        Path to the input image.
-    mask: str, Path
-        Path to the mask.
-    base_path: str, Path
-        Path to the output directory.
-    file_name: str
-        Name of the output file.
-    centroids: list
-        List of centroids.
-    figure_text_key: str
-        Key to the figure text.
+    """Save binary segmentation overlay.
+
+    Args:
+        img_in (Union[str, Path]): Path to the input image.
+        mask (Union[str, Path]): Path to the mask.
+        base_path (Union[str, Path]): Path to the output directory.
+        file_name (str): Output file name.
+        centroids (list, optional): List of centroids. Defaults to None.
+        figure_text_key (dict, optional): Figure text key. Defaults to None.
+        spine_hus (list, optional): List of HU values. Defaults to None.
+        spine (bool, optional): Spine flag. Defaults to True.
+        model_type (Models): Model type. Defaults to None.
     """
 
     if model_type.model_name == "ts_spine":
@@ -224,27 +201,22 @@ def save_binary_segmentation_overlay(
 
 
 def normalize_img(img: np.ndarray) -> np.ndarray:
-    """
-    Normalize the image.
-    Parameters
-    ----------
-    img: np.ndarray
-        Image to normalize.
-    Returns
-    -------
-    np.ndarray
-        Normalized image.
+    """Normalize the image.
+
+    Args:
+        img (np.ndarray): Input image.
+
+    Returns:
+        np.ndarray: Normalized image.
     """
     return (img - img.min()) / (img.max() - img.min())
 
 
 def generate_panel(image_dir: Union[str, Path]):
-    """
-    Generate panel.
-    Parameters
-    ----------
-    image_dir: str, Path
-        Path to the input image directory.
+    """Generate panel.
+
+    Args:
+        image_dir (Union[str, Path]): Path to the image directory.
     """
     image_files = [os.path.join(image_dir, path) for path in _image_files]
     new_im = Image.new("RGB", (2080, 1040))

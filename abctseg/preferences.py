@@ -22,6 +22,11 @@ _C.NUM_WORKERS = 1
 
 
 def save_preferences(filename=None):
+    """Save preferences to a file.
+    
+    Args:
+        filename (str, optional): Filename. Defaults to None.
+    """
     if filename is None:
         filename = _PREFERENCES_FILE
     os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -31,6 +36,8 @@ def save_preferences(filename=None):
 
 
 def reset_preferences():
+    """Reset preferences.
+    """
     global PREFERENCES
     PREFERENCES = _C.clone()
 

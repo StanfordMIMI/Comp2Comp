@@ -25,29 +25,23 @@ def forward_pass_2d(
     logger: logging.Logger,
     model_type: Models,
 ):
+    """Run inference on 2D images.
+
+    Args:
+        args (argparse.Namespace): Arguments.
+        batch_size (int): Batch size.
+        use_pp (bool): Use post-processing.
+        num_workers (int): Number of workers.
+        files (list): List of files.
+        num_gpus (int): Number of GPUs.
+        logger (logging.Logger): Logger object.
+        model_type (Models): Model type.
+
+    Returns:
+        preds (list): Predictions.
+        params_dicts (list): Parameters dictionaries.
     """
-    Run inference on 2D images.
-    Parameters
-    ----------
-    args: argparse.Namespace
-        Arguments.
-    batch_size: int
-        Batch size.
-    use_pp: bool
-        Use multiprocessing.
-    num_workers: int
-        Number of workers.
-    files: list
-        List of files.
-    num_gpus: int
-        Number of GPUs.
-    logger: logging.Logger
-        Logger object.
-    label_text: str
-        Label text.
-    output_dir: str
-        Output directory.
-    """
+
     m_name = args.muscle_fat_model
     logger.info("Computing masks with model {}".format(m_name))
 
@@ -88,24 +82,23 @@ def compute_and_save_results(
     logger: logging.Logger,
     model_type: Models,
 ):
-    """
-    Compute and save results.
-    Parameters
-    ----------
-    args: argparse.Namespace
-        Arguments.
-    preds: list
-        Predictions.
-    params_dicts: list
-        Parameters dictionaries.
-    files: list
-        List of files.
-    label_text: str
-        Label text.
-    output_dir: str
-        Output directory.
-    logger: logging.Logger
-        Logger object.
+    """Compute and save results.
+    
+    Args:
+        args (argparse.Namespace): Arguments.
+        preds (list): Predictions.
+        params_dicts (list): Parameters dictionaries.
+        files (list): List of files.
+        label_text (List[str]): Label text.
+        output_dir (str): Output directory.
+        logger (logging.Logger): Logger object.
+        model_type (Models): Model type.
+
+    Returns:
+        inputs (list): Inputs.
+        masks (list): Masks.
+        file_names (list): File names.
+        results (list): Results.
     """
     inputs = []
     masks = []
@@ -117,11 +110,14 @@ def compute_and_save_results(
     start_time = perf_counter()
     masks = [model_type.preds_to_mask(p) for p in preds]
     for i, mask in enumerate(masks):
+        # Keep only channels from the model_type categories dict
         masks[i] = masks[i][
             ..., [model_type.categories[cat] for cat in model_type.categories]
         ]
     if args.pp:
         masks = fill_holes(masks)
+        # TODO: currently, IMAT pixels are determined before this line in abct.data.predict using a threshold of 0.5. This is not ideal.
+        # We should instead determine IMAT pixels here, after after model_type.preds_to_mask(p) and fill_holes.
         if "muscle" in categories and "imat" in categories:
             # subtract imat from muscle
             cats = list(categories.keys())
@@ -178,6 +174,27 @@ def inference_2d(
     label_text: List[str] = None,
     output_dir: str = None,
 ):
+    """Run inference on 2D images.
+    
+    Args:
+        args (argparse.Namespace): Arguments.
+        batch_size (int): Batch size.
+        use_pp (bool): Use post-processing.
+        num_workers (int): Number of workers.
+        files (list): List of files.
+        num_gpus (int): Number of GPUs.
+        logger (logging.Logger): Logger object.
+        model_type (Models): Model type.
+        label_text (List[str], optional): Label text. Defaults to None.
+        output_dir (str, optional): Output directory. Defaults to None.
+
+    Returns:
+        inputs (list): Inputs.
+        masks (list): Masks.
+        file_names (list): File names.
+        results (list): Results.
+    """
+    
     (preds, params_dict) = forward_pass_2d(
         args,
         batch_size,
