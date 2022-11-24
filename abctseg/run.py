@@ -15,6 +15,17 @@ def format_output_path(
     base_dirs: Sequence[str] = None,
     file_name: Sequence[str] = None,
 ):
+    """Format output path for a given file.
+
+    Args:
+        file_path (str): File path.
+        save_dir (str, optional): Save directory. Defaults to None.
+        base_dirs (Sequence[str], optional): Base directories. Defaults to None.
+        file_name (Sequence[str], optional): File name. Defaults to None.
+
+    Returns:
+        str: Output path.
+    """
     if not save_dir:
         save_dir = PREFERENCES.OUTPUT_PATH
 
@@ -44,6 +55,14 @@ def format_output_path(
 # Function the returns a list of file names exluding
 # the extention from the list of file paths
 def get_file_names(files):
+    """Get file names from a list of file paths.
+
+    Args:
+        files (list): List of file paths.
+
+    Returns:
+        list: List of file names.
+    """
     file_names = []
     for file in files:
         file_name = os.path.splitext(os.path.basename(file))[0]
@@ -111,6 +130,17 @@ def find_files(
 
 
 def compute_results(x, mask, categories: Dict, params: Dict):
+    """Compute results for a given segmentation.
+
+    Args:
+        x (np.ndarray): Image.
+        mask (np.ndarray): Segmentation mask.
+        categories (Dict): Categories.
+        params (Dict): Parameters.
+
+    Returns:
+        Dict: Results.
+    """
     hu = HounsfieldUnits()
     spacing = params.get("spacing", None)
     csa_units = "mm^2" if spacing else ""
@@ -138,7 +168,14 @@ def compute_results(x, mask, categories: Dict, params: Dict):
 
 
 def get_dicom_paths_and_num(path):
-    """Get all paths under a path that contain only dicom files."""
+    """Get all paths under a path that contain only dicom files.
+
+    Args:
+        path (str): Path to search.
+
+    Returns:
+        list: List of paths.
+    """
     dicom_paths = []
     for root, _, files in os.walk(path):
         if len(files) > 0:

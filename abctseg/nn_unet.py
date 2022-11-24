@@ -18,16 +18,12 @@ def spine_seg(
     input_path: Union[str, Path],
     output_path: Union[str, Path],
 ):
-    """
-    Segment the spine.
-    Parameters
-    ----------
-    logger: logging.Logger
-        Logger object.
-    input_path: str, Path
-        Path to the input image.
-    output_path: str, Path
-        Path to the output directory.
+    """Run spine segmentation.
+
+    Args:
+        logger (logging.Logger): Logger.
+        input_path (Union[str, Path]): Input path.
+        output_path (Union[str, Path]): Output path.
     """
 
     logger.info("Segmenting spine...")

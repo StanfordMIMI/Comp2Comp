@@ -108,8 +108,15 @@ class CrossSectionalArea(Metric):
 
 
 def manifest_to_map(manifest):
-    """Converts a manifest to a map of metric name to metric instance."""
-    #TODO: hacky. Update this
+    """Converts a manifest to a map of metric name to metric instance.
+
+    Args:
+        manifest (dict): A dictionary of metric name to metric instance.
+
+    Returns:
+        dict: A dictionary of metric name to metric instance.
+    """
+    # TODO: hacky. Update this
     figure_text_key = {}
     for manifest_dict in manifest:
         try:
