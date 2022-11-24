@@ -14,6 +14,12 @@ def parse_windows(windows):
 
     These windows can either be strings corresponding to popular windowing
     thresholds for CT or tuples of (upper, lower) bounds.
+
+    Args:
+        windows (list): List of strings or tuples.
+
+    Returns:
+        list: List of tuples of (upper, lower) bounds.
     """
     windowing = {
         "soft": (400, 50),
@@ -46,6 +52,16 @@ def parse_windows(windows):
 
 
 def _window(xs, bounds):
+    """Apply windowing to an array of CT images.
+
+    Args:
+        xs (ndarray): NxHxW
+        bounds (tuple): (lower, upper) bounds
+
+    Returns:
+        ndarray: Windowed images.
+    """
+
     imgs = []
     for lb, ub in bounds:
         imgs.append(np.clip(xs, a_min=lb, a_max=ub))
@@ -86,7 +102,16 @@ class Dataset(k_utils.Sequence):
 
 
 # function that fills in holes in a segmentation mask
-def _fill_holes(mask, mask_id):
+def _fill_holes(mask: np.ndarray, mask_id: int):
+    """Fill in holes in a segmentation mask.
+
+    Args:
+        mask (ndarray): NxHxW
+        mask_id (int): Label of the mask.
+
+    Returns:
+        ndarray: Filled mask.
+    """
     int_mask = ((1 - mask) > 0.5).astype(np.int8)
     components, output, stats, _ = cv2.connectedComponentsWithStats(int_mask, connectivity=8)
     sizes = stats[1:, -1]
@@ -104,8 +129,12 @@ def _fill_holes(mask, mask_id):
     return img_out
 
 
-def fill_holes(ys):
-    """Take an array of size NxHxWxC and for each channel fill in holes."""
+def fill_holes(ys: List):
+    """Take an array of size NxHxWxC and for each channel fill in holes.
+
+    Args:
+        ys (list): List of segmentation masks.
+    """
     segs = []
     for n in range(len(ys)):
         ys_out = [_fill_holes(ys[n][..., i], i) for i in range(ys[n].shape[-1])]
@@ -117,6 +146,16 @@ def fill_holes(ys):
 def _swap_muscle_imap(xs, ys, muscle_idx: int, imat_idx: int, threshold=-30.0):
     """
     If pixel labeled as muscle but has HU < threshold, change label to imat.
+
+    Args:
+        xs (ndarray): NxHxWxC
+        ys (ndarray): NxHxWxC
+        muscle_idx (int): Index of the muscle label.
+        imat_idx (int): Index of the imat label.
+        threshold (float): Threshold for HU value.
+
+    Returns:
+        ndarray: Segmentation mask with swapped labels.
     """
     labels = ys.copy()
 
@@ -175,6 +214,22 @@ def predict(
     use_postprocessing: bool = False,
     postprocessing_params: dict = None,
 ):
+    """Predict segmentation masks for a dataset.
+
+    Args:
+        model (keras.Model): Model to use for prediction.
+        dataset (Dataset): Dataset to predict on.
+        batch_size (int): Batch size.
+        num_workers (int): Number of workers.
+        max_queue_size (int): Maximum queue size.
+        use_multiprocessing (bool): Use multiprocessing.
+        use_postprocessing (bool): Use built-in post-processing.
+        postprocessing_params (dict): Post-processing parameters.
+
+    Returns:
+        List: List of segmentation masks.
+    """
+
     if num_workers > 0:
         enqueuer = OrderedEnqueuer(dataset, use_multiprocessing=use_multiprocessing, shuffle=False)
         enqueuer.start(workers=num_workers, max_queue_size=max_queue_size)

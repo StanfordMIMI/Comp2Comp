@@ -35,7 +35,11 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def setup(args):
-    """Load preferences and perform basic setups."""
+    """Load preferences and perform basic setups.
+    
+    Args:
+        args (argparse.Namespace): command line arguments.
+    """
     args_dict = vars(args)
     config_file = args.config_file if "config_file" in args_dict else None
     if config_file:
@@ -165,6 +169,14 @@ def argument_parser():
 
 
 def handle_init(args):
+    """Handle init command.
+    
+    Args:
+        args (argparse.Namespace): command line arguments.
+
+    Raises:
+        ValueError: if invalid config action.
+    """
     cfg_action = args.cfg_action
     if cfg_action == "ls":
         print("\n" + PREFERENCES.dump())
@@ -184,6 +196,12 @@ def handle_init(args):
 
 
 def handle_process_2d(args):
+    """Handle process_2d command.
+
+    Args:
+        args (argparse.Namespace): command line arguments.
+    """
+
     setup(args)
     if not PREFERENCES.MODELS_DIR:
         raise ValueError(
@@ -268,7 +286,14 @@ def handle_process_2d(args):
 
 
 def handle_process_3d(args):
-    """Process 3D dicom series."""
+    """Handle process_3d command.
+    
+    Args:
+        args (argparse.Namespace): command line arguments.
+
+    Raises:
+        ValueError: if invalid model type.
+    """
     st = time()
     setup(args)
     if not PREFERENCES.MODELS_DIR:
@@ -383,6 +408,18 @@ def handle_process_3d(args):
 
 
 def handle_summarize(results_dir, dicom_files=None, label_text=None, spine_hus=None):
+    """Handle summarize command.
+
+    Args:
+        results_dir (str): path to results directory.
+        dicom_files (list): list of dicom file paths.
+        label_text (list): list of label text.
+        spine_hus (list): list of spine hus.
+
+    Returns:
+        (str, dict): path to summary file and manifest.
+    """
+    
     results_dir_sub = Path(results_dir) / "metrics"
     results_dir_sub.mkdir(exist_ok=True)
     metrics_file = os.path.join(results_dir_sub, "abct-metrics.csv")
