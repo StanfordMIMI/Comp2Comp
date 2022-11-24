@@ -109,7 +109,7 @@ class CrossSectionalArea(Metric):
 
 def manifest_to_map(manifest):
     """Converts a manifest to a map of metric name to metric instance.
-    
+
     Args:
         manifest (dict): A dictionary of metric name to metric instance.
 

@@ -23,7 +23,7 @@ _C.NUM_WORKERS = 1
 
 def save_preferences(filename=None):
     """Save preferences to a file.
-    
+
     Args:
         filename (str, optional): Filename. Defaults to None.
     """
@@ -36,8 +36,7 @@ def save_preferences(filename=None):
 
 
 def reset_preferences():
-    """Reset preferences.
-    """
+    """Reset preferences."""
     global PREFERENCES
     PREFERENCES = _C.clone()
 

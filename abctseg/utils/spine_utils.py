@@ -7,12 +7,12 @@ import dosma as dm
 import numpy as np
 from pydicom.filereader import dcmread
 
-from abctseg.utils import visualization
 from abctseg.models import Models
+from abctseg.utils import visualization
 
 
 def find_spine_dicoms(seg: np.ndarray, path: str, model_type):
-    """Find the dicom files corresponding to the spine T12 - L5 levels.  
+    """Find the dicom files corresponding to the spine T12 - L5 levels.
 
     Args:
         seg (np.ndarray): Segmentation volume.
@@ -55,7 +55,7 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type):
 # centroids
 def compute_centroids(seg: np.ndarray, spine_model_type):
     """Compute the centroids of the labels.
-    
+
     Args:
         seg (np.ndarray): Segmentation volume.
         spine_model_type (str): Model type.
@@ -274,7 +274,7 @@ def visualize_coronal_sagittal_spine(
     model_type=None,
 ):
     """Visualize the coronal and sagittal planes of the spine.
-    
+
     Args:
         seg (np.ndarray): Segmentation volume.
         rois (List[np.ndarray]): List of ROIs.

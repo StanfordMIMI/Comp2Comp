@@ -57,12 +57,12 @@ def format_output_path(
 # Function the returns a list of file names exluding the extention from the list of file paths
 def get_file_names(files):
     """Get file names from a list of file paths.
-    
+
     Args:
         files (list): List of file paths.
 
     Returns:
-        list: List of file names.  
+        list: List of file names.
     """
     file_names = []
     for file in files:
@@ -173,7 +173,7 @@ def compute_results(x, mask, categories: Dict, params: Dict):
 
 def get_dicom_paths_and_num(path):
     """Get all paths under a path that contain only dicom files.
-    
+
     Args:
         path (str): Path to search.
 

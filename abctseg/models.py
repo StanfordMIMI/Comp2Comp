@@ -57,7 +57,7 @@ class Models(enum.Enum):
 
     def find_model_weights():
         """Find the model weights in the models directory.
-        
+
         Returns:
             str: Path to model weights.
         """
@@ -69,7 +69,7 @@ class Models(enum.Enum):
 
     def load_model(self, logger):
         """Load the model from the models directory.
-        
+
         Args:
             logger (logging.Logger): Logger.
 

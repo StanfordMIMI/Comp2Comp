@@ -83,7 +83,7 @@ def compute_and_save_results(
     model_type: Models,
 ):
     """Compute and save results.
-    
+
     Args:
         args (argparse.Namespace): Arguments.
         preds (list): Predictions.
@@ -175,7 +175,7 @@ def inference_2d(
     output_dir: str = None,
 ):
     """Run inference on 2D images.
-    
+
     Args:
         args (argparse.Namespace): Arguments.
         batch_size (int): Batch size.
@@ -194,7 +194,7 @@ def inference_2d(
         file_names (list): File names.
         results (list): Results.
     """
-    
+
     (preds, params_dict) = forward_pass_2d(
         args,
         batch_size,
