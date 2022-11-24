@@ -1,4 +1,4 @@
-# abCTSeg
+# Comp2Comp
 Comp2Comp is a library for extracting body composition measures from computed tomography scans. 
 
 ## Installation
