@@ -8,15 +8,19 @@ import numpy as np
 from pydicom.filereader import dcmread
 
 from abctseg.utils import visualization
+from abctseg.models import Models
 
 
 def find_spine_dicoms(seg: np.ndarray, path: str, model_type):
-    """
-    Find the dicom files corresponding to the spine T12 - L5 levels.
-    Parameters
-    ----------
-    seg: np.ndarray
-        Segmentation volume.
+    """Find the dicom files corresponding to the spine T12 - L5 levels.  
+
+    Args:
+        seg (np.ndarray): Segmentation volume.
+        path (str): Path to the dicom files.
+        model_type (str): Model type.
+
+    Returns:
+        List[str]: List of dicom files.
     """
     vertical_positions = []
     label_idxs = list(model_type.categories.values())
@@ -50,12 +54,14 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type):
 # sagittal centroid of each label and returns a list of the
 # centroids
 def compute_centroids(seg: np.ndarray, spine_model_type):
-    """
-    Compute the centroids of the labels.
-    Parameters
-    ----------
-    seg: np.ndarray
-        Segmentation volume.
+    """Compute the centroids of the labels.
+    
+    Args:
+        seg (np.ndarray): Segmentation volume.
+        spine_model_type (str): Model type.
+
+    Returns:
+        List[int]: List of centroids.
     """
     # take values of spine_model_type.categories dictionary
     # and convert to list
@@ -71,14 +77,15 @@ def compute_centroids(seg: np.ndarray, spine_model_type):
 # takes a slice through the centroid on axis = 1 for each centroid
 # and returns a list of the slices
 def get_slices(seg: np.ndarray, centroids: List[int], spine_model_type):
-    """
-    Get the slices corresponding to the centroids.
-    Parameters
-    ----------
-    seg: np.ndarray
-        Segmentation volume.
-    centroids: List[int]
-        List of centroids.
+    """Get the slices corresponding to the centroids.
+
+    Args:
+        seg (np.ndarray): Segmentation volume.
+        centroids (List[int]): List of centroids.
+        spine_model_type (str): Model type.
+
+    Returns:
+        List[np.ndarray]: List of slices.
     """
     label_idxs = list(spine_model_type.categories.values())
     slices = []
@@ -92,12 +99,13 @@ def get_slices(seg: np.ndarray, centroids: List[int], spine_model_type):
 # connected component. Returns the mask with the right most
 # connected component deleted
 def delete_right_most_connected_component(mask: np.ndarray):
-    """
-    Delete the right most connected component.
-    Parameters
-    ----------
-    mask: np.ndarray
-        Mask volume.
+    """Delete the right most connected component corresponding to spinous processes.
+
+    Args:
+        mask (np.ndarray): Mask volume.
+
+    Returns:
+        np.ndarray: Mask volume.
     """
     mask = mask.astype(np.uint8)
     _, labels, _, centroids = cv2.connectedComponentsWithStats(
@@ -110,12 +118,13 @@ def delete_right_most_connected_component(mask: np.ndarray):
 
 # compute center of mass of 2d mask
 def compute_center_of_mass(mask: np.ndarray):
-    """
-    Compute the center of mass of a 2D mask.
-    Parameters
-    ----------
-    mask: np.ndarray
-        Mask volume.
+    """Compute the center of mass of a 2D mask.
+
+    Args:
+        mask (np.ndarray): Mask volume.
+
+    Returns:
+        np.ndarray: Center of mass.
     """
     mask = mask.astype(np.uint8)
     _, _, _, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
@@ -126,14 +135,14 @@ def compute_center_of_mass(mask: np.ndarray):
 # Function that takes a 3d centroid and retruns a binary mask with a 3d
 # roi around the centroid
 def roi_from_mask(img: np.ndarray, centroid: np.ndarray):
-    """
-    Compute a 3D ROI from a 3D mask.
-    Parameters
-    ----------
-    img: np.ndarray
-        Image volume.
-    centroid: np.ndarray
-        Centroid.
+    """Compute a 3D ROI from a 3D mask.
+
+    Args:
+        img (np.ndarray): Image volume.
+        centroid (np.ndarray): Centroid.
+
+    Returns:
+        np.ndarray: ROI volume.
     """
     roi = np.zeros(img.shape)
     length = 5
@@ -153,14 +162,16 @@ def mean_img_mask(
     rescale_slope: float,
     rescale_intercept: float,
 ):
-    """
-    Compute the mean of an image inside a mask.
-    Parameters
-    ----------
-    img: np.ndarray
-        Image volume.
-    mask: np.ndarray
-        Mask volume.
+    """Compute the mean of an image inside a mask.
+
+    Args:
+        img (np.ndarray): Image volume.
+        mask (np.ndarray): Mask volume.
+        rescale_slope (float): Rescale slope.
+        rescale_intercept (float): Rescale intercept.
+
+    Returns:
+        float: Mean value.
     """
     img = img.astype(np.float32)
     mask = mask.astype(np.float32)
@@ -170,14 +181,19 @@ def mean_img_mask(
 
 
 def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
-    """
-    Compute the ROIs for the spine.
-    Parameters
-    ----------
-    seg: np.ndarray
-        Segmentation volume.
-    img: np.ndarray
-        Image volume.
+    """Compute the ROIs for the spine.
+
+    Args:
+        seg (np.ndarray): Segmentation volume.
+        img (np.ndarray): Image volume.
+        rescale_slope (float): Rescale slope.
+        rescale_intercept (float): Rescale intercept.
+        spine_model_type (Models): Model type.
+
+    Returns:
+        spine_hus (List[float]): List of HU values.
+        rois (List[np.ndarray]): List of ROIs.
+        centroids_3d (List[np.ndarray]): List of centroids.
     """
     # Compute centroids
     centroids = compute_centroids(seg, spine_model_type)
@@ -205,16 +221,15 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
 
 
 def compute_centroid(seg: np.ndarray, plane: str, label: int):
-    """
-    Compute the centroid of a label in a given plane.
-    Parameters
-    ----------
-    seg: np.ndarray
-        Segmentation volume.
-    plane: str
-        Plane to compute the centroid.
-    label: int
-        Label to compute the centroid.
+    """Compute the centroid of a label in a given plane.
+
+    Args:
+        seg (np.ndarray): Segmentation volume.
+        plane (str): Plane.
+        label (int): Label.
+
+    Returns:
+        int: Centroid.
     """
     if plane == "axial":
         sum_out_axes = (0, 1)
@@ -232,12 +247,14 @@ def compute_centroid(seg: np.ndarray, plane: str, label: int):
 
 
 def to_one_hot(label: np.ndarray, model_type):
-    """
-    Convert a label to one-hot encoding.
-    Parameters
-    ----------
-    label: np.ndarray
-        Label volume.
+    """Convert a label to one-hot encoding.
+
+    Args:
+        label (np.ndarray): Label volume.
+        model_type (Models): Model type.
+
+    Returns:
+        np.ndarray: One-hot encoding volume.
     """
     label_idxs = list(model_type.categories.values())
     one_hot_label = np.zeros((label.shape[0], label.shape[1], len(label_idxs)))
@@ -256,20 +273,17 @@ def visualize_coronal_sagittal_spine(
     spine_hus=None,
     model_type=None,
 ):
-    """
-    Visualize the coronal and sagittal planes of the spine.
-    Parameters
-    ----------
-    seg: np.ndarray
-        Segmentation volume.
-    mvs: dm.MedicalVolume
-        MVS volume.
-    centroids: List[int]
-        Centroids of the labels.
-    label_text: List[str]
-        Labels text.
-    output_dir: str
-        Output directory.
+    """Visualize the coronal and sagittal planes of the spine.
+    
+    Args:
+        seg (np.ndarray): Segmentation volume.
+        rois (List[np.ndarray]): List of ROIs.
+        mvs (dm.MedicalVolume): Medical volume.
+        centroids (List[int]): List of centroids.
+        label_text (List[str]): List of labels.
+        output_dir (str): Output directory.
+        spine_hus (List[float], optional): List of HU values. Defaults to None.
+        model_type (Models, optional): Model type. Defaults to None.
     """
     # Get minimum and maximum values of the model_type.catogories dict values
     min_val = min(model_type.categories.values())
