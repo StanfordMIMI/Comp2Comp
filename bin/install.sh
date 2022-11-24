@@ -131,13 +131,15 @@ pip install tensorflow
 
 # Install detectron2
 # FIXME: Remove dependency on detectron2
-pip3 install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.10/index.html
+#pip3 install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.10/index.html
 
 # Install totalSegmentor
 # FIXME: Add this to the setup.py file
 pip3 install git+https://github.com/StanfordMIMI/TotalSegmentator.git
 
-cd $currDir/..
+# cd $currDir/..
+# echo $currDir
+# exit 1
 pip install -e .
 
 echo ""
