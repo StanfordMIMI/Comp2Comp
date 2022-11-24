@@ -116,7 +116,7 @@ class Dataset(k_utils.Sequence):
 # function that fills in holes in a segmentation mask
 def _fill_holes(mask: np.ndarray, mask_id: int):
     """Fill in holes in a segmentation mask.
-    
+
     Args:
         mask (ndarray): NxHxW
         mask_id (int): Label of the mask.
@@ -145,7 +145,7 @@ def _fill_holes(mask: np.ndarray, mask_id: int):
 
 def fill_holes(ys: List):
     """Take an array of size NxHxWxC and for each channel fill in holes.
-    
+
     Args:
         ys (list): List of segmentation masks.
     """
@@ -243,7 +243,7 @@ def predict(
     Returns:
         List: List of segmentation masks.
     """
-    
+
     if num_workers > 0:
         enqueuer = OrderedEnqueuer(
             dataset, use_multiprocessing=use_multiprocessing, shuffle=False
