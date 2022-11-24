@@ -10,27 +10,64 @@ logger = logging.getLogger(__name__)
 
 
 def format_output_path(
-    file_path, save_dir: str = None, base_dirs: Sequence[str] = None
+    file_path,
+    save_dir: str = None,
+    base_dirs: Sequence[str] = None,
+    file_name: Sequence[str] = None,
 ):
+    """Format output path for a given file.
+
+    Args:
+        file_path (str): File path.
+        save_dir (str, optional): Save directory. Defaults to None.
+        base_dirs (Sequence[str], optional): Base directories. Defaults to None.
+        file_name (Sequence[str], optional): File name. Defaults to None.
+
+    Returns:
+        str: Output path.
+    """
     if not save_dir:
-        save_dir = PREFERENCES.OUTPUT_DIR
+        save_dir = PREFERENCES.OUTPUT_PATH
 
     dirname = os.path.dirname(file_path) if not save_dir else save_dir
 
     if save_dir and base_dirs:
         dirname: str = os.path.dirname(file_path)
         relative_dir = [
-            dirname.split(bdir, 1)[1]
-            for bdir in base_dirs
-            if dirname.startswith(bdir)
+            dirname.split(bdir, 1)[1] for bdir in base_dirs if dirname.startswith(bdir)
         ][0]
         # Trim path separator from the path
         relative_dir = relative_dir.lstrip(os.path.sep)
         dirname = os.path.join(save_dir, relative_dir)
+
+    if file_name is not None:
+        return os.path.join(
+            dirname,
+            "{}.h5".format(file_name),
+        )
+
     return os.path.join(
         dirname,
         "{}.h5".format(os.path.splitext(os.path.basename(file_path))[0]),
     )
+
+
+# Function the returns a list of file names exluding
+# the extention from the list of file paths
+def get_file_names(files):
+    """Get file names from a list of file paths.
+
+    Args:
+        files (list): List of file paths.
+
+    Returns:
+        list: List of file names.
+    """
+    file_names = []
+    for file in files:
+        file_name = os.path.splitext(os.path.basename(file))[0]
+        file_names.append(file_name)
+    return file_names
 
 
 def find_files(
@@ -76,9 +113,7 @@ def find_files(
                 output_path = format_output_path(possible_dir)
                 if not exist_ok and os.path.isfile(output_path):
                     logger.info(
-                        "Skipping {} - results exist at {}".format(
-                            possible_dir, output_path
-                        )
+                        "Skipping {} - results exist at {}".format(possible_dir, output_path)
                     )
                     continue
                 ret_files.append(possible_dir)
@@ -94,7 +129,18 @@ def find_files(
     return sorted(set(out_files))
 
 
-def compute_results(x, mask, categories, params: Dict):
+def compute_results(x, mask, categories: Dict, params: Dict):
+    """Compute results for a given segmentation.
+
+    Args:
+        x (np.ndarray): Image.
+        mask (np.ndarray): Segmentation mask.
+        categories (Dict): Categories.
+        params (Dict): Parameters.
+
+    Returns:
+        Dict: Results.
+    """
     hu = HounsfieldUnits()
     spacing = params.get("spacing", None)
     csa_units = "mm^2" if spacing else ""
@@ -103,11 +149,10 @@ def compute_results(x, mask, categories, params: Dict):
     hu_vals = hu(mask, x, category_dim=-1)
     csa_vals = csa(mask=mask, spacing=spacing, category_dim=-1)
 
-    assert mask.shape[-1] == len(categories), (
-        "{} categories found in mask, "
-        "but only {} categories specified".format(
-            mask.shape[-1], len(categories)
-        )
+    assert mask.shape[-1] == len(
+        categories
+    ), "{} categories found in mask, " "but only {} categories specified".format(
+        mask.shape[-1], len(categories)
     )
 
     results = {
@@ -116,7 +161,24 @@ def compute_results(x, mask, categories, params: Dict):
             hu.name(): hu_vals[idx],
             csa.name(): csa_vals[idx],
         }
-        for idx, cat in enumerate(categories)
+        for idx, cat in enumerate(categories.keys())
     }
 
     return results
+
+
+def get_dicom_paths_and_num(path):
+    """Get all paths under a path that contain only dicom files.
+
+    Args:
+        path (str): Path to search.
+
+    Returns:
+        list: List of paths.
+    """
+    dicom_paths = []
+    for root, _, files in os.walk(path):
+        if len(files) > 0:
+            if all([file.endswith(".dcm") for file in files]):
+                dicom_paths.append((root, len(files)))
+    return dicom_paths

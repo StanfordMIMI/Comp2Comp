@@ -24,10 +24,7 @@ class _ColorfulFormatter(logging.Formatter):
         log = super(_ColorfulFormatter, self).formatMessage(record)
         if record.levelno == logging.WARNING:
             prefix = colored("WARNING", "red", attrs=["blink"])
-        elif (
-            record.levelno == logging.ERROR
-            or record.levelno == logging.CRITICAL
-        ):
+        elif record.levelno == logging.ERROR or record.levelno == logging.CRITICAL:
             prefix = colored("ERROR", "red", attrs=["blink", "underline"])
         else:
             return log
@@ -41,7 +38,7 @@ def setup_logger(
     *,
     color=True,
     name="abctseg",
-    abbrev_name=None
+    abbrev_name=None,
 ):
     """
     Initialize the detectron2 logger and set its verbosity level to "INFO".

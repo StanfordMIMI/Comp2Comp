@@ -17,6 +17,7 @@ docs/_build
 
 # Ignore results
 **/pik_data
+**/preds
 
 # Ignore test_data
 **/test_data
@@ -35,9 +36,16 @@ docs/_build
 ._*
 # ignore checkpoint files
 **/.ipynb_checkpoints/
+**/.abctseg/
 
-#ignore cross validation files
+# ignore cross validation files
 *.cv
+
+# ignore yml file
+*.yml
+
+# ignore images
+*.png
 
 # ignore any weights files
 weights/

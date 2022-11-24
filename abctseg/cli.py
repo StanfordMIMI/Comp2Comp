@@ -97,9 +97,7 @@ def argument_parser():
         choices=[x.model_name for x in Models],
         help="models to use for inference",
     )
-    process_parser.add_argument(
-        "--batch", action="store_true", help="run in batch mode"
-    )
+    process_parser.add_argument("--batch", action="store_true", help="run in batch mode")
     process_parser.add_argument(
         "--pp",
         action="store_true",
@@ -109,9 +107,7 @@ def argument_parser():
     add_opts_argument(process_parser)
 
     # summarize parser.
-    summarize_parser = subparsers.add_parser(
-        "summarize", help="summarize results"
-    )
+    summarize_parser = subparsers.add_parser("summarize", help="summarize results")
     summarize_parser.add_argument(
         "--results-dir",
         "--results-path",
@@ -123,14 +119,10 @@ def argument_parser():
 
     # init parser.
     cfg_parser = subparsers.add_parser("config", help="init abCTSeg library")
-    init_subparsers = cfg_parser.add_subparsers(
-        title="config sub-commands", dest="cfg_action"
-    )
+    init_subparsers = cfg_parser.add_subparsers(title="config sub-commands", dest="cfg_action")
     init_subparsers.add_parser("ls", help="list default preferences config")
     init_subparsers.add_parser("reset", help="reset to default config")
-    save_cfg_parser = init_subparsers.add_parser(
-        "save", help="set config defaults"
-    )
+    save_cfg_parser = init_subparsers.add_parser("save", help="set config defaults")
     add_config_file_argument(save_cfg_parser)
     add_opts_argument(save_cfg_parser)
 
@@ -160,8 +152,7 @@ def handle_process(args):
     setup(args)
     if not PREFERENCES.MODELS_DIR:
         raise ValueError(
-            "MODELS_DIR not initialized. "
-            "Use `python -m abctseg.cli config` to set MODELS_DIR"
+            "MODELS_DIR not initialized. " "Use `python -m abctseg.cli config` to set MODELS_DIR"
         )
     logger = logging.getLogger("abctseg.cli.__main__")
     logger.info("\n\n======================================================")
@@ -245,13 +236,9 @@ def handle_process(args):
         ):
             x = params["image"]
             results = compute_results(x, mask, categories, params)
-            output_file = format_output_path(
-                f, base_dirs=dirs if args.batch else None
-            )
+            output_file = format_output_path(f, base_dirs=dirs if args.batch else None)
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
-            sio.dicttoh5(
-                results, output_file, m_save_name, mode="a", overwrite_data=True
-            )
+            sio.dicttoh5(results, output_file, m_save_name, mode="a", overwrite_data=True)
         logger.info(
             "<TIME>: Metrics - count: {} - {:.4f} seconds".format(
                 len(files), perf_counter() - start_time
@@ -261,9 +248,7 @@ def handle_process(args):
 
 def handle_summarize(args):
     metrics_file = os.path.join(args.results_dir, "abct-metrics.csv")
-    h5_files = sorted(
-        find_files(args.results_dir, pattern=".*h5$", exist_ok=True)
-    )
+    h5_files = sorted(find_files(args.results_dir, pattern=".*h5$", exist_ok=True))
 
     manifest = []
     for h5_file in tqdm(h5_files, desc="Parsing metrics"):
@@ -280,9 +265,7 @@ def handle_summarize(args):
                         }
                     )
 
-                manifest.append(
-                    {"File": h5_file, "Model": model, **scalar_metrics}
-                )
+                manifest.append({"File": h5_file, "Model": model, **scalar_metrics})
 
     df = pd.DataFrame(manifest)
     df.to_csv(metrics_file, index=False)

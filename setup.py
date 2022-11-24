@@ -4,28 +4,13 @@
 import os
 from os import path
 
-import keras
-import tensorflow as tf
 from setuptools import find_packages, setup
-
-tf_ver = [int(x) for x in tf.__version__.split(".")[:2]]
-assert tf_ver >= [1, 8] and tf_ver < [2, 0], "Requires TensorFlow >=1.8,<2.0"
-keras_ver = [int(x) for x in keras.__version__.split(".")[:3]]
-assert keras_ver >= [2, 1, 6] and keras_ver < [
-    2,
-    2,
-    0,
-], "Requires Keras >=2.1.6,<2.2.0"
 
 
 def get_version():
-    init_py_path = path.join(
-        path.abspath(path.dirname(__file__)), "abctseg", "__init__.py"
-    )
+    init_py_path = path.join(path.abspath(path.dirname(__file__)), "abctseg", "__init__.py")
     init_py = open(init_py_path, "r").readlines()
-    version_line = [
-        line.strip() for line in init_py if line.startswith("__version__")
-    ][0]
+    version_line = [line.strip() for line in init_py if line.startswith("__version__")][0]
     version = version_line.split("=")[-1].strip().strip("'\"")
 
     # The following is used to build release packages.
@@ -38,9 +23,7 @@ def get_version():
         date_str = datetime.today().strftime("%y%m%d")
         version = version + ".dev" + date_str
 
-        new_init_py = [
-            line for line in init_py if not line.startswith("__version__")
-        ]
+        new_init_py = [line for line in init_py if not line.startswith("__version__")]
         new_init_py.append('__version__ = "{}"\n'.format(version))
         with open(init_py_path, "w") as f:
             f.write("".join(new_init_py))
@@ -51,7 +34,7 @@ setup(
     name="abctseg",
     version=get_version(),
     author="Arjun Desai",
-    url="https://github.com/ad12/ihd-pipeline",
+    url="https://github.com/StanfordMIMI/abCTSeg",
     description="Abdominal CT segmentation pipeline.",
     packages=find_packages(exclude=("configs", "tests")),
     python_requires=">=3.6",
@@ -64,6 +47,12 @@ setup(
         "silx",
         "yacs",
         "pandas",
+        "dosma",
+        "opencv-python",
+        "huggingface_hub",
+        # Stanford MIMI fork of TotalSegmentor
+        # FIXME: Figure out how to add git-based dependendcies.
+        # "git+https://github.com/StanfordMIMI/TotalSegmentator.git",
     ],
     extras_require={
         "all": ["shapely", "psutil"],
@@ -71,7 +60,7 @@ setup(
             # Formatting
             "flake8",
             "isort",
-            "black",
+            "black==22.8.0",
             "flake8-bugbear",
             "flake8-comprehensions",
             # Docs
