@@ -15,7 +15,7 @@ ANACONDA_DOWNLOAD_URL="https://www.anaconda.com/distribution/"
 MINICONDA_KEYWORD="miniconda"
 
 # FIXME: Update the name.
-ABCT_ENV_NAME="abct_test_env"
+ABCT_ENV_NAME="c2c_env"
 
 hasAnaconda=0
 updateEnv=0
