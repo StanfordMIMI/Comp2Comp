@@ -3,9 +3,7 @@ import warnings
 
 from yacs.config import CfgNode as CN
 
-_PREFERENCES_FILE = os.path.join(
-    os.path.join(os.path.dirname(__file__), "preferences.yaml")
-)
+_PREFERENCES_FILE = os.path.join(os.path.join(os.path.dirname(__file__), "preferences.yaml"))
 _HOME_DIR = os.path.expanduser("~")
 
 
@@ -48,7 +46,5 @@ else:
     try:
         PREFERENCES.merge_from_file(_PREFERENCES_FILE)
     except KeyError:
-        warnings.warn(
-            "Preference file is outdated. Please reset your preferences."
-        )
+        warnings.warn("Preference file is outdated. Please reset your preferences.")
         warnings.warn("Loading default config...")

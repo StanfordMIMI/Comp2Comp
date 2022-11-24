@@ -4,7 +4,6 @@ import os
 from time import perf_counter
 from typing import List
 
-import matplotlib.pyplot as plt
 import silx.io.dictdump as sio
 from keras import backend as K
 from tqdm import tqdm
@@ -150,9 +149,7 @@ def compute_and_save_results(
             file_name = None
         output_file = os.path.join(output_dir, file_name + ".h5")
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        sio.dicttoh5(
-            results, output_file, m_save_name, mode="a", overwrite_data=True
-        )
+        sio.dicttoh5(results, output_file, m_save_name, mode="a", overwrite_data=True)
         file_idx += 1
     logger.info(
         "<TIME>: Metrics - count: {} - {:.4f} seconds".format(
