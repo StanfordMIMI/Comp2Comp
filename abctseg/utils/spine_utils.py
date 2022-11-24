@@ -108,9 +108,7 @@ def delete_right_most_connected_component(mask: np.ndarray):
         np.ndarray: Mask volume.
     """
     mask = mask.astype(np.uint8)
-    _, labels, _, centroids = cv2.connectedComponentsWithStats(
-        mask, connectivity=8
-    )
+    _, labels, _, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
     right_most_connected_component = np.argmax(centroids[1:, 1]) + 1
     mask[labels == right_most_connected_component] = 0
     return mask
@@ -208,13 +206,9 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
     centroids_3d = []
     for i, slice in enumerate(slices):
         center_of_mass = compute_center_of_mass(slice)
-        centroid = np.array(
-            [center_of_mass[1], centroids[i], center_of_mass[0]]
-        )
+        centroid = np.array([center_of_mass[1], centroids[i], center_of_mass[0]])
         roi = roi_from_mask(img, centroid)
-        spine_hus.append(
-            mean_img_mask(img, roi, rescale_slope, rescale_intercept)
-        )
+        spine_hus.append(mean_img_mask(img, roi, rescale_slope, rescale_intercept))
         rois.append(roi)
         centroids_3d.append(centroid)
     return (spine_hus, rois, centroids_3d)

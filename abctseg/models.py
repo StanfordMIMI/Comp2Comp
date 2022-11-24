@@ -112,6 +112,7 @@ class Models(enum.Enum):
             # sigmoid
             return preds >= 0.5
 
+    @staticmethod
     def model_from_name(model_name):
         """Get the model enum from the model name.
 
@@ -125,3 +126,11 @@ class Models(enum.Enum):
             if model.model_name == model_name:
                 return model
         return None
+
+    @staticmethod
+    def find_model_weights():
+        for root, _, files in os.walk(PREFERENCES.MODELS_DIR):
+            for file in files:
+                if file.endswith(".h5"):
+                    filename = os.path.join(root, file)
+        return filename

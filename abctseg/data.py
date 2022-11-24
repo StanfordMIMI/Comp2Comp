@@ -1,16 +1,12 @@
 import math
-import sys
 from typing import List, Sequence
 
 import cv2
 import keras.utils as k_utils
-import matplotlib.pyplot as plt
 import numpy as np
 import pydicom
 from keras.utils.data_utils import OrderedEnqueuer
 from tqdm import tqdm
-
-from abctseg.models import Models
 
 
 def parse_windows(windows):
@@ -88,20 +84,12 @@ class Dataset(k_utils.Sequence):
         return math.ceil(len(self._files) / self._batch_size)
 
     def __getitem__(self, idx):
-        files = self._files[
-            idx * self._batch_size : (idx + 1) * self._batch_size
-        ]
+        files = self._files[idx * self._batch_size : (idx + 1) * self._batch_size]
         dcms = [pydicom.read_file(f, force=True) for f in files]
 
-        xs = [
-            (x.pixel_array + int(x.RescaleIntercept)).astype("float32")
-            for x in dcms
-        ]
+        xs = [(x.pixel_array + int(x.RescaleIntercept)).astype("float32") for x in dcms]
 
-        params = [
-            {"spacing": header.PixelSpacing, "image": x}
-            for header, x in zip(dcms, xs)
-        ]
+        params = [{"spacing": header.PixelSpacing, "image": x} for header, x in zip(dcms, xs)]
 
         # Preprocess xs via windowing.
         xs = np.stack(xs, axis=0)
@@ -125,9 +113,7 @@ def _fill_holes(mask: np.ndarray, mask_id: int):
         ndarray: Filled mask.
     """
     int_mask = ((1 - mask) > 0.5).astype(np.int8)
-    components, output, stats, _ = cv2.connectedComponentsWithStats(
-        int_mask, connectivity=8
-    )
+    components, output, stats, _ = cv2.connectedComponentsWithStats(int_mask, connectivity=8)
     sizes = stats[1:, -1]
     components = components - 1
     # Larger threshold for SAT
@@ -245,9 +231,7 @@ def predict(
     """
 
     if num_workers > 0:
-        enqueuer = OrderedEnqueuer(
-            dataset, use_multiprocessing=use_multiprocessing, shuffle=False
-        )
+        enqueuer = OrderedEnqueuer(dataset, use_multiprocessing=use_multiprocessing, shuffle=False)
         enqueuer.start(workers=num_workers, max_queue_size=max_queue_size)
         output_generator = enqueuer.get()
     else:

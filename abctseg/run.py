@@ -34,9 +34,7 @@ def format_output_path(
     if save_dir and base_dirs:
         dirname: str = os.path.dirname(file_path)
         relative_dir = [
-            dirname.split(bdir, 1)[1]
-            for bdir in base_dirs
-            if dirname.startswith(bdir)
+            dirname.split(bdir, 1)[1] for bdir in base_dirs if dirname.startswith(bdir)
         ][0]
         # Trim path separator from the path
         relative_dir = relative_dir.lstrip(os.path.sep)
@@ -54,7 +52,8 @@ def format_output_path(
     )
 
 
-# Function the returns a list of file names exluding the extention from the list of file paths
+# Function the returns a list of file names exluding
+# the extention from the list of file paths
 def get_file_names(files):
     """Get file names from a list of file paths.
 
@@ -114,9 +113,7 @@ def find_files(
                 output_path = format_output_path(possible_dir)
                 if not exist_ok and os.path.isfile(output_path):
                     logger.info(
-                        "Skipping {} - results exist at {}".format(
-                            possible_dir, output_path
-                        )
+                        "Skipping {} - results exist at {}".format(possible_dir, output_path)
                     )
                     continue
                 ret_files.append(possible_dir)
@@ -152,11 +149,10 @@ def compute_results(x, mask, categories: Dict, params: Dict):
     hu_vals = hu(mask, x, category_dim=-1)
     csa_vals = csa(mask=mask, spacing=spacing, category_dim=-1)
 
-    assert mask.shape[-1] == len(categories), (
-        "{} categories found in mask, "
-        "but only {} categories specified".format(
-            mask.shape[-1], len(categories)
-        )
+    assert mask.shape[-1] == len(
+        categories
+    ), "{} categories found in mask, " "but only {} categories specified".format(
+        mask.shape[-1], len(categories)
     )
 
     results = {
@@ -181,7 +177,7 @@ def get_dicom_paths_and_num(path):
         list: List of paths.
     """
     dicom_paths = []
-    for root, dirs, files in os.walk(path):
+    for root, _, files in os.walk(path):
         if len(files) > 0:
             if all([file.endswith(".dcm") for file in files]):
                 dicom_paths.append((root, len(files)))
