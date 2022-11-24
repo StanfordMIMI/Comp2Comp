@@ -11,7 +11,7 @@ lint:
 	flake8
 
 dev-lint:
-	pip install --upgrade black coverage isort flake8 flake8-bugbear flake8-comprehensions pre-commit pooch
+	pip install --upgrade black==22.8.0 coverage isort flake8 flake8-bugbear flake8-comprehensions pre-commit pooch
 
 build-docs:
 	set -e

@@ -3,22 +3,28 @@ import warnings
 
 from yacs.config import CfgNode as CN
 
-_PREFERENCES_FILE = os.path.join(
-    os.path.join(os.path.dirname(__file__), "preferences.yaml")
-)
+_PREFERENCES_FILE = os.path.join(os.path.join(os.path.dirname(__file__), "preferences.yaml"))
 _HOME_DIR = os.path.expanduser("~")
 
 
 _C = CN()
-_C.OUTPUT_DIR = ""
+# FIXME: have a default output folder path
+_C.OUTPUT_PATH = "../abCTSeg/preds"
 _C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
-_C.MODELS_DIR = ""
+_C.MODELS_DIR = "../../abCTSeg_scratch"
+_C.INPUT_PATH = ""
+_C.HF_TOKEN = ""
 
 _C.BATCH_SIZE = 16
 _C.NUM_WORKERS = 1
 
 
 def save_preferences(filename=None):
+    """Save preferences to a file.
+
+    Args:
+        filename (str, optional): Filename. Defaults to None.
+    """
     if filename is None:
         filename = _PREFERENCES_FILE
     os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -28,6 +34,7 @@ def save_preferences(filename=None):
 
 
 def reset_preferences():
+    """Reset preferences."""
     global PREFERENCES
     PREFERENCES = _C.clone()
 
@@ -39,7 +46,5 @@ else:
     try:
         PREFERENCES.merge_from_file(_PREFERENCES_FILE)
     except KeyError:
-        warnings.warn(
-            "Preference file is outdated. Please reset your preferences."
-        )
+        warnings.warn("Preference file is outdated. Please reset your preferences.")
         warnings.warn("Loading default config...")
