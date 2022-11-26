@@ -1,4 +1,4 @@
-# Comp2Comp
+# Comp2Comp ![alt text](https://github.com/StanfordMIMI/abCTSeg/edit/rsna_mvp/logo.png)
 Comp2Comp is a library for extracting body composition measures from computed tomography scans. 
 
 ## Installation
