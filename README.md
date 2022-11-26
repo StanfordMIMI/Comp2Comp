@@ -1,5 +1,4 @@
-# Comp2Comp 
-<img src="logo.png" width="50" height="50" />
+# Comp2Comp <img src="logo.png" width="50" height="50" />
 Comp2Comp is a library for extracting body composition measures from computed tomography scans. 
 
 ## Installation
