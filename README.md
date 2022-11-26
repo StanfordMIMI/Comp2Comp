@@ -12,9 +12,9 @@ bin/install.sh
 
 ## Basic Usage
 ```bash
-# To run 3D body composition:
+# To run 3D body composition, use the following command. For 3D processing, INPUT_PATH should be a path to a folder that contains a series of DICOM files or subfolders that contain DICOM series.
 bin/C2C process_3d INPUT_PATH path/to/input/folder
-# To run 2D body composition:
+# To run 2D body composition, using the following command. For 2D processing, DICOM files within the INPUT_PATH folder and subfolders of INPUT_PATH will be processed.
 bin/C2C process_2d INPUT_PATH path/to/input/folder
 # To submit scripts to slurm, can use the following for 3D processing:
 bin/C2C-slurm process_3d INPUT_PATH path/to/input/folder
