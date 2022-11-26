@@ -6,12 +6,13 @@ from yacs.config import CfgNode as CN
 _PREFERENCES_FILE = os.path.join(os.path.join(os.path.dirname(__file__), "preferences.yaml"))
 _HOME_DIR = os.path.expanduser("~")
 
+_CWD = os.getcwd()
 
 _C = CN()
 # FIXME: have a default output folder path
-_C.OUTPUT_PATH = "../abCTSeg/preds"
-_C.CACHE_DIR = os.path.join(_HOME_DIR, ".abctseg/cache")
-_C.MODELS_DIR = "../../abCTSeg_scratch"
+_C.OUTPUT_PATH = os.path.join(_CWD, "outputs")
+_C.CACHE_DIR = os.path.join(_CWD, ".abctseg/cache")
+_C.MODELS_DIR = os.path.join(_CWD, ".abct_model_dir")
 _C.INPUT_PATH = ""
 _C.HF_TOKEN = ""
 
