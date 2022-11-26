@@ -81,7 +81,7 @@ class Models(enum.Enum):
             repo_id="lblankem/stanford_abct_v0.0.1",
             filename="stanford_v0.0.1.h5",
             cache_dir=PREFERENCES.MODELS_DIR,
-            use_auth_token=PREFERENCES.HF_TOKEN,
+            # use_auth_token=PREFERENCES.HF_TOKEN,
         )
 
         logger.info("Downloading muscle/fat model from hugging face")
