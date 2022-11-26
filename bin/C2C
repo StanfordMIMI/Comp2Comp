@@ -430,7 +430,7 @@ def handle_summarize(results_dir, dicom_files=None, label_text=None, spine_hus=N
     
     results_dir_sub = Path(results_dir) / "metrics"
     results_dir_sub.mkdir(exist_ok=True)
-    metrics_file = os.path.join(results_dir_sub, "abct-metrics.csv")
+    metrics_file = os.path.join(results_dir_sub, "c2c-metrics.csv")
     h5_files = sorted(
         find_files(str(Path(results_dir) / "segmentations"),
                    pattern=".*h5$",
