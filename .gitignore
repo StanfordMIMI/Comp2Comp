@@ -54,3 +54,9 @@ weights/
 
 # preferences file
 comp2comp/preferences.yaml
+
+# model directory
+**/.comp2comp_model_dir/
+
+# slurm outputs
+**/slurm/
