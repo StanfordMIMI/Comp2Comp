@@ -96,9 +96,9 @@ def save_binary_segmentation_overlay(
         model_type (Models): Model type. Defaults to None.
     """
 
-    if model_type.model_name == "ts_spine":
+    if model_type and (model_type.model_name == "ts_spine"):
         _SPINE_LEVELS = list(model_type.categories.keys())
-    elif model_type.model_name == "stanford_v0.0.1":
+    elif model_type and (model_type.model_name == "stanford_v0.0.1"):
         _TISSUES = list(model_type.categories.keys())
 
     # Window image to retain most information
