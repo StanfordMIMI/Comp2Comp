@@ -5,9 +5,8 @@ Comp2Comp is a library for extracting body composition measures from computed to
 ```bash
 # Install it from a local clone:
 git clone -b rsna_mvp https://github.com/StanfordMIMI/Comp2Comp/
-cd comp2comp
 # Install script requires Anaconda/Miniconda.
-bin/install.sh
+cd comp2comp && bin/install.sh
 ```
 
 ## Basic Usage
