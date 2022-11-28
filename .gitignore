@@ -36,13 +36,14 @@ docs/_build
 ._*
 # ignore checkpoint files
 **/.ipynb_checkpoints/
-**/.abctseg/
+**/.comp2comp/
 
 # ignore cross validation files
 *.cv
 
 # ignore yml file
 *.yml
+*.yaml
 
 # ignore images
 *.png
@@ -52,4 +53,4 @@ docs/_build
 weights/
 
 # preferences file
-abctseg/preferences.yaml
+comp2comp/preferences.yaml
