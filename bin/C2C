@@ -254,6 +254,8 @@ def handle_process_2d(args):
 
     logger.info("Preferences:\n" + PREFERENCES.dump())
 
+    muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1")
+
     parent_dir = os.path.basename(os.path.dirname(PREFERENCES.INPUT_PATH))
     output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, parent_dir))
     output_path.mkdir(parents=True, exist_ok=True)
@@ -273,6 +275,7 @@ def handle_process_2d(args):
         dicom_files,
         num_gpus,
         logger,
+        muscle_fat_model_type,
         label_text,
         output_dir = segmentations_path
     )
@@ -289,7 +292,8 @@ def handle_process_2d(args):
             output_path,
             f"{file_names[num_2d]}.png",
             figure_text_key=figure_text_map,
-            spine = False
+            spine = False,
+            model_type = muscle_fat_model_type
         )
 
 
