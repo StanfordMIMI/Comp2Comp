@@ -18,15 +18,15 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 # TODO: Get rid of this before release
 # sys.path.append("/dataNAS/people/lblankem/abCTSeg")
 
-from abctseg import metrics
-from abctseg.inference_2d import inference_2d
-from abctseg.models import Models
-from abctseg.nn_unet import spine_seg
-from abctseg.preferences import PREFERENCES, reset_preferences, save_preferences
-from abctseg.run import find_files, get_dicom_paths_and_num, get_file_names
-from abctseg.utils import dl_utils, spine_utils
-from abctseg.utils.logger import setup_logger
-from abctseg.utils.visualization import (
+from comp2comp import metrics
+from comp2comp.inference_2d import inference_2d
+from comp2comp.models import Models
+from comp2comp.nn_unet import spine_seg
+from comp2comp.preferences import PREFERENCES, reset_preferences, save_preferences
+from comp2comp.run import find_files, get_dicom_paths_and_num, get_file_names
+from comp2comp.utils import dl_utils, spine_utils
+from comp2comp.utils.logger import setup_logger
+from comp2comp.utils.visualization import (
     generate_panel,
     save_binary_segmentation_overlay,
 )
