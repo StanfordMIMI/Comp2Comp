@@ -5,6 +5,7 @@ from typing import Dict, Sequence
 import numpy as np
 from huggingface_hub import hf_hub_download
 from keras.models import load_model
+import wget
 
 from comp2comp.preferences import PREFERENCES
 
@@ -76,13 +77,17 @@ class Models(enum.Enum):
         Returns:
             keras.models.Model: Model.
         """
-        # TODO: use wget to grab model from hf
-        hf_hub_download(
-            repo_id="lblankem/stanford_abct_v0.0.1",
-            filename="stanford_v0.0.1.h5",
-            cache_dir=PREFERENCES.MODELS_DIR,
-            # use_auth_token=PREFERENCES.HF_TOKEN,
-        )
+
+        # hf_hub_download(
+        #     repo_id="lblankem/stanford_abct_v0.0.1",
+        #     filename="stanford_v0.0.1.h5",
+        #     cache_dir=PREFERENCES.MODELS_DIR,
+             # use_auth_token=PREFERENCES.HF_TOKEN,
+        # )
+
+        # Use wget as it seems more reliable 
+        # TODO: move model to StanfordMIMI HF
+        weights_file_name = wget.download("https://huggingface.co/lblankem/stanford_abct_v0.0.1/blob/main/stanford_v0.0.1.h5", out=PREFERENCES.MODELS_DIR)
 
         logger.info("Downloading muscle/fat model from hugging face")
         # filename = os.path.join(
