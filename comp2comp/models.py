@@ -77,7 +77,6 @@ class Models(enum.Enum):
         Returns:
             keras.models.Model: Model.
         """
-
         # hf_hub_download(
         #     repo_id="lblankem/stanford_abct_v0.0.1",
         #     filename="stanford_v0.0.1.h5",
