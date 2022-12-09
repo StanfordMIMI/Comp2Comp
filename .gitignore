@@ -9,11 +9,15 @@
 # Ignore egg files
 **/*.egg-info
 
+# Docs build files
+docs/_build
+
 # Ignore tensorflow logs
 **/tf_log
 
 # Ignore results
 **/pik_data
+**/preds
 
 # Ignore test_data
 **/test_data
@@ -32,12 +36,30 @@
 ._*
 # ignore checkpoint files
 **/.ipynb_checkpoints/
+**/.comp2comp/
 
-#ignore cross validation files
+# ignore cross validation files
 *.cv
+
+# ignore yml file
+*.yml
+*.yaml
+
+# ignore images
+*.png
+!logo.png
 
 # ignore any weights files
 weights/
 
 # preferences file
-abctseg/preferences.yaml
+comp2comp/preferences.yaml
+
+# model directory
+**/.comp2comp_model_dir/
+
+# slurm outputs
+**/slurm/
+
+# ignore outputs file
+**/outputs/
