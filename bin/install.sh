@@ -1,5 +1,3 @@
-
-
 #!/bin/bash
 
 # ==============================================================================
@@ -101,6 +99,8 @@ if [[ `conda env list | grep $ABCT_ENV_NAME` ]]; then
 else
     conda create -y -n $ABCT_ENV_NAME python=3.8
 fi
+
+exit 1
 
 conda activate $ABCT_ENV_NAME
 

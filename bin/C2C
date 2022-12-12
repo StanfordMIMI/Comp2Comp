@@ -15,9 +15,6 @@ from tqdm import tqdm
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-# TODO: Get rid of this before release
-# sys.path.append("/dataNAS/people/lblankem/abCTSeg")
-
 from comp2comp import metrics
 from comp2comp.inference_2d import inference_2d
 from comp2comp.models import Models
@@ -135,14 +132,6 @@ def argument_parser():
         type=int,
         help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
     )
-
-    '''
-    process_3d_parser.add_argument(
-        "--INPUT_PATH",
-        type=str,
-        help="Path to input DICOMS.",
-    )
-    '''
 
     add_config_file_argument(process_3d_parser)
     add_opts_argument(process_3d_parser)

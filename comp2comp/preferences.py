@@ -12,7 +12,7 @@ _C = CN()
 # FIXME: have a default output folder path
 _C.OUTPUT_PATH = os.path.join(_CWD, "outputs")
 _C.CACHE_DIR = os.path.join(_CWD, ".comp2comp/cache")
-_C.MODELS_DIR = os.path.join(_CWD, ".comp2comp_model_dir")
+_C.MODELS_DIR = os.path.join(_CWD, ".comp2comp/model_dir")
 _C.INPUT_PATH = ""
 _C.HF_TOKEN = ""
 
