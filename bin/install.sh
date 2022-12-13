@@ -100,8 +100,6 @@ else
     conda create -y -n $ABCT_ENV_NAME python=3.8
 fi
 
-exit 1
-
 conda activate $ABCT_ENV_NAME
 
 # Install tensorflow and keras
