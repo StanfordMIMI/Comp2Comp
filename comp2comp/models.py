@@ -84,12 +84,14 @@ class Models(enum.Enum):
         #     cache_dir=PREFERENCES.MODELS_DIR,
              # use_auth_token=PREFERENCES.HF_TOKEN,
         # )
-        
-        logger.info("Downloading muscle/fat model from hugging face")
-        Path(PREFERENCES.MODELS_DIR).mkdir(parents=True, exist_ok=True)
-        weights_file_name = wget.download("https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/stanford_v0.0.1.h5", out=os.path.join(PREFERENCES.MODELS_DIR, "stanford_v0.0.1.h5"))
-        filename = Models.find_model_weights()
-        
+        try:
+            filename = Models.find_model_weights()
+        except:
+            logger.info("Downloading muscle/fat model from hugging face")
+            Path(PREFERENCES.MODELS_DIR).mkdir(parents=True, exist_ok=True)
+            weights_file_name = wget.download("https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/stanford_v0.0.1.h5", out=os.path.join(PREFERENCES.MODELS_DIR, "stanford_v0.0.1.h5"))
+            filename = Models.find_model_weights()
+     
         logger.info("Loading muscle/fat model from {}".format(filename))
         return load_model(filename)
 
