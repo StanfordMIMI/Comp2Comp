@@ -138,6 +138,8 @@ pip3 install git+https://github.com/StanfordMIMI/TotalSegmentator.git
 # cd $currDir/..
 # echo $currDir
 # exit 1
+rm -rf /home/lblankem/.cache
+
 pip install -e .
 
 echo ""
