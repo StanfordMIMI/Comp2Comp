@@ -37,7 +37,7 @@ def setup_logger(
     distributed_rank=0,
     *,
     color=True,
-    name="abctseg",
+    name="Comp2Comp",
     abbrev_name=None,
 ):
     """

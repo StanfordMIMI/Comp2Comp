@@ -50,7 +50,8 @@ setup(
         "dosma",
         "opencv-python",
         "huggingface_hub",
-        "pycocotools"
+        "pycocotools",
+        "wget"
         # Stanford MIMI fork of TotalSegmentor
         # FIXME: Figure out how to add git-based dependendcies.
         # "git+https://github.com/StanfordMIMI/TotalSegmentator.git",

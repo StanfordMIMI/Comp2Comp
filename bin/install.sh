@@ -1,5 +1,3 @@
-
-
 #!/bin/bash
 
 # ==============================================================================
@@ -140,6 +138,7 @@ pip3 install git+https://github.com/StanfordMIMI/TotalSegmentator.git
 # cd $currDir/..
 # echo $currDir
 # exit 1
+
 pip install -e .
 
 echo ""
