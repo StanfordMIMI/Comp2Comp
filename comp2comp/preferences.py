@@ -9,10 +9,13 @@ _HOME_DIR = os.path.expanduser("~")
 _CWD = os.getcwd()
 
 _C = CN()
-# FIXME: have a default output folder path
-_C.OUTPUT_PATH = os.path.join(_CWD, "outputs")
-_C.CACHE_DIR = os.path.join(_CWD, ".comp2comp/cache")
-_C.MODELS_DIR = os.path.join(_CWD, ".comp2comp/model_dir")
+# _C.OUTPUT_PATH = os.path.join(_CWD, "outputs")
+# _C.CACHE_DIR = os.path.join(_CWD, ".comp2comp/cache")
+# _C.MODELS_DIR = os.path.join(_CWD, ".comp2comp/model_dir/")
+_C.ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_C.OUTPUT_PATH = os.path.join(_C.ROOT_DIR, "outputs")
+_C.CACHE_DIR = os.path.join(_C.ROOT_DIR, ".comp2comp/cache")
+_C.MODELS_DIR = os.path.join(_C.ROOT_DIR, ".comp2comp/model_dir/")
 _C.INPUT_PATH = ""
 _C.HF_TOKEN = ""
 

@@ -205,7 +205,7 @@ def handle_process_2d(args):
             "MODELS_DIR not initialized. "
             "Use `C2C config` to set MODELS_DIR"
         )
-    logger = logging.getLogger("abctseg.cli.__main__")
+    logger = logging.getLogger("Comp2Comp.bin.C2C.__main__")
     logger.info("\n\n======================================================")
     gpus = dl_utils.get_available_gpus(args.num_gpus)
     num_gpus = len(gpus) if gpus is not None else 0
@@ -302,7 +302,7 @@ def handle_process_3d(args):
             "MODELS_DIR not initialized. "
             "Use `C2C config` to set MODELS_DIR"
         )
-    logger = logging.getLogger("abctseg.cli.__main__")
+    logger = logging.getLogger("Comp2Comp.bin.C2C.__main__")
     logger.info("\n\n======================================================")
 
     gpus = dl_utils.get_available_gpus(args.num_gpus)
