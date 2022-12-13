@@ -6,6 +6,7 @@ import numpy as np
 from huggingface_hub import hf_hub_download
 from keras.models import load_model
 import wget
+from pathlib import Path
 
 from comp2comp.preferences import PREFERENCES
 
@@ -83,20 +84,14 @@ class Models(enum.Enum):
         #     cache_dir=PREFERENCES.MODELS_DIR,
              # use_auth_token=PREFERENCES.HF_TOKEN,
         # )
-
-        # Use wget as it seems more reliable 
-        # TODO: move model to StanfordMIMI HF
         try:
             filename = Models.find_model_weights()
         except:
-            #weights_file_name = wget.download("https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/blob/main/stanford_v0.0.1.h5", out=PREFERENCES.MODELS_DIR)
-            weights_file_name = wget.download("https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/stanford_v0.0.1.h5", out=PREFERENCES.MODELS_DIR)
-
-            logger.info("Downloading muscle/fat model from hugging face")
-            # filename = os.path.join(
-            #    PREFERENCES.MODELS_DIR, "{}.h5".format(self.model_name)
-            # )
-            filename = Models.find_model_weights()
+          logger.info("Downloading muscle/fat model from hugging face")
+          Path(PREFERENCES.MODELS_DIR).mkdir(parents=True, exist_ok=True)
+          weights_file_name = wget.download("https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/stanford_v0.0.1.h5", out=os.path.join(PREFERENCES.MODELS_DIR, "stanford_v0.0.1.h5"))
+          filename = Models.find_model_weights()
+     
         logger.info("Loading muscle/fat model from {}".format(filename))
         return load_model(filename)
 
