@@ -104,7 +104,7 @@ conda activate $ABCT_ENV_NAME
 
 # Install tensorflow and keras
 # https://www.tensorflow.org/install/source#gpu
-pip install tensorflow
+# pip install tensorflow
 
 # Install pytorch
 # FIXME: PyTorch has to be installed with pip to respect setup.py files from nn UNet
@@ -133,7 +133,7 @@ pip install tensorflow
 
 # Install totalSegmentor
 # FIXME: Add this to the setup.py file
-pip3 install git+https://github.com/StanfordMIMI/TotalSegmentator.git
+# pip3 install git+https://github.com/StanfordMIMI/TotalSegmentator.git
 
 # cd $currDir/..
 # echo $currDir
