@@ -207,13 +207,7 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
         for i, slice in enumerate(slices):
             # keep only the two largest connected components 
             two_largest = keep_two_largest_connected_components(slice)
-            plt.imshow(two_largest)
-            plt.show()
             slices[i] = delete_right_most_connected_component(two_largest)
-    else:
-        for i, slice in enumerate(slices):
-            plt.imshow(slice)
-            plt.show()
     # Compute ROIs
     rois = []
     spine_hus = []
@@ -461,50 +455,28 @@ def compare_ts_stanford_roi_hus(image_path):
     image_path (str): Path to the Stanford dataset images.
     """
     img_paths = glob(image_path + "/*")
-    # Initialize empty numpy array of size 40 x 6
     differences = np.zeros((40, 6))
     ground_truth = np.zeros((40, 6))
     for i, img_path in enumerate(img_paths):
         print(f"Image number {i + 1}")
-        # parent_dir = os.path.basename(os.path.dirname(path))
-        # output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, parent_dir))
-        # output_path.mkdir(parents=True, exist_ok=True)
-        # output_path = str(output_path)
-
-        # Match "_0000" in img_path and remove it
         image_path_no_0000 = re.sub(r'_0000', '', img_path)
         ts_seg_path = image_path_no_0000.replace('imagesTs', 'predTs_TS')
         stanford_seg_path = image_path_no_0000.replace('imagesTs', 'labelsTs')
         img = nib.load(img_path).get_fdata()
-        # flip the first and second axes
         img = np.swapaxes(img, 0, 1)
         ts_seg = nib.load(ts_seg_path).get_fdata()
-        # flip the first and second axes
         ts_seg = np.swapaxes(ts_seg, 0, 1)
         stanford_seg = nib.load(stanford_seg_path).get_fdata()
-        # flip the first and second axes
         stanford_seg = np.swapaxes(stanford_seg, 0, 1)
         ts_model_type = Models.model_from_name("ts_spine")
-        # plt.imshow(img[256, :, :])
-        # plt.show()
         (spine_hus_ts, rois, centroids_3d) = compute_rois(ts_seg, img, 1, 0, ts_model_type)
-        # print spine_hus_ts values
-        print("Spine HU values for TS dataset:")
-        print(spine_hus_ts)
-        print("3D centroids for TS dataset:")
-        print(centroids_3d)
-        # print(spine_hus)
         stanford_model_type = Models.model_from_name("stanford_spine_v0.0.1")
         (spine_hus_stanford, rois, centroids_3d) = compute_rois(stanford_seg, img, 1, 0, stanford_model_type)
-        print("Spine HU values for Stanford dataset:")
-        print(spine_hus_stanford)
-        print("3D centroids for Stanford dataset:")
-        print(centroids_3d)
-        # print(spine_hus)
         difference_vals = np.abs(np.array(spine_hus_ts) - np.array(spine_hus_stanford))
-        print(difference_vals)
+        print(f"Differences {difference_vals}\n")
         differences[i, :] = difference_vals
         ground_truth[i, :] = spine_hus_stanford
+        print("\n")
     # compute average percent change from ground truth
     percent_change = np.divide(differences, ground_truth) * 100
     average_percent_change = np.mean(percent_change, axis=0)
@@ -518,6 +490,11 @@ def compare_ts_stanford_roi_hus(image_path):
 
 
 def process_post_hoc(pred_path):
+    """Apply post-hoc heuristics for improving Stanford spine model vertical centroid predictions.
+
+    Args:
+        pred_path (str): Path to the prediction.
+    """
     pred_nib  = nib.load(pred_path)
     spacing = pred_nib.header.get_zooms()[2]
     pred = pred_nib.get_fdata()
