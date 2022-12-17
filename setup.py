@@ -52,7 +52,7 @@ setup(
         "huggingface_hub",
         "pycocotools",
         "wget",
-        "tensorflow",
+        "tensorflow>=2.0.0",
         'totalsegmentator @ git+https://github.com/StanfordMIMI/TotalSegmentator.git'
     ],
     extras_require={
