@@ -51,10 +51,9 @@ setup(
         "opencv-python",
         "huggingface_hub",
         "pycocotools",
-        "wget"
-        # Stanford MIMI fork of TotalSegmentor
-        # FIXME: Figure out how to add git-based dependendcies.
-        # "git+https://github.com/StanfordMIMI/TotalSegmentator.git",
+        "wget",
+        "tensorflow>=2.0.0",
+        'totalsegmentator @ git+https://github.com/StanfordMIMI/TotalSegmentator.git'
     ],
     extras_require={
         "all": ["shapely", "psutil"],
