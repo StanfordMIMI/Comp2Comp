@@ -39,6 +39,14 @@ class Models(enum.Enum):
         False,
         (),
     )
+    STANFORD_SPINE_V_0_0_1 = (
+        4,
+        "stanford_spine_v0.0.1",
+        # Category name mapped to channel index
+        {"L5": 6, "L4": 5, "L3": 4, "L2": 3, "L1": 2, "T12": 1},
+        False,
+        (),
+    )
 
     def __new__(
         cls,

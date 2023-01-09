@@ -6,7 +6,12 @@ import cv2
 import dosma as dm
 import numpy as np
 from pydicom.filereader import dcmread
+import nibabel as nib
+from itertools import groupby
+import re
+import matplotlib.pyplot as plt
 
+from comp2comp.preferences import PREFERENCES
 from comp2comp.models import Models
 from comp2comp.utils import visualization
 
@@ -198,8 +203,11 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
     # Get slices
     slices = get_slices(seg, centroids, spine_model_type)
     # Delete right most connected component
-    for i, slice in enumerate(slices):
-        slices[i] = delete_right_most_connected_component(slice)
+    if spine_model_type.model_name == "ts_spine":
+        for i, slice in enumerate(slices):
+            # keep only the two largest connected components 
+            two_largest = keep_two_largest_connected_components(slice)
+            slices[i] = delete_right_most_connected_component(two_largest)
     # Compute ROIs
     rois = []
     spine_hus = []
@@ -212,6 +220,26 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
         rois.append(roi)
         centroids_3d.append(centroid)
     return (spine_hus, rois, centroids_3d)
+
+def keep_two_largest_connected_components(mask: np.ndarray):
+    """Keep the two largest connected components.
+
+    Args:
+        mask (np.ndarray): Mask volume.
+
+    Returns:
+        np.ndarray: Mask volume.
+    """
+    mask = mask.astype(np.uint8)
+    # sort connected components by size
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    stats = stats[1:, 4]
+    sorted_indices = np.argsort(stats)[::-1]
+    # keep only the two largest connected components
+    mask = np.zeros(mask.shape)
+    for i in range(2):
+        mask[labels == sorted_indices[i] + 1] = 1
+    return mask
 
 
 def compute_centroid(seg: np.ndarray, plane: str, label: int):
@@ -335,3 +363,206 @@ def visualize_coronal_sagittal_spine(
         spine_hus=spine_hus,
         model_type=model_type,
     )
+
+def compare_ts_stanford_centroids(labels_path):
+    """Compare the centroids of the Stanford dataset with the centroids of the TS dataset.
+
+    Args:
+        labels_path (str): Path to the Stanford dataset labels.
+    """
+    t12_diff = []
+    l1_diff = []
+    l2_diff = []
+    l3_diff = []
+    l4_diff = []
+    l5_diff = []
+    num_skipped = 0
+
+    labels = glob(labels_path + "/*")
+    for i, label_path in enumerate(labels):
+        # modify label_path to give pred_path
+        pred_path = label_path.replace('labelsTs', 'predTs_TS')
+        print(label_path.split('/')[-1])
+        label_nib  = nib.load(label_path)
+        label = label_nib.get_fdata()
+        spacing = label_nib.header.get_zooms()[2]
+        pred_nib  = nib.load(pred_path)
+        pred = pred_nib.get_fdata()
+        if True:
+            pred[pred == 18] = 6
+            pred[pred == 19] = 5
+            pred[pred == 20] = 4
+            pred[pred == 21] = 3
+            pred[pred == 22] = 2
+            pred[pred == 23] = 1
+        
+        for label_idx in range(1, 7):
+            label_level = label == label_idx
+            indexes = np.array(range(label.shape[2]))
+            sums = np.sum(label_level, axis = (0, 1))
+            normalized_sums = sums / np.sum(sums)
+            label_centroid = np.sum(indexes * normalized_sums)
+            print(f"Centroid for label {label_idx}: {label_centroid}")
+    
+            if False:
+                try:
+                    pred_centroid = pred_centroids[6 - label_idx]
+                except:
+                    # Change this part
+                    print("Something wrong with pred_centroids, skipping!")
+                    num_skipped += 1
+                    break
+            
+            #if revert_to_original:
+            if True:
+                pred_level = pred == label_idx
+                sums = np.sum(pred_level, axis = (0, 1))
+                indices = list(range(sums.shape[0]))
+                groupby_input = zip(indices, list(sums))
+                g = groupby(groupby_input, key=lambda x:x[1]>0.0)
+                m = max([list(s) for v, s in g if v > 0], key = lambda x:np.sum(list(zip(*x))[1]))
+                res = list(zip(*m))
+                indexes = list(res[0])
+                sums = list(res[1])
+                normalized_sums = sums / np.sum(sums)
+                pred_centroid = np.sum(indexes * normalized_sums)
+            print(f"Centroid for prediction {label_idx}: {pred_centroid}")
+            
+            diff = np.absolute(pred_centroid - label_centroid) * spacing
+            
+            if label_idx == 1:
+                t12_diff.append(diff)
+            elif label_idx == 2:
+                l1_diff.append(diff)
+            elif label_idx == 3:
+                l2_diff.append(diff)
+            elif label_idx == 4:
+                l3_diff.append(diff)
+            elif label_idx == 5:
+                l4_diff.append(diff)
+            elif label_idx == 6:
+                l5_diff.append(diff)
+            
+    print(f"Processed {i + 1} scans!\n")
+    print(f"Skipped {num_skipped}")
+    print(f"The final differences in mm:")
+    print(np.mean(t12_diff), np.mean(l1_diff), np.mean(l2_diff), np.mean(l3_diff), np.mean(l4_diff), np.mean(l5_diff))
+
+
+def compare_ts_stanford_roi_hus(image_path):
+    """Compare the HU values of the Stanford dataset with the HU values of the TS dataset.
+
+    image_path (str): Path to the Stanford dataset images.
+    """
+    img_paths = glob(image_path + "/*")
+    differences = np.zeros((40, 6))
+    ground_truth = np.zeros((40, 6))
+    for i, img_path in enumerate(img_paths):
+        print(f"Image number {i + 1}")
+        image_path_no_0000 = re.sub(r'_0000', '', img_path)
+        ts_seg_path = image_path_no_0000.replace('imagesTs', 'predTs_TS')
+        stanford_seg_path = image_path_no_0000.replace('imagesTs', 'labelsTs')
+        img = nib.load(img_path).get_fdata()
+        img = np.swapaxes(img, 0, 1)
+        ts_seg = nib.load(ts_seg_path).get_fdata()
+        ts_seg = np.swapaxes(ts_seg, 0, 1)
+        stanford_seg = nib.load(stanford_seg_path).get_fdata()
+        stanford_seg = np.swapaxes(stanford_seg, 0, 1)
+        ts_model_type = Models.model_from_name("ts_spine")
+        (spine_hus_ts, rois, centroids_3d) = compute_rois(ts_seg, img, 1, 0, ts_model_type)
+        stanford_model_type = Models.model_from_name("stanford_spine_v0.0.1")
+        (spine_hus_stanford, rois, centroids_3d) = compute_rois(stanford_seg, img, 1, 0, stanford_model_type)
+        difference_vals = np.abs(np.array(spine_hus_ts) - np.array(spine_hus_stanford))
+        print(f"Differences {difference_vals}\n")
+        differences[i, :] = difference_vals
+        ground_truth[i, :] = spine_hus_stanford
+        print("\n")
+    # compute average percent change from ground truth
+    percent_change = np.divide(differences, ground_truth) * 100
+    average_percent_change = np.mean(percent_change, axis=0)
+    # print average percent change
+    print("Average percent change from ground truth:")
+    print(average_percent_change)
+    # print average difference
+    average_difference = np.mean(differences, axis=0)
+    print("Average difference from ground truth:")
+    print(average_difference)
+
+
+def process_post_hoc(pred_path):
+    """Apply post-hoc heuristics for improving Stanford spine model vertical centroid predictions.
+
+    Args:
+        pred_path (str): Path to the prediction.
+    """
+    pred_nib  = nib.load(pred_path)
+    spacing = pred_nib.header.get_zooms()[2]
+    pred = pred_nib.get_fdata()
+
+    pred_bodies = np.logical_and(pred >= 1, pred <= 6)
+    pred_bodies = pred_bodies.astype(np.int64)
+    
+    labels_out, N = cc3d.connected_components(pred_bodies, return_N=True, connectivity=6)
+    
+    stats = cc3d.statistics(labels_out)
+    print(stats)
+    
+    labels_out_list = []
+    voxel_counts_list = list(stats['voxel_counts'])
+    for idx_lab in range(1, N + 2):
+        labels_out_list.append(labels_out == idx_lab)
+    
+    centroids_list = list(stats['centroids'][:, 2])
+    
+    labels = []
+    centroids = []
+    voxels = []
+    
+    for idx, count in enumerate(voxel_counts_list):
+        if count > 10000:
+            labels.append(labels_out_list[idx])
+            centroids.append(centroids_list[idx])
+            voxels.append(count)
+        
+    top_comps = [(counts0, labels0, centroids0) for counts0, labels0, centroids0 in sorted(zip(voxels, labels, centroids), reverse = True)]
+    top_comps = top_comps[1:7]
+    
+    # ====== Check whether the connected components are fusing vertebral bodies ======
+    revert_to_original = False
+    
+    volumes = list(zip(*top_comps))[0]
+    if volumes[0] > 1.5 * volumes[1]:
+        revert_to_original = True
+        print("Reverting to original...")
+    
+    labels = list(zip(*top_comps))[1]
+    centroids = list(zip(*top_comps))[2]
+        
+    top_comps = zip(centroids, labels)
+    pred_centroids = [x for x, _ in sorted(top_comps)]
+
+    for label_idx in range(1, 7):
+        if not revert_to_original:
+            try:
+                pred_centroid = pred_centroids[6 - label_idx]
+            except:
+                # Change this part
+                print("Something went wrong with post processing, probably < 6 predicted bodies. Reverting to original labels.")
+                revert_to_original = True
+                
+        if revert_to_original:
+            pred_level = pred == label_idx
+            sums = np.sum(pred_level, axis = (0, 1))
+            indices = list(range(sums.shape[0]))
+            groupby_input = zip(indices, list(sums))
+            #sys.exit()
+            g = groupby(groupby_input, key=lambda x:x[1]>0.0)
+            m = max([list(s) for v, s in g if v > 0], key = lambda x:np.sum(list(zip(*x))[1]))
+            #sys.exit()
+            #m = max([list(s) for v, s in g], key=lambda np.sum)
+            res = list(zip(*m))
+            indexes = list(res[0])
+            sums = list(res[1])
+            normalized_sums = sums / np.sum(sums)
+            pred_centroid = np.sum(indexes * normalized_sums)
+        print(f"Centroid for prediction {label_idx}: {pred_centroid}")
