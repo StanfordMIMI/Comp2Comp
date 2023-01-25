@@ -450,7 +450,6 @@ def compare_ts_stanford_centroids(labels_path):
     print(f"The final median differences in mm:")
     print(np.median(t12_diff), np.median(l1_diff), np.median(l2_diff), np.median(l3_diff), np.median(l4_diff), np.median(l5_diff))
 
-
 def compare_ts_stanford_roi_hus(image_path):
     """Compare the HU values of the Stanford dataset with the HU values of the TS dataset.
 
@@ -495,7 +494,6 @@ def compare_ts_stanford_roi_hus(image_path):
     print(average_difference)
     print("Median difference from ground truth:")
     print(median_difference)
-
 
 def process_post_hoc(pred_path):
     """Apply post-hoc heuristics for improving Stanford spine model vertical centroid predictions.
