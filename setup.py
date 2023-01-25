@@ -40,7 +40,7 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "pydicom",
-        "numpy",
+        "numpy==1.23.5",
         "h5py",
         "tabulate",
         "tqdm",
