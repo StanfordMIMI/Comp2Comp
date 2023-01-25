@@ -445,9 +445,10 @@ def compare_ts_stanford_centroids(labels_path):
             
     print(f"Processed {i + 1} scans!\n")
     print(f"Skipped {num_skipped}")
-    print(f"The final differences in mm:")
+    print(f"The final mean differences in mm:")
     print(np.mean(t12_diff), np.mean(l1_diff), np.mean(l2_diff), np.mean(l3_diff), np.mean(l4_diff), np.mean(l5_diff))
-
+    print(f"The final median differences in mm:")
+    print(np.median(t12_diff), np.median(l1_diff), np.median(l2_diff), np.median(l3_diff), np.median(l4_diff), np.median(l5_diff))
 
 def compare_ts_stanford_roi_hus(image_path):
     """Compare the HU values of the Stanford dataset with the HU values of the TS dataset.
@@ -480,14 +481,19 @@ def compare_ts_stanford_roi_hus(image_path):
     # compute average percent change from ground truth
     percent_change = np.divide(differences, ground_truth) * 100
     average_percent_change = np.mean(percent_change, axis=0)
+    median_percent_change = np.median(percent_change, axis=0)
     # print average percent change
     print("Average percent change from ground truth:")
     print(average_percent_change)
+    print("Median percent change from ground truth:")
+    print(median_percent_change)
     # print average difference
     average_difference = np.mean(differences, axis=0)
+    median_difference = np.median(differences, axis = 0)
     print("Average difference from ground truth:")
     print(average_difference)
-
+    print("Median difference from ground truth:")
+    print(median_difference)
 
 def process_post_hoc(pred_path):
     """Apply post-hoc heuristics for improving Stanford spine model vertical centroid predictions.
