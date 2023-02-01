@@ -128,7 +128,7 @@ def argument_parser():
     )
     process_3d_parser.add_argument(
         "--muscle_fat_model",
-        default="stanford_v0.0.1",
+        default="abCT_v0.0.1",
         type=str,
         help="muscle + fat segmentation model to use for inference",
     )
@@ -321,7 +321,7 @@ def handle_process_3d(args):
 
     #muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1")
     #muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1_v1")
-    muscle_fat_model_type = Models.model_from_name("abCT_v0.0.1")
+    muscle_fat_model_type = Models.model_from_name(args.muscle_fat_model)
     spine_model_type = Models.model_from_name("ts_spine")
 
     base_output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))

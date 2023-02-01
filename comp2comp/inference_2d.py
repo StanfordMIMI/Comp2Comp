@@ -8,7 +8,6 @@ import silx.io.dictdump as sio
 from keras import backend as K
 from tqdm import tqdm
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2
 
 from comp2comp.data import Dataset, fill_holes, predict
@@ -119,12 +118,8 @@ def compute_and_save_results(
         ]
     if args.pp:
         masks = fill_holes(masks)
-        # TODO: currently, IMAT pixels are determined before this line in abct.data.predict using a threshold of 0.5. This is not ideal.
-        # We should instead determine IMAT pixels here, after after model_type.preds_to_mask(p) and fill_holes.
         if "muscle" in categories and "imat" in categories:
-            # subtract imat from muscle
             cats = list(categories.keys())
-            # find index of muscle and imat
             muscle_idx = cats.index("muscle")
 
     assert len(masks) == len(params_dicts)
@@ -143,9 +138,7 @@ def compute_and_save_results(
         # get rid of small connected components as these are likely noise
         imat_mask = remove_small_objects(imat_mask)
         mask[..., cats.index("imat")] += imat_mask
-        # this is being generated correctly!!
         mask[..., cats.index("muscle")][imat_mask == 1] = 0
-        #mask[..., cats.index("muscle")] = 0
         results = compute_results(x, mask, categories, params)
         results_dict[label_text[file_idx]] = results
 
@@ -170,11 +163,10 @@ def compute_and_save_results(
 
 def remove_small_objects(mask, min_size=10):
     mask = mask.astype(np.uint8)
-    nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    components, output, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
     sizes = stats[1:, -1]
-    nb_components = nb_components - 1
     mask = np.zeros((output.shape))
-    for i in range(0, nb_components):
+    for i in range(0, components - 1):
         if sizes[i] >= min_size:
             mask[output == i + 1] = 1
     return mask

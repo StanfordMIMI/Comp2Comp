@@ -9,7 +9,6 @@ from pydicom.filereader import dcmread
 import nibabel as nib
 from itertools import groupby
 import re
-import matplotlib.pyplot as plt
 import os
 from scipy.ndimage import zoom
 
@@ -201,22 +200,6 @@ def mean_img_mask(
     img_masked = (img * mask)[mask > 0]
     #mean = (rescale_slope * np.mean(img_masked)) + rescale_intercept
     median = (rescale_slope * np.median(img_masked)) + rescale_intercept
-    # save a histogram of the pixel values in the mask
-    # scale the imag_masked
-    '''
-    img_masked = (rescale_slope * img_masked) + rescale_intercept
-    plt.hist(img_masked, bins=100)
-    plt.xlabel("Pixel Value")
-    plt.ylabel("Frequency")
-    if index == 0:
-        plt.title("T12 Histogram")
-        plt.savefig(os.path.join(save_dir, "images", "T12_histo.png"))
-    else:
-        plt.title(f"L{index} Histogram")
-        plt.savefig(os.path.join(save_dir, "images", f"L{index}_histo.png"))
-    plt.close()
-    #return mean
-    '''
     return median
 
 
