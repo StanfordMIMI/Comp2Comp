@@ -12,15 +12,13 @@ from comp2comp.preferences import PREFERENCES
 
 
 class Models(enum.Enum):
-    """
     ABCT_V_0_0_1 = (
         1,
         "abCT_v0.0.1",
-        ("muscle", "imat", "vat", "sat"),
+        {"muscle": 0, "imat": 1, "vat": 2, "sat": 3},
         False,
         ("soft", "bone", "custom"),
     )
-    """
 
     STANFORD_V_0_0_1 = (
         2,
@@ -65,18 +63,6 @@ class Models(enum.Enum):
         obj.windows = windows
         return obj
 
-    def find_model_weights():
-        """Find the model weights in the models directory.
-
-        Returns:
-            str: Path to model weights.
-        """
-        for root, dirs, files in os.walk(PREFERENCES.MODELS_DIR):
-            for file in files:
-                if file.endswith(".h5"):
-                    filename = os.path.join(root, file)
-        return filename
-
     def load_model(self, logger):
         """Load the model from the models directory.
 
@@ -93,12 +79,12 @@ class Models(enum.Enum):
              # use_auth_token=PREFERENCES.HF_TOKEN,
         # )
         try:
-            filename = Models.find_model_weights()
+            filename = Models.find_model_weights(self.model_name)
         except:
             logger.info("Downloading muscle/fat model from hugging face")
             Path(PREFERENCES.MODELS_DIR).mkdir(parents=True, exist_ok=True)
-            weights_file_name = wget.download("https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/stanford_v0.0.1.h5", out=os.path.join(PREFERENCES.MODELS_DIR, "stanford_v0.0.1.h5"))
-            filename = Models.find_model_weights()
+            weights_file_name = wget.download(f"https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/{self.model_name}.h5", out=os.path.join(PREFERENCES.MODELS_DIR, f"{self.model_name}.h5"))
+            filename = Models.find_model_weights(self.model_name)
      
         logger.info("Loading muscle/fat model from {}".format(filename))
         return load_model(filename)
@@ -139,9 +125,9 @@ class Models(enum.Enum):
         return None
 
     @staticmethod
-    def find_model_weights():
+    def find_model_weights(file_name):
         for root, _, files in os.walk(PREFERENCES.MODELS_DIR):
             for file in files:
-                if file.endswith(".h5"):
+                if file.startswith(file_name):
                     filename = os.path.join(root, file)
         return filename

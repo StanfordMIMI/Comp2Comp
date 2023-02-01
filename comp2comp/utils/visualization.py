@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from typing import Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
@@ -81,6 +80,7 @@ def save_binary_segmentation_overlay(
     spine_hus=None,
     spine=True,
     model_type=None,
+    pixel_spacing=None
 ):
     """Save binary segmentation overlay.
 
@@ -96,10 +96,39 @@ def save_binary_segmentation_overlay(
         model_type (Models): Model type. Defaults to None.
     """
 
+    _2D_COLORS = (
+        np.array(
+            [
+                255,
+                136, 
+                133,
+                140,
+                197,
+                135,
+                246,
+                190,
+                129,
+                154,
+                135,
+                224
+            ]
+        )
+    .astype(np.float32)
+    .reshape(-1, 3)
+    )
+
+    _2D_COLORS = _2D_COLORS / 255.0
+
     if model_type and (model_type.model_name == "ts_spine"):
         _SPINE_LEVELS = list(model_type.categories.keys())
-    elif model_type and (model_type.model_name == "stanford_v0.0.1"):
+        # reverse the list
+        _SPINE_LEVELS = _SPINE_LEVELS[::-1]
+    elif model_type and ((model_type.model_name == "stanford_v0.0.1") or (model_type.model_name == "abCT_v0.0.1")):
         _TISSUES = list(model_type.categories.keys())
+        _SPINE_LEVELS = ["T12", "L1", "L2", "L3", "L4", "L5"]
+        if model_type.model_name == "abCT_v0.0.1":
+            # put the imat color before vat and sat colors
+            _2D_COLORS = np.insert(_2D_COLORS, 1, _2D_COLORS[3], axis=0)
 
     # Window image to retain most information
     img_in = np.clip(img_in, -300, 1800)
@@ -117,14 +146,24 @@ def save_binary_segmentation_overlay(
     img_rgb = np.tile(img_in, (1, 1, 3))
     vis = Visualizer(img_rgb)
     for num_bin_masks in range(1, mask.shape[2] + 1):
+        if num_bin_masks > 6:
+            color = _COLORS[num_bin_masks - 1]
+            edge_color = color
+        else:
+            edge_color = None
         if centroids:
             alpha_val = 0.2
+            color = _COLORS[num_bin_masks - 1]
         else:
-            alpha_val = 1
+            alpha_val = 0.9
+            color = _2D_COLORS[num_bin_masks - 1]
+            edge_color = color
         vis.draw_binary_mask(
             mask[:, :, num_bin_masks - 1].astype(int),
-            color=_COLORS[num_bin_masks - 1],
+            color=color,
+            edge_color=edge_color,
             alpha=alpha_val,
+            area_threshold = 0
         )
         # Debug imat mask
         if centroids:
@@ -136,19 +175,19 @@ def save_binary_segmentation_overlay(
                     mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT,
                     int(_TEXT_SPACING / 2.0) * (num_bin_masks - 1) + _TEXT_START_VERTICAL_OFFSET,
                 ),
-                color=_COLORS[num_bin_masks - 1],
+                color=_COLORS[5 - (num_bin_masks - 1)],
                 font_size=7,
             )
 
             vis.draw_line(
                 x_data=(0, mask.shape[1] - 1),
                 y_data=(
-                    centroids[num_bin_masks - 1],
-                    centroids[num_bin_masks - 1],
+                    int(centroids[num_bin_masks - 1] * (pixel_spacing[2] / pixel_spacing[1])),
+                    int(centroids[num_bin_masks - 1] * (pixel_spacing[2] / pixel_spacing[1])),
                 ),
                 color=_COLORS[num_bin_masks - 1],
                 linestyle="dashed",
-                linewidth=0.5,
+                linewidth=0.25,
             )
         else:
             if spine:
@@ -156,6 +195,17 @@ def save_binary_segmentation_overlay(
                     box_coord=(1, 1, mask.shape[0] - 1, mask.shape[1] - 1),
                     alpha=1,
                     edge_color=_COLORS[_COLOR_MAP[file_name.split("_")[0]]],
+                )
+                # draw the level T12 - L5 in the upper left corner
+                if file_name.split('_')[0] == "T12":
+                    position = (40, 15)
+                else:
+                    position = (30, 15)
+                vis.draw_text(
+                    text = f"{file_name.split('_')[0]}",
+                    position = position,
+                    color = _COLORS[_COLOR_MAP[file_name.split("_")[0]]],
+                    font_size = 24
                 )
 
             if figure_text_key:
@@ -178,7 +228,7 @@ def save_binary_segmentation_overlay(
                         mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT,
                         _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset,
                     ),
-                    color=_COLORS[num_bin_masks - 1],
+                    color=_2D_COLORS[num_bin_masks - 1],
                     font_size=7,
                 )
                 vis.draw_text(
@@ -189,7 +239,7 @@ def save_binary_segmentation_overlay(
                         + text_start_vertical_offset
                         + (_TEXT_SPACING / 2),
                     ),
-                    color=_COLORS[num_bin_masks - 1],
+                    color=_2D_COLORS[num_bin_masks - 1],
                     font_size=7,
                 )
     vis_obj = vis.get_output()

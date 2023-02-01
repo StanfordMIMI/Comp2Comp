@@ -7,6 +7,8 @@ from typing import List
 import silx.io.dictdump as sio
 from keras import backend as K
 from tqdm import tqdm
+import numpy as np
+import cv2
 
 from comp2comp.data import Dataset, fill_holes, predict
 from comp2comp.models import Models
@@ -47,6 +49,7 @@ def forward_pass_2d(
     dataset = Dataset(files, windows=model_type.windows)
     categories = model_type.categories
     model = model_type.load_model(logger)
+
     if num_gpus > 1:
         model = dl_utils.ModelMGPU(model, gpus=num_gpus)
 
@@ -115,27 +118,27 @@ def compute_and_save_results(
         ]
     if args.pp:
         masks = fill_holes(masks)
-        # TODO: currently, IMAT pixels are determined before this line in abct.data.predict using a threshold of 0.5. This is not ideal.
-        # We should instead determine IMAT pixels here, after after model_type.preds_to_mask(p) and fill_holes.
         if "muscle" in categories and "imat" in categories:
-            # subtract imat from muscle
             cats = list(categories.keys())
-            # find index of muscle and imat
             muscle_idx = cats.index("muscle")
-            imat_idx = cats.index("imat")
-            for i in range(len(masks)):
-                masks[i][..., muscle_idx] -= masks[i][..., imat_idx]
-                masks[i][masks[i] < 0] = 0
 
     assert len(masks) == len(params_dicts)
     assert len(masks) == len(files)
     m_save_name = "/{}".format(m_name)
     file_idx = 0
+    cats = list(categories.keys())
     for _, _, mask, params in tqdm(  # noqa: B007
         zip(files, preds, masks, params_dicts), total=len(files)
     ):
 
         x = params["image"]
+        muscle_mask = mask[..., cats.index("muscle")]
+        imat_mask = mask[..., cats.index("imat")]
+        imat_mask = (np.logical_and((x * muscle_mask) <= -30, (x * muscle_mask) >= -190)).astype(int)
+        # get rid of small connected components as these are likely noise
+        imat_mask = remove_small_objects(imat_mask)
+        mask[..., cats.index("imat")] += imat_mask
+        mask[..., cats.index("muscle")][imat_mask == 1] = 0
         results = compute_results(x, mask, categories, params)
         results_dict[label_text[file_idx]] = results
 
@@ -156,8 +159,17 @@ def compute_and_save_results(
             len(files), perf_counter() - start_time
         )
     )
-    return (inputs, masks, file_names, results_dict)
+    return (inputs, masks, file_names, results_dict)    
 
+def remove_small_objects(mask, min_size=10):
+    mask = mask.astype(np.uint8)
+    components, output, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    sizes = stats[1:, -1]
+    mask = np.zeros((output.shape))
+    for i in range(0, components - 1):
+        if sizes[i] >= min_size:
+            mask[output == i + 1] = 1
+    return mask
 
 def inference_2d(
     args: argparse.Namespace,
