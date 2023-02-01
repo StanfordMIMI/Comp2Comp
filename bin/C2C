@@ -342,6 +342,7 @@ def handle_process_3d(args):
             output_path = base_output_path / parent_dir
             output_path.mkdir(parents=True, exist_ok=True)
             output_path = str(output_path)
+
             # Log the output path
             logger.info("Output path: {}".format(output_path))
 
