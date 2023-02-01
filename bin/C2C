@@ -6,9 +6,14 @@ import sys
 from pathlib import Path
 from time import time
 import shutil
+import traceback
 
 import h5py
 import pandas as pd
+import dosma
+import numpy as np
+from datetime import datetime
+import matplotlib.pyplot as plt
 
 # import voxel as vx
 from tqdm import tqdm
@@ -314,8 +319,12 @@ def handle_process_3d(args):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     logger.info("Preferences:\n" + PREFERENCES.dump())
 
-    muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1")
+    #muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1")
+    #muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1_v1")
+    muscle_fat_model_type = Models.model_from_name("abCT_v0.0.1")
     spine_model_type = Models.model_from_name("ts_spine")
+
+    base_output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
 
     for path, num in get_dicom_paths_and_num(PREFERENCES.INPUT_PATH):
         try:
@@ -329,17 +338,10 @@ def handle_process_3d(args):
                 logger.info("Number of slices is less than 300, skipping")
                 continue
 
-            # Get parent directory name not path
-            # print("FOR DEBUGGING")
-            # print(path)
-            # print(os.path.dirname(path))
-            # print(os.path.basename(os.path.dirname(path)))
-            # parent_dir = os.path.basename(os.path.dirname(path))
-            parent_dir = os.path.basename(path)
-            output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, parent_dir))
+            parent_dir = Path(os.path.basename(path))
+            output_path = base_output_path / parent_dir
             output_path.mkdir(parents=True, exist_ok=True)
             output_path = str(output_path)
-
             # Log the output path
             logger.info("Output path: {}".format(output_path))
 
@@ -348,16 +350,42 @@ def handle_process_3d(args):
             segmentations_path.mkdir(parents=True, exist_ok=True)
             seg_output_dir = str(segmentations_path / "spine.nii.gz")
 
+            images_path = Path(output_path) / "images"
+            images_path.mkdir(parents=True, exist_ok=True)
+
+            metrics_path = Path(output_path) / "metrics"
+            metrics_path.mkdir(parents=True, exist_ok=True)
+
             # Perform spine segmentation inference
             seg, mvs = spine_seg(logger, seg_input_path, seg_output_dir)
+            mvs_ndarray = mvs.volume
+            pixel_spacing = mvs.pixel_spacing
 
-            (spine_hus, rois, centroids) = spine_utils.compute_rois(
+            # Flip / transpose the axes if necessary
+            transpose_idxs = dosma.core.get_transpose_inds(mvs.orientation, ('AP', 'RL', 'SI'))
+            mvs_ndarray = np.transpose(mvs_ndarray, transpose_idxs)
+            seg = np.transpose(seg, transpose_idxs)
+            # apply same transformation to pixel spacing
+            pixel_spacing_list = []
+            for i in range(3):
+                pixel_spacing_list.append(pixel_spacing[transpose_idxs[i]])
+
+            flip_idxs = dosma.core.get_flip_inds(mvs.orientation, ('AP', 'RL', 'SI'))
+            mvs_ndarray = np.flip(mvs_ndarray, flip_idxs)
+            seg = np.flip(seg, flip_idxs)
+
+            (spine_hus, rois, centroids_3d) = spine_utils.compute_rois(
                 seg,
-                mvs.volume,
+                mvs_ndarray,
                 mvs.get_metadata("RescaleSlope"),
                 mvs.get_metadata("RescaleIntercept"),
-                spine_model_type
+                spine_model_type,
+                output_path,
+                pixel_spacing_list
             )
+            # spine hus opposite order
+            spine_hus = spine_hus[::-1]
+            
             dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(
                 seg,
                 path,
@@ -367,12 +395,14 @@ def handle_process_3d(args):
             spine_utils.visualize_coronal_sagittal_spine(
                 seg,
                 rois,
-                mvs,
+                mvs_ndarray,
                 centroids,
+                centroids_3d,
                 label_text,
                 output_path,
                 spine_hus=spine_hus,
-                model_type=spine_model_type
+                model_type=spine_model_type,
+                pixel_spacing=pixel_spacing_list
             )
 
             # Print dicom paths to logger
@@ -396,7 +426,7 @@ def handle_process_3d(args):
             _, manifest = handle_summarize(output_path, dicom_files, label_text, spine_hus)
 
             # TODO: this is hacky, but it works. We need to refactor this
-            figure_text_map = metrics.manifest_to_map(manifest)
+            figure_text_map = metrics.manifest_to_map(manifest, muscle_fat_model_type)
 
             # Save images
             for num_2d in range(len(inputs)):
@@ -417,7 +447,9 @@ def handle_process_3d(args):
         except Exception as e:
             shutil.rmtree(output_path)
             logger.info(f"ERROR PROCESSING {path}")
-            logger.info(str(e))
+            # logger.info(str(e))
+            # print the traceback
+            traceback.print_exc()
             continue
 
 def handle_summarize(results_dir, dicom_files=None, label_text=None, spine_hus=None):
@@ -489,6 +521,9 @@ def handle_summarize(results_dir, dicom_files=None, label_text=None, spine_hus=N
 
 
 def main():
+    '''
+    Entry point. Code is bad but functionality > readability. Best of luck!
+    '''
     args = argument_parser().parse_args()
     if args.action == "config":
         handle_init(args)

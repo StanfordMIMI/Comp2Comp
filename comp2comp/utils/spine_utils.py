@@ -10,6 +10,8 @@ import nibabel as nib
 from itertools import groupby
 import re
 import matplotlib.pyplot as plt
+import os
+from scipy.ndimage import zoom
 
 from comp2comp.preferences import PREFERENCES
 from comp2comp.models import Models
@@ -137,7 +139,7 @@ def compute_center_of_mass(mask: np.ndarray):
 
 # Function that takes a 3d centroid and retruns a binary mask with a 3d
 # roi around the centroid
-def roi_from_mask(img: np.ndarray, centroid: np.ndarray):
+def roi_from_mask(img: np.ndarray, centroid: np.ndarray, pixel_spacing):
     """Compute a 3D ROI from a 3D mask.
 
     Args:
@@ -148,12 +150,28 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray):
         np.ndarray: ROI volume.
     """
     roi = np.zeros(img.shape)
-    length = 5
+    length_i = int(5.0 / pixel_spacing[0])
+    length_j = int(5.0 / pixel_spacing[1])
+    length_k = int(5.0 / pixel_spacing[2])
+
+    # cubic ROI around centroid
+    '''
     roi[
         int(centroid[0] - length) : int(centroid[0] + length),
         int(centroid[1] - length) : int(centroid[1] + length),
         int(centroid[2] - length) : int(centroid[2] + length),
     ] = 1
+    '''
+    # spherical ROI around centroid
+    roi = np.zeros(img.shape)
+    i_lower = int(centroid[0] - length_i)
+    j_lower = int(centroid[1] - length_j)
+    k_lower = int(centroid[2] - length_k)
+    for i in range(i_lower, i_lower + 2 * length_i):
+        for j in range(j_lower, j_lower + 2 * length_j):
+            for k in range(k_lower, k_lower + 2 * length_k):
+                if (i - centroid[0]) ** 2 / length_i ** 2 + (j - centroid[1]) ** 2 / length_j ** 2 + (k - centroid[2]) ** 2 / length_k ** 2 <= 1:
+                    roi[i, j, k] = 1
     return roi
 
 
@@ -164,6 +182,8 @@ def mean_img_mask(
     mask: np.ndarray,
     rescale_slope: float,
     rescale_intercept: float,
+    save_dir: str,
+    index: int
 ):
     """Compute the mean of an image inside a mask.
 
@@ -179,11 +199,28 @@ def mean_img_mask(
     img = img.astype(np.float32)
     mask = mask.astype(np.float32)
     img_masked = (img * mask)[mask > 0]
-    mean = (rescale_slope * np.mean(img_masked)) + rescale_intercept
-    return mean
+    #mean = (rescale_slope * np.mean(img_masked)) + rescale_intercept
+    median = (rescale_slope * np.median(img_masked)) + rescale_intercept
+    # save a histogram of the pixel values in the mask
+    # scale the imag_masked
+    '''
+    img_masked = (rescale_slope * img_masked) + rescale_intercept
+    plt.hist(img_masked, bins=100)
+    plt.xlabel("Pixel Value")
+    plt.ylabel("Frequency")
+    if index == 0:
+        plt.title("T12 Histogram")
+        plt.savefig(os.path.join(save_dir, "images", "T12_histo.png"))
+    else:
+        plt.title(f"L{index} Histogram")
+        plt.savefig(os.path.join(save_dir, "images", f"L{index}_histo.png"))
+    plt.close()
+    #return mean
+    '''
+    return median
 
 
-def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
+def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, save_dir, pixel_spacing):
     """Compute the ROIs for the spine.
 
     Args:
@@ -215,8 +252,8 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type):
     for i, slice in enumerate(slices):
         center_of_mass = compute_center_of_mass(slice)
         centroid = np.array([center_of_mass[1], centroids[i], center_of_mass[0]])
-        roi = roi_from_mask(img, centroid)
-        spine_hus.append(mean_img_mask(img, roi, rescale_slope, rescale_intercept))
+        roi = roi_from_mask(img, centroid, pixel_spacing)
+        spine_hus.append(mean_img_mask(img, roi, rescale_slope, rescale_intercept, save_dir, i))
         rois.append(roi)
         centroids_3d.append(centroid)
     return (spine_hus, rois, centroids_3d)
@@ -288,12 +325,14 @@ def to_one_hot(label: np.ndarray, model_type):
 def visualize_coronal_sagittal_spine(
     seg: np.ndarray,
     rois: List[np.ndarray],
-    mvs: dm.MedicalVolume,
+    mvs: np.ndarray,
     centroids: List[int],
+    centroids_3d: np.ndarray,
     label_text: List[str],
     output_dir: str,
     spine_hus=None,
     model_type=None,
+    pixel_spacing=None
 ):
     """Visualize the coronal and sagittal planes of the spine.
 
@@ -314,12 +353,17 @@ def visualize_coronal_sagittal_spine(
     sagittal_centroid = compute_centroid(for_centroid, "sagittal", 1)
     coronal_centroid = compute_centroid(for_centroid, "coronal", 1)
 
-    # Spine visualizations
-    sagittal_image = mvs.volume[:, sagittal_centroid, :]
-    sagittal_label = seg[:, sagittal_centroid, :]
+    sagittal_vals, coronal_vals = curved_planar_reformation(mvs, centroids_3d)
+    sagittal_image = mvs[:, sagittal_vals, range(len(sagittal_vals))]
+    sagittal_label = seg[:, sagittal_vals, range(len(sagittal_vals))]
+    zoom_factor = pixel_spacing[2] / pixel_spacing[1]
+    sagittal_image = zoom(sagittal_image, (1, zoom_factor), order = 3)
+    sagittal_label = zoom(sagittal_label, (1, zoom_factor), order = 0).astype(int)
+
     one_hot_sag_label = to_one_hot(sagittal_label, model_type)
     for roi in rois:
-        one_hot_roi_label = roi[:, sagittal_centroid, :]
+        one_hot_roi_label = roi[:, sagittal_vals, range(len(sagittal_vals))]
+        one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order = 0).astype(int)
         one_hot_sag_label = np.concatenate(
             (
                 one_hot_sag_label,
@@ -330,11 +374,15 @@ def visualize_coronal_sagittal_spine(
             axis=2,
         )
 
-    coronal_image = mvs.volume[coronal_centroid, :, :]
-    coronal_label = seg[coronal_centroid, :, :]
+    coronal_image = mvs[coronal_vals, :, range(len(coronal_vals))]
+    coronal_label = seg[coronal_vals, :, range(len(coronal_vals))]
+    coronal_image = zoom(coronal_image, (zoom_factor, 1), order = 3)
+    coronal_label = zoom(coronal_label, (zoom_factor, 1), order = 0).astype(int)
+
     one_hot_cor_label = to_one_hot(coronal_label, model_type)
     for roi in rois:
-        one_hot_roi_label = roi[coronal_centroid, :, :]
+        one_hot_roi_label = roi[coronal_vals, :, range(len(coronal_vals))]
+        one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order = 0).astype(int)
         one_hot_cor_label = np.concatenate(
             (
                 one_hot_cor_label,
@@ -346,13 +394,14 @@ def visualize_coronal_sagittal_spine(
         )
 
     visualization.save_binary_segmentation_overlay(
-        np.transpose(coronal_image),
-        np.transpose(one_hot_cor_label, (1, 0, 2)),
+        coronal_image,
+        one_hot_cor_label,
         output_dir,
         "spine_coronal.png",
         centroids,
         spine_hus=spine_hus,
         model_type=model_type,
+        pixel_spacing=pixel_spacing
     )
     visualization.save_binary_segmentation_overlay(
         np.transpose(sagittal_image),
@@ -362,7 +411,39 @@ def visualize_coronal_sagittal_spine(
         centroids,
         spine_hus=spine_hus,
         model_type=model_type,
+        pixel_spacing=pixel_spacing
     )
+
+def curved_planar_reformation(mvs, centroids):
+    # first index gives coronal plane, second index gives sagittal plane, third index gives axial plane
+    # order the centroids by the axial plane
+    centroids = sorted(centroids, key=lambda x: x[2])
+    # change type to int
+    centroids = [(int(x[0]), int(x[1]), int(x[2])) for x in centroids]
+    # extract the sagittal centroids
+    sagittal_centroids = [centroids[i][1] for i in range(0, len(centroids))]
+    # extract the coronal centroids
+    coronal_centroids = [centroids[i][0] for i in range(0, len(centroids))]
+    # extract the axial centroids
+    axial_centroids = [centroids[i][2] for i in range(0, len(centroids))]
+    current_axial_centroid = 0
+    sagittal_vals = [sagittal_centroids[0]] * axial_centroids[0]
+    coronal_vals = [coronal_centroids[0]] * axial_centroids[0]
+    for i in range(1, len(axial_centroids)):
+        num = axial_centroids[i] - axial_centroids[i - 1]
+        interp = list(np.linspace(sagittal_centroids[i - 1], sagittal_centroids[i], num=num))
+        sagittal_vals.extend(interp)
+        interp = list(np.linspace(coronal_centroids[i - 1], coronal_centroids[i], num=num))
+        coronal_vals.extend(interp)
+    sagittal_vals.extend([sagittal_centroids[-1]] * (mvs.shape[2] - len(sagittal_vals)))
+    coronal_vals.extend([coronal_centroids[-1]] * (mvs.shape[2] - len(coronal_vals)))
+    sagittal_vals = np.array(sagittal_vals)
+    coronal_vals = np.array(coronal_vals)
+    sagittal_vals = sagittal_vals.astype(int)
+    coronal_vals = coronal_vals.astype(int)
+
+    return (sagittal_vals, coronal_vals)
+
 
 def compare_ts_stanford_centroids(labels_path):
     """Compare the centroids of the Stanford dataset with the centroids of the TS dataset.

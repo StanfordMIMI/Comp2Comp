@@ -1,5 +1,6 @@
 import math
 from typing import List, Sequence
+import matplotlib.pyplot as plt
 
 import cv2
 import keras.utils as k_utils
@@ -121,7 +122,8 @@ def _fill_holes(mask: np.ndarray, mask_id: int):
     if mask_id == 2:
         min_size = 400
     else:
-        min_size = 50  # Smaller threshold for everything else
+        #min_size = 50  # Smaller threshold for everything else
+        min_size = 50
     img_out = np.ones_like(mask)
     for i in range(0, components):
         if sizes[i] > min_size:
@@ -193,6 +195,7 @@ def postprocess(xs: np.ndarray, ys: np.ndarray, params: dict):
 
     # If muscle hu is < -30, assume it is imat.
 
+    '''
     if "muscle" in categories and "imat" in categories:
         ys = _swap_muscle_imap(
             xs,
@@ -200,6 +203,7 @@ def postprocess(xs: np.ndarray, ys: np.ndarray, params: dict):
             muscle_idx=categories["muscle"],
             imat_idx=categories["imat"],
         )
+    '''
 
     return ys
 
