@@ -17,7 +17,7 @@ from comp2comp.models import Models
 from comp2comp.utils import visualization
 
 
-def find_spine_dicoms(seg: np.ndarray, path: str, model_type):
+def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
     """Find the dicom files corresponding to the spine T12 - L5 levels.
 
     Args:
@@ -43,17 +43,27 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type):
     # TODO Make these names configurable
     label_text = ["T12_seg", "L1_seg", "L2_seg", "L3_seg", "L4_seg", "L5_seg"]
 
+    # if flip_si is True, then flip the vertical positions
+    if flip_si:
+        vertical_positions_dcm = [(seg.shape[2] - x) for x in vertical_positions]
+    else:
+        vertical_positions_dcm = vertical_positions
+
     dicom_files = []
+    instance_numbers = []
     for dicom_path in glob(folder_in + "/*.dcm"):
         instance_number = dcmread(dicom_path).InstanceNumber
-        if instance_number in vertical_positions:
+        if instance_number in vertical_positions_dcm:
             dicom_files.append(dicom_path)
             instance_numbers.append(instance_number)
 
-    dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
-    instance_numbers.sort(reverse=True)
+    if flip_si:
+        dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files), reverse = True)]
+    else:
+        dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
+    vertical_positions.sort(reverse=True)
 
-    return (dicom_files, label_text, instance_numbers)
+    return (dicom_files, label_text, vertical_positions)
 
 
 # Function that takes a numpy array as input, computes the

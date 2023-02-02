@@ -265,12 +265,30 @@ def generate_panel(image_dir: Union[str, Path]):
         image_dir (Union[str, Path]): Path to the image directory.
     """
     image_files = [os.path.join(image_dir, path) for path in _image_files]
-    new_im = Image.new("RGB", (2080, 1040))
-    index = 0
-    for i in range(0, 2080, 520):
-        for j in range(0, 1040, 520):
+    im_cor = Image.open(image_files[0])
+    im_sag = Image.open(image_files[1])
+    im_cor_width = int(im_cor.width / im_cor.height * 512)
+    width = (8 + im_cor_width + 8) + ((512 + 8) * 3)
+    height = 1048
+    new_im = Image.new("RGB", (width, height))
+
+    index = 2 
+    for i in range(8 + im_cor_width + 8, width, 520):
+        for j in range(8, height, 520):
             im = Image.open(image_files[index])
             im.thumbnail((512, 512))
             new_im.paste(im, (i, j))
             index += 1
+            im.close()
+    
+    im_cor.thumbnail((im_cor_width, 512))
+    new_im.paste(im_cor, (8, 8))
+    im_sag.thumbnail((im_cor_width, 512))
+    new_im.paste(im_sag, (8, 528))
     new_im.save(os.path.join(image_dir, "panel.png"))
+    im_cor.close()
+    im_sag.close()
+    new_im.close()
+
+
+

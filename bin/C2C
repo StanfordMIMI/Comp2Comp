@@ -249,10 +249,10 @@ def handle_process_2d(args):
 
     logger.info("Preferences:\n" + PREFERENCES.dump())
 
-    muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1")
+    muscle_fat_model_type = Models.model_from_name(args.muscle_fat_model)
 
     parent_dir = os.path.basename(os.path.dirname(PREFERENCES.INPUT_PATH))
-    output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, parent_dir))
+    output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), parent_dir))
     output_path.mkdir(parents=True, exist_ok=True)
     output_path = str(output_path)
 
@@ -277,7 +277,7 @@ def handle_process_2d(args):
 
     _, manifest = handle_summarize(output_path)
 
-    figure_text_map = metrics.manifest_to_map(manifest)
+    figure_text_map = metrics.manifest_to_map(manifest, muscle_fat_model_type)
 
     # Save images
     for num_2d in range(len(inputs)):
@@ -319,8 +319,6 @@ def handle_process_3d(args):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     logger.info("Preferences:\n" + PREFERENCES.dump())
 
-    #muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1")
-    #muscle_fat_model_type = Models.model_from_name("stanford_v0.0.1_v1")
     muscle_fat_model_type = Models.model_from_name(args.muscle_fat_model)
     spine_model_type = Models.model_from_name("ts_spine")
 
@@ -375,6 +373,10 @@ def handle_process_3d(args):
             mvs_ndarray = np.flip(mvs_ndarray, flip_idxs)
             seg = np.flip(seg, flip_idxs)
 
+            flip_si = False
+            if 2 in flip_idxs:
+                flip_si = True
+
             (spine_hus, rois, centroids_3d) = spine_utils.compute_rois(
                 seg,
                 mvs_ndarray,
@@ -390,7 +392,8 @@ def handle_process_3d(args):
             dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(
                 seg,
                 path,
-                spine_model_type
+                spine_model_type,
+                flip_si
             )
             logger.info("{} scans found".format(len(dicom_files)))
             spine_utils.visualize_coronal_sagittal_spine(
