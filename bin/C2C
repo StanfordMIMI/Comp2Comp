@@ -111,7 +111,7 @@ def argument_parser():
     )
     process_2d_parser.add_argument(
         "--muscle_fat_model",
-        default = 'stanford_v0.0.1',
+        default = 'abCT_v0.0.1',
         type=str,
         help="muscle + fat segmentation model to use for inference",
     )
@@ -223,19 +223,20 @@ def handle_process_2d(args):
     # Find files.
     dicom_files = []
     f = PREFERENCES.INPUT_PATH
-    if not os.path.isdir(f):
-        raise ValueError("Input path must be a directory")
-    
-    dirs = [os.path.abspath(f)]
 
-    dicom_files.extend(
-        find_files(
-            dirs,
-            max_depth=args.max_depth,
-            exist_ok=args.overwrite,
-            pattern=args.pattern,
+    if not os.path.isdir(f):
+        dicom_files = [str(os.path.abspath(f))]
+
+    else:
+        dirs = [os.path.abspath(f)]
+        dicom_files.extend(
+            find_files(
+                dirs,
+                max_depth=args.max_depth,
+                exist_ok=args.overwrite,
+                pattern=args.pattern,
+            )
         )
-    )
 
     label_text = get_file_names(dicom_files)
 
@@ -409,7 +410,7 @@ def handle_process_3d(args):
                 pixel_spacing=pixel_spacing_list
             )
 
-            # Print dicom paths to logger
+            # Print dicom paths to logger 
             logger.info(f"Dicom paths: {dicom_files}")
             batch_size = PREFERENCES.BATCH_SIZE
             use_pp = args.pp

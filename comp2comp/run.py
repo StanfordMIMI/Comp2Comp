@@ -143,7 +143,7 @@ def compute_results(x, mask, categories: Dict, params: Dict):
     """
     hu = HounsfieldUnits()
     spacing = params.get("spacing", None)
-    csa_units = "mm^2" if spacing else ""
+    csa_units = "cm^2" if spacing else ""
     csa = CrossSectionalArea(csa_units)
 
     hu_vals = hu(mask, x, category_dim=-1)

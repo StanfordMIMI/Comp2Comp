@@ -98,7 +98,7 @@ class CrossSectionalArea(Metric):
         mask = mask.astype(np.bool)
         mask = flatten_non_category_dims(mask, category_dim)
 
-        return pixel_area * np.count_nonzero(mask, -1)
+        return pixel_area * np.count_nonzero(mask, -1) / 100.0
 
     def name(self):
         if self.units:
@@ -124,13 +124,13 @@ def manifest_to_map(manifest, model_type):
         except BaseException:
             key = ".".join((manifest_dict["File"].split("/")[-1]).split(".")[:-1])
         muscle_hu = f"{manifest_dict['Hounsfield Unit (muscle)']:.2f}"
-        muscle_area = f"{manifest_dict['Cross-sectional Area (mm^2) (muscle)']:.2f}"
+        muscle_area = f"{manifest_dict['Cross-sectional Area (cm^2) (muscle)']:.2f}"
         vat_hu = f"{manifest_dict['Hounsfield Unit (vat)']:.2f}"
-        vat_area = f"{manifest_dict['Cross-sectional Area (mm^2) (vat)']:.2f}"
+        vat_area = f"{manifest_dict['Cross-sectional Area (cm^2) (vat)']:.2f}"
         sat_hu = f"{manifest_dict['Hounsfield Unit (sat)']:.2f}"
-        sat_area = f"{manifest_dict['Cross-sectional Area (mm^2) (sat)']:.2f}"
+        sat_area = f"{manifest_dict['Cross-sectional Area (cm^2) (sat)']:.2f}"
         imat_hu = f"{manifest_dict['Hounsfield Unit (imat)']:.2f}"
-        imat_area = f"{manifest_dict['Cross-sectional Area (mm^2) (imat)']:.2f}"
+        imat_area = f"{manifest_dict['Cross-sectional Area (cm^2) (imat)']:.2f}"
         if model_type.model_name == "abCT_v0.0.1":
             figure_text_key[key] = [
                 muscle_hu,
