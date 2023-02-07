@@ -120,10 +120,10 @@ def _fill_holes(mask: np.ndarray, mask_id: int):
     # Larger threshold for SAT
     # TODO make this configurable / parameter
     if mask_id == 2:
-        min_size = 400
+        min_size = 200
     else:
         #min_size = 50  # Smaller threshold for everything else
-        min_size = 50
+        min_size = 20
     img_out = np.ones_like(mask)
     for i in range(0, components):
         if sizes[i] > min_size:
