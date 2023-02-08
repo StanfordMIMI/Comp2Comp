@@ -30,9 +30,9 @@ _COLORS = (
             1.000,
             1.000,
             0.000,
-            0.000,
-            0.000,
             1.000,
+            0.500,
+            0.000,
             0.000,
             1.000,
             1.000,
@@ -65,11 +65,14 @@ _COLORS = (
 
 _COLOR_MAP = {"L5": 0, "L4": 1, "L3": 2, "L2": 3, "L1": 4, "T12": 5}
 
-_TEXT_SPACING = 39.0
-_TEXT_VERTICAL_SPACING = 12.0
-_TEXT_START_VERTICAL_OFFSET = 22.0
-_TEXT_OFFSET_FROM_RIGHT = 185
+_SPINE_TEXT_OFFSET_FROM_TOP = 10.0
+_SPINE_TEXT_OFFSET_FROM_RIGHT = 63.0
+_SPINE_TEXT_VERTICAL_SPACING = 14.0
 
+_MUSCLE_FAT_TEXT_HORIZONTAL_SPACING = 40.0
+_MUSCLE_FAT_TEXT_VERTICAL_SPACING = 14.0
+_MUSCLE_FAT_TEXT_OFFSET_FROM_TOP = 22.0
+_MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT = 181.0
 
 def save_binary_segmentation_overlay(
     img_in: Union[str, Path],
@@ -145,7 +148,7 @@ def save_binary_segmentation_overlay(
     images_base_path = Path(base_path) / "images"
     images_base_path.mkdir(exist_ok=True)
 
-    text_start_vertical_offset = _TEXT_START_VERTICAL_OFFSET
+    text_start_vertical_offset = _MUSCLE_FAT_TEXT_OFFSET_FROM_TOP
 
     img_in = img_in.reshape((img_in.shape[0], img_in.shape[1], 1))
     img_rgb = np.tile(img_in, (1, 1, 3))
@@ -154,21 +157,21 @@ def save_binary_segmentation_overlay(
         vis.draw_text(
             text=f"Density (HU)",
             position=(
-                mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT - 43,
+                mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT - 63,
                 text_start_vertical_offset
             ),
             color=[1, 1, 1],
-            font_size=7,
+            font_size=9,
             horizontal_alignment="left"
         )
         vis.draw_text(
             text=f"Area (CM²)",
             position=(
-                mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT - 43,
-                text_start_vertical_offset + _TEXT_VERTICAL_SPACING
+                mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT - 63,
+                text_start_vertical_offset + _MUSCLE_FAT_TEXT_VERTICAL_SPACING
             ),
             color=[1, 1, 1],
-            font_size=7,
+            font_size=9,
             horizontal_alignment="left"
         )
     for num_bin_masks in range(1, mask.shape[2] + 1):
@@ -196,13 +199,13 @@ def save_binary_segmentation_overlay(
             if num_bin_masks > 6:
                 continue
             vis.draw_text(
-                text=f"{_SPINE_LEVELS[num_bin_masks - 1]}: {spine_hus[num_bin_masks - 1]:.2f}",
+                text=f"{_SPINE_LEVELS[num_bin_masks - 1]}: {round(float(spine_hus[num_bin_masks - 1]))}",
                 position=(
-                    mask.shape[1] - 63,
-                    int(28 / 2.0) * (num_bin_masks - 1) + 10,
+                    mask.shape[1] - _SPINE_TEXT_OFFSET_FROM_RIGHT,
+                    _SPINE_TEXT_VERTICAL_SPACING * (num_bin_masks - 1) + _SPINE_TEXT_OFFSET_FROM_TOP,
                 ),
                 color=_COLORS[5 - (num_bin_masks - 1)],
-                font_size=7,
+                font_size=9,
                 horizontal_alignment="left"
             )
 
@@ -237,46 +240,46 @@ def save_binary_segmentation_overlay(
 
             if figure_text_key:
                 if spine:
-                    hu_val = figure_text_key[file_name.split("_")[0]][(num_bin_masks - 1) * 2]
-                    area_val = figure_text_key[file_name.split("_")[0]][
+                    hu_val = round(float(figure_text_key[file_name.split("_")[0]][(num_bin_masks - 1) * 2]))
+                    area_val = round(float(figure_text_key[file_name.split("_")[0]][
                         ((num_bin_masks - 1) * 2) + 1
-                    ]
+                    ]))
                 else:
-                    hu_val = figure_text_key[".".join(file_name.split(".")[:-1])][
+                    hu_val = round(float(figure_text_key[".".join(file_name.split(".")[:-1])][
                         (num_bin_masks - 1) * 2
-                    ]
-                    area_val = figure_text_key[".".join(file_name.split(".")[:-1])][
+                    ]))
+                    area_val = round(float(figure_text_key[".".join(file_name.split(".")[:-1])][
                         ((num_bin_masks - 1) * 2) + 1
-                    ]
+                    ]))
                 vis.draw_text(
                     text=f"{_TISSUES[num_bin_masks - 1]}",
                     position = (
-                        mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT + _TEXT_SPACING * (num_bin_masks),
-                        text_start_vertical_offset - _TEXT_VERTICAL_SPACING
+                        mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT + _MUSCLE_FAT_TEXT_HORIZONTAL_SPACING * (num_bin_masks),
+                        text_start_vertical_offset - _MUSCLE_FAT_TEXT_VERTICAL_SPACING
                     ),
                     color=_2D_COLORS[num_bin_masks - 1],
-                    font_size=7,
+                    font_size=9,
                     horizontal_alignment="center"
                 )
 
                 vis.draw_text(
                     text=hu_val,
                     position=(
-                        mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT + _TEXT_SPACING * (num_bin_masks),
+                        mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT + _MUSCLE_FAT_TEXT_HORIZONTAL_SPACING * (num_bin_masks),
                         text_start_vertical_offset
                     ),
                     color=_2D_COLORS[num_bin_masks - 1],
-                    font_size=7,
+                    font_size=9,
                     horizontal_alignment="center"
                 )
                 vis.draw_text(
                     text=area_val,
                     position=(
-                        mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT + _TEXT_SPACING * (num_bin_masks),
-                        text_start_vertical_offset + _TEXT_VERTICAL_SPACING
+                        mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT + _MUSCLE_FAT_TEXT_HORIZONTAL_SPACING * (num_bin_masks),
+                        text_start_vertical_offset + _MUSCLE_FAT_TEXT_VERTICAL_SPACING
                     ),
                     color=_2D_COLORS[num_bin_masks - 1],
-                    font_size=7,
+                    font_size=9,
                     horizontal_alignment="center"
                 )
 
@@ -284,8 +287,8 @@ def save_binary_segmentation_overlay(
                 vis.draw_text(
                     text=f"{_TISSUES[num_bin_masks - 1]} HU: " + hu_val,
                     position=(
-                        mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT,
-                        _TEXT_SPACING * (num_bin_masks - 1) + text_start_vertical_offset,
+                        mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT,
+                        _MUSCLE_FAT_TEXT_HORIZONTAL_SPACING * (num_bin_masks - 1) + text_start_vertical_offset,
                     ),
                     color=_2D_COLORS[num_bin_masks - 1],
                     font_size=7,
@@ -293,10 +296,10 @@ def save_binary_segmentation_overlay(
                 vis.draw_text(
                     text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + area_val,
                     position=(
-                        mask.shape[1] - _TEXT_OFFSET_FROM_RIGHT,
-                        _TEXT_SPACING * (num_bin_masks - 1)
+                        mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT,
+                        _MUSCLE_FAT_TEXT_HORIZONTAL_SPACING * (num_bin_masks - 1)
                         + text_start_vertical_offset
-                        + (_TEXT_SPACING / 2),
+                        + (_MUSCLE_FAT_TEXT_HORIZONTAL_SPACING / 2),
                     ),
                     color=_2D_COLORS[num_bin_masks - 1],
                     font_size=7,
