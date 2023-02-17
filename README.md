@@ -29,7 +29,7 @@ bin/C2C-slurm process_2d INPUT_PATH path/to/input/folder
 ```
 
 ## Example Image Output
-
+![Alt text](figures/panel_example.png?raw=true "Title")
 
 ## Citation
 ``` 
