@@ -47,6 +47,7 @@ docs/_build
 
 # ignore images
 *.png
+!panel_example.png
 !logo.png
 
 # ignore any weights files
