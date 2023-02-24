@@ -208,9 +208,9 @@ def mean_img_mask(
     img = img.astype(np.float32)
     mask = mask.astype(np.float32)
     img_masked = (img * mask)[mask > 0]
-    #mean = (rescale_slope * np.mean(img_masked)) + rescale_intercept
-    median = (rescale_slope * np.median(img_masked)) + rescale_intercept
-    return median
+    mean = (rescale_slope * np.mean(img_masked)) + rescale_intercept
+    # median = (rescale_slope * np.median(img_masked)) + rescale_intercept
+    return mean
 
 
 def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, save_dir, pixel_spacing):
