@@ -38,6 +38,9 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def muscle_adipose_tissue(args):
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../outputs")
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
 
     # Each class within InferencePipeline can modify InferencePipeline and access its attributes
     pipeline = InferencePipeline([
@@ -48,7 +51,7 @@ def muscle_adipose_tissue(args):
         MetricsSaver(),
         ],
     config={
-        "output_dir": args.output_dir
+        "output_dir": output_dir
         }
     )
 
@@ -56,6 +59,9 @@ def muscle_adipose_tissue(args):
 
 
 def spine_muscle_adipose_tissue(args):
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../outputs")
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
 
     # Each class within InferencePipeline can modify InferencePipeline and access its attributes
     pipeline = InferencePipeline([
@@ -67,7 +73,7 @@ def spine_muscle_adipose_tissue(args):
         MetricsSaver(),
         ],
     config={
-        "output_dir": args.output_dir
+        "output_dir": output_dir
         }
     )
 
