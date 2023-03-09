@@ -25,519 +25,99 @@ from comp2comp import metrics
 from comp2comp.inference_2d import inference_2d
 from comp2comp.models import Models
 from comp2comp.nn_unet import spine_seg
-from comp2comp.preferences import PREFERENCES, reset_preferences, save_preferences
 from comp2comp.run import find_files, get_dicom_paths_and_num, get_file_names
 from comp2comp.utils import dl_utils, spine_utils
-from comp2comp.utils.logger import setup_logger
 from comp2comp.utils.visualization import (
     generate_panel,
     save_binary_segmentation_overlay,
 )
+from comp2comp.utils.io_utils import find_dicom_files
+from comp2comp.inference_pipeline import InferencePipeline
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
-def setup(args):
-    """Load preferences and perform basic setups.
-    
-    Args:
-        args (argparse.Namespace): command line arguments.
-    """
-    args_dict = vars(args)
-    config_file = args.config_file if "config_file" in args_dict else None
-    if config_file:
-        PREFERENCES.merge_from_file(args.config_file)
-    opts = args.opts
-    if len(opts) and opts[0] == "--":
-        opts = opts[1:]
-    PREFERENCES.merge_from_list(opts)
-    setup_logger(PREFERENCES.CACHE_DIR)
+def muscle_adipose_tissue(args):
 
-
-def add_config_file_argument(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "--config-file",
-        type=str,
-        required=False,
-        help="Preferences config file",
+    # Each class within InferencePipeline can modify InferencePipeline and access its attributes
+    pipeline = InferencePipeline([
+        DicomFinder(args.input_path), 
+        MuscleAdiposeTissueSegmentation(),
+        Visualizer(),
+        H5Saver(),
+        MetricsSaver(),
+        ],
+    config={
+        "output_dir": args.output_dir
+        }
     )
 
+    pipeline()
 
-def add_opts_argument(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "opts",
-        help="Modify preferences options using the command-line",
-        default=None,
-        nargs=argparse.REMAINDER,
+
+def spine_muscle_adipose_tissue(args):
+
+    # Each class within InferencePipeline can modify InferencePipeline and access its attributes
+    pipeline = InferencePipeline([
+        DicomSeriesFinder(args.input_path),
+        SpineSegmentation(),
+        MuscleAdiposeTissueSegmentation(),
+        Visualizer(),
+        H5Saver(),
+        MetricsSaver(),
+        ],
+    config={
+        "output_dir": args.output_dir
+        }
     )
+
+    pipeline()
 
 
 def argument_parser():
-    parser = argparse.ArgumentParser("abCTSeg command line interface")
+    parser = argparse.ArgumentParser("Comp2Comp command line interface")
     subparsers = parser.add_subparsers(dest="action")
 
-    # Processing parser
-    process_2d_parser = subparsers.add_parser("process_2d", help="process abCT scans")
-
-    process_2d_parser.add_argument(
-        "--pp",
-        action="store_false",
-        help="use post-processing.",
-    )
-    process_2d_parser.add_argument(
-        "--max-depth",
-        nargs="?",
+    # Muscle + fat segmentation
+    muscle_adipose_tissue_parser = subparsers.add_parser("muscle_adipose_tissue", 
+                                              help="muscle + fat segmentation")
+    muscle_adipose_tissue_parser.add_argument(
+        "--input_path",
+        required=True,
         type=str,
-        default=None,
-        help="max depth to search directory. Default: None (recursive search)",
+        help="path to input directory or file",
     )
-    process_2d_parser.add_argument(
-        "--pattern",
-        nargs="?",
-        type=str,
-        default=None,
-        help="regex pattern for file names. Default: None",
-    )
-    process_2d_parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="overwrite results for computed files. Default: False",
-    )
-    process_2d_parser.add_argument(
-        "--num-gpus",
-        default=1,
-        type=int,
-        help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
-    )
-    process_2d_parser.add_argument(
+    muscle_adipose_tissue_parser.add_argument(
         "--muscle_fat_model",
         default = 'abCT_v0.0.1',
         type=str,
         help="muscle + fat segmentation model to use for inference",
     )
 
-    add_config_file_argument(process_2d_parser)
-    add_opts_argument(process_2d_parser)
-
-    process_3d_parser = subparsers.add_parser("process_3d",
-                                              help="process abCT dicom series")
-    process_3d_parser.add_argument(
-        "--pp",
-        action="store_false",
-        help="use post-processing.",
+    # Spine segmentation + muscle + fat segmentation
+    spine_muscle_adipose_tissue_parser = subparsers.add_parser("spine_muscle_adipose_tissue",
+                                              help="spine segmentation and muscle + fat segmentation")
+    spine_muscle_adipose_tissue_parser.add_argument(
+        "--input_path",
+        required=True,
+        type=str,
+        help="path to input directory or file",
     )
-    process_3d_parser.add_argument(
+    spine_muscle_adipose_tissue_parser.add_argument(
         "--muscle_fat_model",
         default="abCT_v0.0.1",
         type=str,
         help="muscle + fat segmentation model to use for inference",
     )
-    process_3d_parser.add_argument(
-        "--num-gpus",
-        default=1,
-        type=int,
-        help="number of GPU(s) to use. Defaults to cpu if no gpu found.",
-    )
-
-    add_config_file_argument(process_3d_parser)
-    add_opts_argument(process_3d_parser)
-
-    # summarize parser.
-    summarize_parser = subparsers.add_parser(
-        "summarize", help="summarize results"
-    )
-    summarize_parser.add_argument(
-        "--results-dir",
-        "--results-path",
-        required=True,
-        help="path to results directory",
-    )
-    add_config_file_argument(summarize_parser)
-    add_opts_argument(summarize_parser)
-
-    # init parser.
-    cfg_parser = subparsers.add_parser("config", help="init abCTSeg library")
-    init_subparsers = cfg_parser.add_subparsers(
-        title="config sub-commands", dest="cfg_action"
-    )
-    init_subparsers.add_parser("ls", help="list default preferences config")
-    init_subparsers.add_parser("reset", help="reset to default config")
-    save_cfg_parser = init_subparsers.add_parser(
-        "save", help="set config defaults"
-    )
-    add_config_file_argument(save_cfg_parser)
-    add_opts_argument(save_cfg_parser)
-
     return parser
 
 
-def handle_init(args):
-    """Handle init command.
-    
-    Args:
-        args (argparse.Namespace): command line arguments.
-
-    Raises:
-        ValueError: if invalid config action.
-    """
-    cfg_action = args.cfg_action
-    if cfg_action == "ls":
-        print("\n" + PREFERENCES.dump())
-    elif cfg_action == "reset":
-        print("\nResetting preferences...")
-        reset_preferences()
-        save_preferences()
-        print("\n" + PREFERENCES.dump())
-    elif cfg_action == "save":
-        setup(args)
-        save_preferences()
-        print("\nUpdated Preferences:")
-        print("====================")
-        print(PREFERENCES.dump())
-    else:
-        raise AssertionError("cfg_action {} not supported".format(cfg_action))
-
-
-def handle_process_2d(args):
-    """Handle process_2d command.
-
-    Args:
-        args (argparse.Namespace): command line arguments.
-    """
-
-    setup(args)
-    if not PREFERENCES.MODELS_DIR:
-        raise ValueError(
-            "MODELS_DIR not initialized. "
-            "Use `C2C config` to set MODELS_DIR"
-        )
-    logger = logging.getLogger("Comp2Comp.bin.C2C.__main__")
-    logger.info("\n\n======================================================")
-    gpus = dl_utils.get_available_gpus(args.num_gpus)
-    num_gpus = len(gpus) if gpus is not None else 0
-    if gpus is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(x) for x in gpus])
-    else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cpu
-
-    # Find files.
-    dicom_files = []
-    f = PREFERENCES.INPUT_PATH
-
-    if not os.path.isdir(f):
-        dicom_files = [str(os.path.abspath(f))]
-
-    else:
-        dirs = [os.path.abspath(f)]
-        dicom_files.extend(
-            find_files(
-                dirs,
-                max_depth=args.max_depth,
-                exist_ok=args.overwrite,
-                pattern=args.pattern,
-            )
-        )
-
-    label_text = get_file_names(dicom_files)
-
-    logger.info("{} scans found".format(len(dicom_files)))
-    if len(dicom_files) == 0:
-        sys.exit(0)
-
-    batch_size = PREFERENCES.BATCH_SIZE
-    use_pp = args.pp
-    num_workers = PREFERENCES.NUM_WORKERS
-
-    logger.info("Preferences:\n" + PREFERENCES.dump())
-
-    muscle_fat_model_type = Models.model_from_name(args.muscle_fat_model)
-
-    parent_dir = os.path.basename(os.path.dirname(PREFERENCES.INPUT_PATH))
-    output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), parent_dir))
-    output_path.mkdir(parents=True, exist_ok=True)
-    output_path = str(output_path)
-
-    # Log the output path
-    logger.info("Output path: {}".format(output_path))
-
-    segmentations_path = Path(output_path) / "segmentations"
-    segmentations_path.mkdir(parents=True, exist_ok=True)
-
-    (inputs, masks, file_names, model_type) = inference_2d(
-        args,
-        batch_size,
-        use_pp,
-        num_workers,
-        dicom_files,
-        num_gpus,
-        logger,
-        muscle_fat_model_type,
-        label_text,
-        output_dir = segmentations_path
-    )
-
-    _, manifest = handle_summarize(output_path)
-
-    figure_text_map = metrics.manifest_to_map(manifest, muscle_fat_model_type)
-
-    # Save images
-    for num_2d in range(len(inputs)):
-        save_binary_segmentation_overlay(
-            inputs[num_2d],
-            masks[num_2d],
-            output_path,
-            f"{file_names[num_2d]}.png",
-            figure_text_key=figure_text_map,
-            spine = False,
-            model_type = muscle_fat_model_type
-        )
-
-
-def handle_process_3d(args):
-    """Handle process_3d command.
-    
-    Args:
-        args (argparse.Namespace): command line arguments.
-
-    Raises:
-        ValueError: if invalid model type.
-    """
-    st = time()
-    setup(args)
-    if not PREFERENCES.MODELS_DIR:
-        raise ValueError(
-            "MODELS_DIR not initialized. "
-            "Use `C2C config` to set MODELS_DIR"
-        )
-    logger = logging.getLogger("Comp2Comp.bin.C2C.__main__")
-    logger.info("\n\n======================================================")
-
-    gpus = dl_utils.get_available_gpus(args.num_gpus)
-    num_gpus = len(gpus) if gpus is not None else 0
-    if gpus is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(x) for x in gpus])
-    else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    logger.info("Preferences:\n" + PREFERENCES.dump())
-
-    muscle_fat_model_type = Models.model_from_name(args.muscle_fat_model)
-    spine_model_type = Models.model_from_name("ts_spine")
-
-    base_output_path = Path(os.path.join(PREFERENCES.OUTPUT_PATH, datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
-
-    for path, num in get_dicom_paths_and_num(PREFERENCES.INPUT_PATH):
-        try:
-            logger.info("\n\n======================================================")
-            logger.info("Processing the DICOM series from {}".format(path))
-            logger.info("======================================================")
-
-            # assert that the number of slices is greater
-            # than 300, if not, go to next loop iteration
-            if num < 300:
-                logger.info("Number of slices is less than 300, skipping")
-                continue
-
-            parent_dir = Path(os.path.basename(path))
-            output_path = base_output_path / parent_dir
-            output_path.mkdir(parents=True, exist_ok=True)
-            output_path = str(output_path)
-
-            # Log the output path
-            logger.info("Output path: {}".format(output_path))
-
-            seg_input_path = path
-            segmentations_path = Path(output_path) / "segmentations"
-            segmentations_path.mkdir(parents=True, exist_ok=True)
-            seg_output_dir = str(segmentations_path / "spine.nii.gz")
-
-            images_path = Path(output_path) / "images"
-            images_path.mkdir(parents=True, exist_ok=True)
-
-            metrics_path = Path(output_path) / "metrics"
-            metrics_path.mkdir(parents=True, exist_ok=True)
-
-            # Perform spine segmentation inference
-            seg, mvs = spine_seg(logger, seg_input_path, seg_output_dir)
-            mvs_ndarray = mvs.volume
-            pixel_spacing = mvs.pixel_spacing
-
-            # Flip / transpose the axes if necessary
-            transpose_idxs = dosma.core.get_transpose_inds(mvs.orientation, ('AP', 'RL', 'SI'))
-            mvs_ndarray = np.transpose(mvs_ndarray, transpose_idxs)
-            seg = np.transpose(seg, transpose_idxs)
-            # apply same transformation to pixel spacing
-            pixel_spacing_list = []
-            for i in range(3):
-                pixel_spacing_list.append(pixel_spacing[transpose_idxs[i]])
-
-            flip_idxs = dosma.core.get_flip_inds(mvs.orientation, ('AP', 'RL', 'SI'))
-            mvs_ndarray = np.flip(mvs_ndarray, flip_idxs)
-            seg = np.flip(seg, flip_idxs)
-
-            flip_si = False
-            if 2 in flip_idxs:
-                flip_si = True
-
-            (spine_hus, rois, centroids_3d) = spine_utils.compute_rois(
-                seg,
-                mvs_ndarray,
-                mvs.get_metadata("RescaleSlope"),
-                mvs.get_metadata("RescaleIntercept"),
-                spine_model_type,
-                output_path,
-                pixel_spacing_list
-            )
-            # spine hus opposite order
-            spine_hus = spine_hus[::-1]
-            
-            dicom_files, label_text, centroids = spine_utils.find_spine_dicoms(
-                seg,
-                path,
-                spine_model_type,
-                flip_si
-            )
-            logger.info("{} scans found".format(len(dicom_files)))
-            spine_utils.visualize_coronal_sagittal_spine(
-                seg,
-                rois,
-                mvs_ndarray,
-                centroids,
-                centroids_3d,
-                label_text,
-                output_path,
-                spine_hus=spine_hus,
-                model_type=spine_model_type,
-                pixel_spacing=pixel_spacing_list
-            )
-
-            # Print dicom paths to logger 
-            logger.info(f"Dicom paths: {dicom_files}")
-            batch_size = PREFERENCES.BATCH_SIZE
-            use_pp = args.pp
-            num_workers = PREFERENCES.NUM_WORKERS
-            (inputs, masks, file_names, results) = inference_2d(
-                args,
-                batch_size,
-                use_pp,
-                num_workers,
-                dicom_files,
-                num_gpus,
-                logger,
-                muscle_fat_model_type,
-                label_text,
-                segmentations_path
-            )
-
-            _, manifest = handle_summarize(output_path, dicom_files, label_text, spine_hus)
-
-            # TODO: this is hacky, but it works. We need to refactor this
-            figure_text_map = metrics.manifest_to_map(manifest, muscle_fat_model_type)
-
-            # Save images
-            for num_2d in range(len(inputs)):
-                save_binary_segmentation_overlay(
-                    inputs[num_2d],
-                    masks[num_2d],
-                    output_path,
-                    f"{file_names[num_2d]}.png",
-                    figure_text_key=figure_text_map,
-                    model_type=muscle_fat_model_type
-                )
-            generate_panel(os.path.join(output_path, "images"))
-            end = time()
-
-            # Log total time for 3d processing
-            logger.info(f"Total time for 3D processing: {end-st:.2f}s.")
-
-        except Exception as e:
-            shutil.rmtree(output_path)
-            logger.info(f"ERROR PROCESSING {path}")
-            # logger.info(str(e))
-            # print the traceback
-            traceback.print_exc()
-            continue
-
-def handle_summarize(results_dir, dicom_files=None, label_text=None, spine_hus=None):
-    """Handle summarize command.
-
-    Args:
-        results_dir (str): path to results directory.
-        dicom_files (list): list of dicom file paths.
-        label_text (list): list of label text.
-        spine_hus (list): list of spine hus.
-
-    Returns:
-        (str, dict): path to summary file and manifest.
-    """
-    
-    results_dir_sub = Path(results_dir) / "metrics"
-    results_dir_sub.mkdir(exist_ok=True)
-    metrics_file = os.path.join(results_dir_sub, "c2c-metrics.csv")
-    h5_files = sorted(
-        find_files(str(Path(results_dir) / "segmentations"),
-                   pattern=".*h5$",
-                   exist_ok=True)
-    )
-
-    manifest = []
-    for h5_file in tqdm(h5_files, desc="Parsing metrics"):
-        if dicom_files:
-            # Get the index of label_text such that the label_text matches the h5_file
-            if spine_hus:
-                index = [i for i, s in enumerate(label_text) if s in h5_file][0]
-                level = label_text[index]
-                spine_hu = spine_hus[index]
-                dicom_file = dicom_files[index]
-            
-        with h5py.File(h5_file, "r") as f:
-            for model in f.keys():
-                scalar_metrics = {}
-                for tissue in f[model]:
-
-                    h5_group = f[model][tissue]
-                    scalar_metrics.update(
-                        {
-                            f"{metric} ({tissue})": h5_group[metric][()]
-                            for metric in h5_group
-                            if not h5_group[metric].shape
-                        }
-                    )
-                if dicom_files and spine_hus:
-                    manifest.append(
-                        {
-                            "Dicom File": dicom_file,
-                            "Level": level.split('_')[0],
-                            "Model": model,
-                            f"Hounsfield Unit (spine roi)": spine_hu,
-                            **scalar_metrics
-                        }
-                    )
-                else:
-                    manifest.append(
-                        {
-                            "File": h5_file,
-                            "Model": model,
-                            **scalar_metrics}
-                    )
-
-    df = pd.DataFrame(manifest)
-    df.to_csv(metrics_file, index=False)
-    return df, manifest
-
-
 def main():
-    '''
-    Entry point. Code is bad but functionality > readability. Best of luck!
-    '''
     args = argument_parser().parse_args()
-    if args.action == "config":
-        handle_init(args)
-    elif args.action == "process_2d":
-        handle_process_2d(args)
-    elif args.action == "process_3d":
-        handle_process_3d(args)
-    elif args.action == "summarize":
-        handle_summarize(args)
+    if args.action == "muscle_adipose_tissue":
+        muscle_adipose_tissue(args)
+    elif args.action == "spine_muscle_adipose_tissue":
+        spine_muscle_adipose_tissue(args)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 

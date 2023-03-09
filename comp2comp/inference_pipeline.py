@@ -13,30 +13,31 @@ class InferencePipeline:
     """
     def __init__(self, inference_classes: List = None, config: Dict = None):
         self.config = config
+        # assign values from config to attributes
+        if self.config is not None:
+            for key, value in self.config.items():
+                setattr(self, key, value)
+                
         self.inference_classes = inference_classes
 
-    def __call__(self):
+    def __call__(self, **kwargs):
         # print out the class names for each inference class
-        print("")
         print("Inference pipeline:")
         for inference_class in self.inference_classes:
             print(inference_class.__repr__())
         print("")
-        print("Running {} with input keys {}".format(self.inference_classes[0].__repr__(), 
-            inspect.signature(self.inference_classes[0]).parameters.keys()))
-        output = self.inference_classes[0]()
-        print("Finished {} with output keys {}\n".format(self.inference_classes[0].__repr__(), 
-            output.keys()))
 
-        for inference_class in self.inference_classes[1:]:
+        output = kwargs
+        for inference_class in self.inference_classes:
             assert set(inspect.signature(inference_class).parameters.keys()) == set(output.keys()), \
                 "Input to inference class, {}, does not have the correct parameters".format(inference_class.__repr__())
 
             print("Running {} with input keys {}".format(inference_class.__repr__(),
                 inspect.signature(inference_class).parameters.keys()))
-            output = inference_class(**output)
+            output = inference_class(self, **output)
             print("Finished {} with output keys {}\n".format(inference_class.__repr__(), 
                 output.keys()))
+
         return output
 
 
