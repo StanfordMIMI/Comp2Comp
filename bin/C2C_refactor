@@ -37,11 +37,7 @@ from comp2comp.utils.visualization import (
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
-
 def main():
-    '''
-    Entry point. Code is bad but functionality > readability. Best of luck!
-    '''
     args = argument_parser().parse_args()
     if args.action == "muscle_adipose_tissue":
         handle_process_2d(args)
