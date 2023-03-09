@@ -44,7 +44,7 @@ def muscle_adipose_tissue(args):
 
     pipeline = InferencePipeline([
         DicomFinder(args.input_path), # returns dicom_file_paths
-        MuscleAdiposeTissueSegmentation(),
+        MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model), # returns muscle_fat_seg
         Visualizer(),
         H5Saver(),
         MetricsSaver(),

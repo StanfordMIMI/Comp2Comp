@@ -3,6 +3,7 @@ import logging
 import os
 from time import perf_counter
 from typing import List
+from pathlib import Path
 
 import silx.io.dictdump as sio
 from keras import backend as K
@@ -10,51 +11,29 @@ from tqdm import tqdm
 import numpy as np
 import cv2
 
-from comp2comp.data import Dataset, fill_holes, predict
-from comp2comp.models import Models
-from comp2comp.run import compute_results
+from comp2comp.muscle_adipose_tissue.data import Dataset, fill_holes, predict
+from comp2comp.models.models import Models
+from comp2comp.utils.run import compute_results
 from comp2comp.utils import dl_utils
 
 from comp2comp.inference_class_base import InferenceClass
 
 class MuscleAdiposeTissueSegmentation(InferenceClass):
     """Muscle adipose tissue segmentation class."""
-    def __init__(self, batch_size: int):
+    def __init__(self, batch_size: int, model_name: str):
         super().__init__()
         self.batch_size = batch_size
+        self.model_name = model_name
+        self.model_type = Models.model_from_name(model_name)
 
     def forward_pass_2d(
         self,
-        args: argparse.Namespace,
-        batch_size: int,
-        use_pp: bool,
-        num_workers: int,
-        files: list,
-        num_gpus: int,
-        logger: logging.Logger,
-        model_type: Models,
+        files
     ):
-        """Run inference on 2D images.
-
-        Args:
-            args (argparse.Namespace): Arguments.
-            batch_size (int): Batch size.
-            use_pp (bool): Use post-processing.
-            num_workers (int): Number of workers.
-            files (list): List of files.
-            num_gpus (int): Number of GPUs.
-            logger (logging.Logger): Logger object.
-            model_type (Models): Model type.
-
-        Returns:
-            preds (list): Predictions.
-            params_dicts (list): Parameters dictionaries.
-        """
-
-        m_name = args.muscle_fat_model
+        m_name = self.model_name
         logger.info("Computing masks with model {}".format(m_name))
 
-        dataset = Dataset(files, windows=model_type.windows)
+        dataset = Dataset(files, windows=self.model_type.windows)
         categories = model_type.categories
         model = model_type.load_model(logger)
 
@@ -81,6 +60,36 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         )
         return preds, params_dicts
 
+    def __call__(
+        self,
+        inference_pipeline,
+        dicom_file_paths: List[Path]
+    ):
+
+        (preds, params_dict) = forward_pass_2d(
+            dicom_file_paths
+        )
+        '''
+        (inputs, masks, file_names, results) = compute_and_save_results(
+            args,
+            preds,
+            params_dict,
+            files,
+            label_text,
+            output_dir,
+            logger,
+            model_type,
+        )
+        return (inputs, masks, file_names, results)
+        '''
+        print("Params dict: ", params_dict)
+        return (preds, params_dict)
+
+
+class MuscleAdiposeTissuePostProcess(InferenceClass):
+    """Post-process muscle and adipose tissue segmentation."""
+    def __init__(self):
+        super().__init__()
 
     def compute_and_save_results(
         self,
@@ -178,61 +187,7 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         for i in range(0, components - 1):
             if sizes[i] >= min_size:
                 mask[output == i + 1] = 1
+
         return mask
 
-    def __call__(
-        self,
-        inference_pipeline,
-        args: argparse.Namespace,
-        batch_size: int,
-        use_pp: bool,
-        num_workers: int,
-        files: list,
-        num_gpus: int,
-        logger: logging.Logger,
-        model_type: Models,
-        label_text: List[str] = None,
-        output_dir: str = None,
-    ):
-        """Run inference on 2D images.
-
-        Args:
-            args (argparse.Namespace): Arguments.
-            batch_size (int): Batch size.
-            use_pp (bool): Use post-processing.
-            num_workers (int): Number of workers.
-            files (list): List of files.
-            num_gpus (int): Number of GPUs.
-            logger (logging.Logger): Logger object.
-            model_type (Models): Model type.
-            label_text (List[str], optional): Label text. Defaults to None.
-            output_dir (str, optional): Output directory. Defaults to None.
-
-        Returns:
-            inputs (list): Inputs.
-            masks (list): Masks.
-            file_names (list): File names.
-            results (list): Results.
-        """
-
-        (preds, params_dict) = forward_pass_2d(
-            args,
-            batch_size,
-            use_pp,
-            num_workers,
-            files,
-            num_gpus,
-            logger,
-            model_type,
-        )
-        (inputs, masks, file_names, results) = compute_and_save_results(
-            args,
-            preds,
-            params_dict,
-            files,
-            label_text,
-            output_dir,
-            logger,
-            model_type,
-        )
-        return (inputs, masks, file_names, results)
+    
