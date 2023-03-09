@@ -37,6 +37,38 @@ from comp2comp.utils.visualization import (
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
+def muscle_adipose_tissue(args):
+    pass
+
+def spine_muscle_adipose_tissue(args):
+    pass
+
+
+def argument_parser():
+    parser = argparse.ArgumentParser("Comp2Comp command line interface")
+    subparsers = parser.add_subparsers(dest="action")
+
+    # Processing parser
+    process_2d_parser = subparsers.add_parser("muscle_adipose_tissue", 
+                                              help="muscle + fat segmentation")
+    process_2d_parser.add_argument(
+        "--muscle_fat_model",
+        default = 'abCT_v0.0.1',
+        type=str,
+        help="muscle + fat segmentation model to use for inference",
+    )
+
+    process_3d_parser = subparsers.add_parser("spine_muscle_adipose_tissue",
+                                              help="spine segmentation and muscle + fat segmentation")
+    process_3d_parser.add_argument(
+        "--muscle_fat_model",
+        default="abCT_v0.0.1",
+        type=str,
+        help="muscle + fat segmentation model to use for inference",
+    )
+    return parser
+
+
 def main():
     args = argument_parser().parse_args()
     if args.action == "muscle_adipose_tissue":
