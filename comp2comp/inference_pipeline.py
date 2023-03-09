@@ -11,7 +11,7 @@ from comp2comp.io import DicomLoader, NiftiSaver
 class InferencePipeline:
     """Inference pipeline.
     """
-    def __init__(self, config: Dict = None, inference_classes: List = None):
+    def __init__(self, inference_classes: List = None, config: Dict = None):
         self.config = config
         self.inference_classes = inference_classes
 
@@ -56,10 +56,10 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, default=default_output_dir)
     args = parser.parse_args()
 
-    dicom_loader = DicomLoader(args.dicom_dir)
-    nifti_saver = NiftiSaver(args.output_dir)
-
-    pipeline = InferencePipeline(inference_classes=[dicom_loader, nifti_saver])
+    pipeline = InferencePipeline([
+                                DicomLoader(args.dicom_dir),
+                                NiftiSaver(args.output_dir)
+                                ])
     pipeline()
 
     print("Done.")

@@ -8,6 +8,7 @@ class DicomLoader(InferenceClass):
     """Load a single dicom series.
     """
     def __init__(self, input_path: Union[str, Path]) -> Dict[str, dm.MedicalVolume]:
+        super().__init__()
         self.dicom_dir = Path(input_path)
         self.dr = dm.DicomReader()
 
@@ -19,6 +20,7 @@ class NiftiSaver(InferenceClass):
     """Save dosma medical volume object to NIfTI file.
     """
     def __init__(self, output_path: Union[str, Path]):
+        super().__init__()
         self.output_dir = Path(output_path)
         self.nw = dm.NiftiWriter()
 
