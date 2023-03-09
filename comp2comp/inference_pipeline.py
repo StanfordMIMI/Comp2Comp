@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 import dosma as dm
 
-from comp2comp.io import DicomLoader, NiftiSaver
+from comp2comp.io.io import DicomLoader, NiftiSaver
 
 class InferencePipeline:
     """Inference pipeline.
@@ -22,10 +22,13 @@ class InferencePipeline:
 
     def __call__(self, **kwargs):
         # print out the class names for each inference class
-        print("Inference pipeline:")
-        for inference_class in self.inference_classes:
-            print(inference_class.__repr__())
         print("")
+        print("Inference pipeline:")
+        for i, inference_class in enumerate(self.inference_classes):
+            print(f"({i + 1}) {inference_class.__repr__()}")
+        print("")
+
+        print("Starting inference pipeline.\n")
 
         output = kwargs
         for inference_class in self.inference_classes:
