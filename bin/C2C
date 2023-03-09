@@ -42,9 +42,8 @@ def muscle_adipose_tissue(args):
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 
-    # Each class within InferencePipeline can modify InferencePipeline and access its attributes
     pipeline = InferencePipeline([
-        DicomFinder(args.input_path), 
+        DicomFinder(args.input_path), # returns dicom_file_paths
         MuscleAdiposeTissueSegmentation(),
         Visualizer(),
         H5Saver(),
