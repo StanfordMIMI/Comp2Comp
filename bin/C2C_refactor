@@ -40,8 +40,9 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 def main():
     args = argument_parser().parse_args()
     if args.action == "muscle_adipose_tissue":
-        handle_process_2d(args)
+        muscle_adipose_tissue(args)
     elif args.action == "spine_muscle_adipose_tissue":
+        spine_muscle_adipose_tissue(args)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 
