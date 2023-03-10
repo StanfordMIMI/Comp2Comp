@@ -12,9 +12,8 @@ import re
 import os
 from scipy.ndimage import zoom
 
-from comp2comp.preferences import PREFERENCES
-from comp2comp.models import Models
-from comp2comp.utils import visualization
+from comp2comp.models.models import Models
+from comp2comp.visualization import visualization
 
 
 def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):

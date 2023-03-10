@@ -10,9 +10,6 @@ from totalsegmentator.libs import (
     setup_nnunet,
 )
 
-from comp2comp.preferences import PREFERENCES
-
-
 def spine_seg(
     logger: logging.Logger,
     input_path: Union[str, Path],

@@ -5,7 +5,7 @@ from typing import Union
 import numpy as np
 from PIL import Image
 
-from comp2comp.utils.visualizer import Visualizer
+from comp2comp.visualization.visualizer import Visualizer
 
 _image_files = [
     "spine_coronal.png",

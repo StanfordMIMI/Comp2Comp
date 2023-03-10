@@ -20,7 +20,7 @@ from comp2comp.inference_class_base import InferenceClass
 
 class MuscleAdiposeTissueSegmentation(InferenceClass):
     """Muscle adipose tissue segmentation class."""
-    def __init__(self, batch_size: int, model_name: str):
+    def __init__(self, batch_size: int, model_name: str, model_dir: str = None):
         super().__init__()
         self.batch_size = batch_size
         self.model_name = model_name
@@ -31,29 +31,27 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         files
     ):
         m_name = self.model_name
-        logger.info("Computing masks with model {}".format(m_name))
+        num_workers = 1
+        use_pp = True
+        print("Computing masks with model {}".format(m_name))
 
         dataset = Dataset(files, windows=self.model_type.windows)
-        categories = model_type.categories
-        model = model_type.load_model(logger)
+        categories = self.model_type.categories
 
-        if num_gpus > 1:
-            model = dl_utils.ModelMGPU(model, gpus=num_gpus)
-
-        logger.info("<MODEL>: {}".format(m_name))
-        logger.info("Computing segmentation masks using {}...".format(m_name))
+        print("<MODEL>: {}".format(m_name))
+        print("Computing segmentation masks using {}...".format(m_name))
         start_time = perf_counter()
         _, preds, params_dicts = predict(
-            model,
+            self.model,
             dataset,
             num_workers=num_workers,
             use_multiprocessing=num_workers > 1,
-            batch_size=batch_size,
+            batch_size=self.batch_size,
             use_postprocessing=use_pp,
             postprocessing_params={"categories": categories},
         )
         K.clear_session()
-        logger.info(
+        print(
             "<TIME>: Segmentation - count: {} - {:.4f} seconds".format(
                 len(files), perf_counter() - start_time
             )
@@ -65,8 +63,9 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         inference_pipeline,
         dicom_file_paths: List[Path]
     ):
+        self.model = self.model_type.load_model(inference_pipeline.model_dir)
 
-        (preds, params_dict) = forward_pass_2d(
+        (preds, params_dict) = self.forward_pass_2d(
             dicom_file_paths
         )
         '''

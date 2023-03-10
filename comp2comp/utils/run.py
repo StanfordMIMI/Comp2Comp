@@ -3,8 +3,7 @@ import os
 import re
 from typing import Dict, Sequence, Union
 
-from comp2comp.metrics import CrossSectionalArea, HounsfieldUnits
-from comp2comp.preferences import PREFERENCES
+from comp2comp.metrics.metrics import CrossSectionalArea, HounsfieldUnits
 
 logger = logging.getLogger(__name__)
 
