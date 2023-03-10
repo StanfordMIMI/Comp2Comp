@@ -45,7 +45,6 @@ def muscle_adipose_tissue(args):
         output_dir.mkdir(parents=True)
 
     model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
-    print(f"model_dir: {model_dir}")
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
@@ -77,7 +76,6 @@ def spine_muscle_adipose_tissue(args):
         output_dir.mkdir(parents=True)
 
     model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
-    print(f"model_dir: {model_dir}")
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
