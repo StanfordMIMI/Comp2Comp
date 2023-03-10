@@ -22,7 +22,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 from comp2comp import metrics
-from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import MuscleAdiposeTissueSegmentation
+from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
+    MuscleAdiposeTissueSegmentation,
+    MuscleAdiposeTissuePostProcessing,
+    MuscleAdiposeTissueComputeMetrics,
+)
+    
 from comp2comp.models.models import Models
 from comp2comp.spine.nn_unet import spine_seg
 from comp2comp.utils.run import find_files, get_dicom_paths_and_num, get_file_names
@@ -48,10 +53,11 @@ def muscle_adipose_tissue(args):
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
-
     pipeline = InferencePipeline([
-        DicomFinder(args.input_path), # returns dicom_file_paths
-        MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model), # returns muscle_fat_seg
+        DicomFinder(args.input_path),
+        MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
+        MuscleAdiposeTissuePostProcessing(),
+        MuscleAdiposeTissueComputeMetrics(),
         # Visualizer(),
         # H5Saver(),
         # MetricsSaver(),

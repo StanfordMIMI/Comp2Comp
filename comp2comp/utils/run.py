@@ -128,43 +128,6 @@ def find_files(
     return sorted(set(out_files))
 
 
-def compute_results(x, mask, categories: Dict, params: Dict):
-    """Compute results for a given segmentation.
-
-    Args:
-        x (np.ndarray): Image.
-        mask (np.ndarray): Segmentation mask.
-        categories (Dict): Categories.
-        params (Dict): Parameters.
-
-    Returns:
-        Dict: Results.
-    """
-    hu = HounsfieldUnits()
-    spacing = params.get("spacing", None)
-    csa_units = "cm^2" if spacing else ""
-    csa = CrossSectionalArea(csa_units)
-
-    hu_vals = hu(mask, x, category_dim=-1)
-    csa_vals = csa(mask=mask, spacing=spacing, category_dim=-1)
-
-    assert mask.shape[-1] == len(
-        categories
-    ), "{} categories found in mask, " "but only {} categories specified".format(
-        mask.shape[-1], len(categories)
-    )
-
-    results = {
-        cat: {
-            "mask": mask[..., idx],
-            hu.name(): hu_vals[idx],
-            csa.name(): csa_vals[idx],
-        }
-        for idx, cat in enumerate(categories.keys())
-    }
-
-    return results
-
 
 def get_dicom_paths_and_num(path):
     """Get all paths under a path that contain only dicom files.

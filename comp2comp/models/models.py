@@ -70,12 +70,6 @@ class Models(enum.Enum):
         Returns:
             keras.models.Model: Model.
         """
-        # hf_hub_download(
-        #     repo_id="lblankem/stanford_abct_v0.0.1",
-        #     filename="stanford_v0.0.1.h5",
-        #     cache_dir=PREFERENCES.MODELS_DIR,
-             # use_auth_token=PREFERENCES.HF_TOKEN,
-        # )
         try:
             filename = Models.find_model_weights(self.model_name)
         except:
@@ -87,26 +81,6 @@ class Models(enum.Enum):
      
         print("Loading muscle/fat model from {}".format(filename))
         return load_model(filename)
-
-    def preds_to_mask(self, preds):
-        """Convert model predictions to a mask.
-
-        Args:
-            preds (np.ndarray): Model predictions.
-
-        Returns:
-            np.ndarray: Mask.
-        """
-        if self.use_softmax:
-            # softmax
-            labels = np.zeros_like(preds, dtype=np.uint8)
-            l_argmax = np.argmax(preds, axis=-1)
-            for c in range(labels.shape[-1]):
-                labels[l_argmax == c, c] = 1
-            return labels.astype(np.bool)
-        else:
-            # sigmoid
-            return preds >= 0.5
 
     @staticmethod
     def model_from_name(model_name):
