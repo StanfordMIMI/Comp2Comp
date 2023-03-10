@@ -173,7 +173,7 @@ def _swap_muscle_imap(xs, ys, muscle_idx: int, imat_idx: int, threshold=-30.0):
     return labels
 
 
-def postprocess(xs: np.ndarray, ys: np.ndarray, params: dict):
+def postprocess(xs: np.ndarray, ys: np.ndarray):
     """Built-in post-processing.
 
     TODO: Make this configurable.
@@ -187,8 +187,6 @@ def postprocess(xs: np.ndarray, ys: np.ndarray, params: dict):
     Returns:
         ndarray: Post-processed labels.
     """
-    assert params
-    categories = params["categories"]
 
     # Add another channel full of zeros to ys
     ys = np.concatenate([ys, np.zeros_like(ys[..., :1])], axis=-1)
@@ -215,8 +213,6 @@ def predict(
     num_workers: int = 1,
     max_queue_size: int = 10,
     use_multiprocessing: bool = False,
-    use_postprocessing: bool = False,
-    postprocessing_params: dict = None,
 ):
     """Predict segmentation masks for a dataset.
 
@@ -249,9 +245,8 @@ def predict(
         x, p_dicts = next(output_generator)
         y = model.predict(x, batch_size=batch_size)
 
-        if use_postprocessing:
-            image = np.stack([out["image"] for out in p_dicts], axis=0)
-            y = postprocess(image, y, postprocessing_params)
+        image = np.stack([out["image"] for out in p_dicts], axis=0)
+        y = postprocess(image, y)
 
         params.extend(p_dicts)
         xs.extend([x[i, ...] for i in range(len(x))])

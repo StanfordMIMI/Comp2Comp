@@ -22,21 +22,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 from comp2comp import metrics
-from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
-    MuscleAdiposeTissueSegmentation,
-    MuscleAdiposeTissuePostProcessing,
-    MuscleAdiposeTissueComputeMetrics,
-)
-    
+from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import *
 from comp2comp.models.models import Models
 from comp2comp.spine.nn_unet import spine_seg
 from comp2comp.utils.run import find_files, get_dicom_paths_and_num, get_file_names
 from comp2comp.utils import dl_utils, spine_utils
 from comp2comp.io.io import DicomFinder
-from comp2comp.visualization.visualization import (
-    generate_panel,
-    save_binary_segmentation_overlay,
-)
+from comp2comp.visualization.visualization import MuscleAdiposeTissueVisualizer
 from comp2comp.utils.io_utils import find_dicom_files
 from comp2comp.inference_pipeline import InferencePipeline
 
@@ -44,9 +36,13 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def muscle_adipose_tissue(args):
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../outputs")
+    output_dir = Path(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 
+        "../outputs", 
+        datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        ))
     if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+        output_dir.mkdir(parents=True)
 
     model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
     print(f"model_dir: {model_dir}")
@@ -58,7 +54,7 @@ def muscle_adipose_tissue(args):
         MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
         MuscleAdiposeTissuePostProcessing(),
         MuscleAdiposeTissueComputeMetrics(),
-        # Visualizer(),
+        MuscleAdiposeTissueVisualizer(),
         # H5Saver(),
         # MetricsSaver(),
         ],
@@ -72,10 +68,13 @@ def muscle_adipose_tissue(args):
 
 
 def spine_muscle_adipose_tissue(args):
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../outputs")
-    print(f"output_dir: {output_dir}")
+    output_dir = Path(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 
+        "../outputs", 
+        datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        ))
     if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+        output_dir.mkdir(parents=True)
 
     model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
     print(f"model_dir: {model_dir}")

@@ -10,6 +10,8 @@ from keras import backend as K
 from tqdm import tqdm
 import numpy as np
 import cv2
+import sys
+import matplotlib.pyplot as plt
 
 from comp2comp.muscle_adipose_tissue.data import Dataset, fill_holes, predict
 from comp2comp.models.models import Models
@@ -31,14 +33,11 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         self,
         files
     ):
-        m_name = self.model_name
-        num_workers = 1
-        use_pp = True
-
         dataset = Dataset(files, windows=self.model_type.windows)
         categories = self.model_type.categories
+        num_workers = 1
 
-        print("Computing segmentation masks using {}...".format(m_name))
+        print("Computing segmentation masks using {}...".format(self.model_name))
         start_time = perf_counter()
         _, preds, results = predict(
             self.model,
@@ -46,8 +45,6 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
             num_workers=num_workers,
             use_multiprocessing=num_workers > 1,
             batch_size=self.batch_size,
-            use_postprocessing=use_pp,
-            postprocessing_params={"categories": categories},
         )
         K.clear_session()
         print(f"Completed {len(files)} segmentations in {(perf_counter() - start_time):.2f} seconds.")
@@ -76,6 +73,7 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         spacings = []
         for result in results:
             spacings.append(result["spacing"])
+
         return {
             "images": images,
             "preds": preds,
@@ -87,7 +85,6 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
     """Post-process muscle and adipose tissue segmentation."""
     def __init__(self):
         super().__init__()
-        self.use_softmax = True
 
     def preds_to_mask(self, preds):
         """Convert model predictions to a mask.
@@ -112,8 +109,9 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
     def __call__(self, inference_pipeline, images, preds, spacings):
         """Post-process muscle and adipose tissue segmentation."""
         self.model_type = inference_pipeline.muscle_adipose_tissue_model_type
+        self.use_softmax = self.model_type.use_softmax
         self.model_name = inference_pipeline.muscle_adipose_tissue_model_name
-        return self.compute_and_save_results(images, preds, spacings)
+        return self.post_process(images, preds, spacings)
 
     def remove_small_objects(self, mask, min_size=10):
         mask = mask.astype(np.uint8)
@@ -125,7 +123,7 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
                 mask[output == i + 1] = 1
         return mask
 
-    def compute_and_save_results(
+    def post_process(
         self,
         images,
         preds,
