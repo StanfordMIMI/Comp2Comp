@@ -46,6 +46,8 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
             self.save_binary_segmentation_overlay(
                 result
             )
+        # pass along for next class in pipeline
+        return {"results": results}
 
     def save_binary_segmentation_overlay(
         self,

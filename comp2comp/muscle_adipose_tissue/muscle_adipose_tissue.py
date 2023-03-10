@@ -12,6 +12,7 @@ import numpy as np
 import cv2
 import sys
 import matplotlib.pyplot as plt
+import h5py
 
 from comp2comp.muscle_adipose_tissue.data import Dataset, fill_holes, predict
 from comp2comp.models.models import Models
@@ -220,6 +221,31 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
             for idx, cat in enumerate(categories.keys())
         }
         return results
+
+class MuscleAdiposeTissueH5Saver(InferenceClass):
+    """Save results to an HDF5 file."""
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, inference_pipeline, results):
+        """Save results to an HDF5 file."""
+        self.model_type = inference_pipeline.muscle_adipose_tissue_model_type
+        self.model_name = inference_pipeline.muscle_adipose_tissue_model_name
+        self.output_dir = inference_pipeline.output_dir
+        self.h5_output_dir = os.path.join(self.output_dir, "segmentations")
+        os.makedirs(self.h5_output_dir, exist_ok=True)
+        self.save_results(results)
+
+    def save_results(self, results):
+        """Save results to an HDF5 file."""
+        categories = self.model_type.categories
+        cats = list(categories.keys())
+
+        for i, result in enumerate(results):
+            with h5py.File(os.path.join(self.h5_output_dir, "test.h5"), "w") as f:
+                for cat in cats:
+                    mask = result[cat]["mask"]
+                    f.create_dataset(name=cat, data=np.array(mask, dtype=np.uint8))
 
 
 
