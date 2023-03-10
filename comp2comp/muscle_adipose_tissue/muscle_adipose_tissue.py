@@ -191,7 +191,7 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
         results = []
         for image, mask, spacing in zip(images, masks, spacings):
             results.append(self.compute_metrics(image, mask, spacing))
-        return {"results": results}
+        return {"images": images, "results": results}
 
     def compute_metrics(self, x, mask, spacing):
         """Compute results for a given segmentation.
@@ -213,7 +213,6 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
 
         results = {
             cat: {
-                "image": x,
                 "mask": mask[..., idx],
                 hu.name(): hu_vals[idx],
                 csa.name(): csa_vals[idx],

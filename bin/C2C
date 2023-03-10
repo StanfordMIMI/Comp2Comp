@@ -55,7 +55,7 @@ def muscle_adipose_tissue(args):
         MuscleAdiposeTissueComputeMetrics(),
         MuscleAdiposeTissueVisualizer(),
         MuscleAdiposeTissueH5Saver(),
-        #MuscleAdiposeTissueMetricsSaver(),
+        MuscleAdiposeTissueMetricsSaver(),
         ],
     config={
         "output_dir": output_dir,

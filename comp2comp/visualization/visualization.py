@@ -38,12 +38,13 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
         self._MUSCLE_FAT_TEXT_OFFSET_FROM_TOP = 22.0
         self._MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT = 181.0
 
-    def __call__(self, inference_pipeline, results):
+    def __call__(self, inference_pipeline, images, results):
         self.output_dir = inference_pipeline.output_dir
 
-        for result in results:
+        for image, result in zip(images, results):
             # now, result is a dict with keys for each tissue
             self.save_binary_segmentation_overlay(
+                image,
                 result
             )
         # pass along for next class in pipeline
@@ -51,11 +52,12 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
 
     def save_binary_segmentation_overlay(
         self,
+        image,
         result
     ):
         file_name = "test.png"
         tissues = result.keys()
-        img_in = result[list(tissues)[0]]['image']
+        img_in = image
         assert img_in.shape == (512, 512), "Image shape is not 512 x 512"
 
         img_in = np.clip(img_in, -300, 1800)
