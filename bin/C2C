@@ -67,34 +67,40 @@ def muscle_adipose_tissue(args):
 
 
 def spine_muscle_adipose_tissue(args):
-    output_dir = Path(os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 
-        "../outputs", 
-        datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        ))
-    if not os.path.exists(output_dir):
-        output_dir.mkdir(parents=True)
-
     model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
-    # Each class within InferencePipeline can modify InferencePipeline and access its attributes
-    pipeline = InferencePipeline([
-        DicomSeriesFinder(args.input_path),
-        SpineSegmentation(),
-        MuscleAdiposeTissueSegmentation(),
-        Visualizer(),
-        H5Saver(),
-        MetricsSaver(),
-        ],
-    config={
-        "output_dir": output_dir,
-        "model_dir": model_dir
-        }
-    )
+    for path, num in get_dicom_paths_and_num(args.input_path):
 
-    pipeline()
+        parent_dir = Path(os.path.basename(path))
+        output_path = base_output_path / parent_dir
+
+        output_dir = Path(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 
+            "../outputs", 
+            datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            ))
+            
+        if not os.path.exists(output_dir):
+            output_dir.mkdir(parents=True)
+
+        # Each class within InferencePipeline can modify InferencePipeline and access its attributes
+        pipeline = InferencePipeline([
+            DicomSeriesFinder(args.input_path),
+            SpineSegmentation(),
+            MuscleAdiposeTissueSegmentation(),
+            Visualizer(),
+            H5Saver(),
+            MetricsSaver(),
+            ],
+        config={
+            "output_dir": output_dir,
+            "model_dir": model_dir
+            }
+        )
+
+        pipeline()
 
 
 def argument_parser():
