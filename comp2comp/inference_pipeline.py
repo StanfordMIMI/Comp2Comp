@@ -44,8 +44,12 @@ class InferencePipeline:
 
             output = inference_class(self, **output)
 
-            print("Finished {} with output keys {}\n".format(inference_class.__repr__(), 
-                output.keys()))
+            # if not the last inference class, check that the output keys are correct
+            if inference_class != self.inference_classes[-1]:
+                print("Finished {} with output keys {}\n".format(inference_class.__repr__(), 
+                    output.keys()))
+
+        print("Inference pipeline finished.\n")
 
         return output
 

@@ -13,8 +13,9 @@ import cv2
 import sys
 import matplotlib.pyplot as plt
 import h5py
+import pandas as pd
 
-from comp2comp.muscle_adipose_tissue.data import Dataset, fill_holes, predict
+from comp2comp.muscle_adipose_tissue.data import Dataset, predict
 from comp2comp.models.models import Models
 from comp2comp.utils import dl_utils
 from comp2comp.metrics.metrics import CrossSectionalArea, HounsfieldUnits
@@ -60,6 +61,8 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
     ):
         inference_pipeline.muscle_adipose_tissue_model_type = self.model_type
         inference_pipeline.muscle_adipose_tissue_model_name = self.model_name
+        inference_pipeline.dicom_file_paths = dicom_file_paths
+        inference_pipeline.dicom_file_names = [dicom_file_path.stem for dicom_file_path in dicom_file_paths]
         self.model = self.model_type.load_model(inference_pipeline.model_dir)
 
         results = self.forward_pass_2d(
@@ -143,7 +146,8 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
                 ..., [categories[cat] for cat in categories]
             ]
 
-        masks = fill_holes(masks)
+        masks = self.fill_holes(masks)
+
         cats = list(categories.keys())
         
         if "muscle" in categories and "imat" in categories:
@@ -160,10 +164,52 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
             masks[file_idx] = mask
             images[file_idx] = image
             file_idx += 1
-
+        
         print(f"Completed post-processing in {(perf_counter() - start_time):.2f} seconds.")
 
         return {"images": images, "masks": masks, "spacings": spacings} 
+
+    # function that fills in holes in a segmentation mask
+    def _fill_holes(self, mask: np.ndarray, mask_id: int):
+        """Fill in holes in a segmentation mask.
+
+        Args:
+            mask (ndarray): NxHxW
+            mask_id (int): Label of the mask.
+
+        Returns:
+            ndarray: Filled mask.
+        """
+        int_mask = ((1 - mask) > 0.5).astype(np.int8)
+        components, output, stats, _ = cv2.connectedComponentsWithStats(int_mask, connectivity=8)
+        sizes = stats[1:, -1]
+        components = components - 1
+        # Larger threshold for SAT
+        # TODO make this configurable / parameter
+        if mask_id == 2:
+            min_size = 200
+        else:
+            #min_size = 50  # Smaller threshold for everything else
+            min_size = 20
+        img_out = np.ones_like(mask)
+        for i in range(0, components):
+            if sizes[i] > min_size:
+                img_out[output == i + 1] = 0
+        return img_out
+
+
+    def fill_holes(self, ys: List):
+        """Take an array of size NxHxWxC and for each channel fill in holes.
+
+        Args:
+            ys (list): List of segmentation masks.
+        """
+        segs = []
+        for n in range(len(ys)):
+            ys_out = [self._fill_holes(ys[n][..., i], i) for i in range(ys[n].shape[-1])]
+            segs.append(np.stack(ys_out, axis=2).astype(float))
+
+        return segs
 
 
 class MuscleAdiposeTissueComputeMetrics(InferenceClass):
@@ -221,6 +267,7 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
         }
         return results
 
+
 class MuscleAdiposeTissueH5Saver(InferenceClass):
     """Save results to an HDF5 file."""
     def __init__(self):
@@ -233,7 +280,10 @@ class MuscleAdiposeTissueH5Saver(InferenceClass):
         self.output_dir = inference_pipeline.output_dir
         self.h5_output_dir = os.path.join(self.output_dir, "segmentations")
         os.makedirs(self.h5_output_dir, exist_ok=True)
+        self.dicom_file_paths = inference_pipeline.dicom_file_paths
+        self.dicom_file_names = inference_pipeline.dicom_file_names
         self.save_results(results)
+        return {"results": results}
 
     def save_results(self, results):
         """Save results to an HDF5 file."""
@@ -241,10 +291,51 @@ class MuscleAdiposeTissueH5Saver(InferenceClass):
         cats = list(categories.keys())
 
         for i, result in enumerate(results):
-            with h5py.File(os.path.join(self.h5_output_dir, "test.h5"), "w") as f:
+            file_name = self.dicom_file_names[i]
+            with h5py.File(os.path.join(self.h5_output_dir, file_name + ".h5"), "w") as f:
                 for cat in cats:
                     mask = result[cat]["mask"]
                     f.create_dataset(name=cat, data=np.array(mask, dtype=np.uint8))
+
+class MuscleAdiposeTissueMetricsSaver(InferenceClass):
+    """Save metrics to a CSV file."""
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, inference_pipeline, results):
+        """Save metrics to a CSV file."""
+        self.model_type = inference_pipeline.muscle_adipose_tissue_model_type
+        self.model_name = inference_pipeline.muscle_adipose_tissue_model_name
+        self.output_dir = inference_pipeline.output_dir
+        self.csv_output_dir = os.path.join(self.output_dir, "metrics")
+        os.makedirs(self.csv_output_dir, exist_ok=True)
+        self.dicom_file_paths = inference_pipeline.dicom_file_paths
+        self.save_results(results)
+
+    def save_results(self, results):
+        """Save results to a CSV file."""
+        categories = self.model_type.categories
+        cats = list(categories.keys())
+        df = pd.DataFrame(columns=[
+            "File Path",
+            "Muscle HU", 
+            "Muscle CSA (cm^2)", 
+            "IMAT HU", 
+            "IMAT CSA (cm^2)", 
+            "SAT HU", 
+            "SAT CSA (cm^2)", 
+            "VAT HU", 
+            "VAT CSA (cm^2)"
+            ])
+
+        for i, result in enumerate(results):
+            row = []
+            row.append(self.dicom_file_paths[i])
+            for cat in cats:
+                row.append(result[cat]["Hounsfield Unit"])
+                row.append(result[cat]["Cross-sectional Area (cm^2)"])
+            df.loc[i] = row
+        df.to_csv(os.path.join(self.csv_output_dir, "metrics.csv"), index=False)
 
 
 

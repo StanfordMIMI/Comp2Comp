@@ -51,3 +51,5 @@ class DicomFinder(InferenceClass):
         for file in self.input_path.glob("**/*.dcm"):
             dicom_files.append(file)
         return {"dicom_file_paths": dicom_files}
+
+    

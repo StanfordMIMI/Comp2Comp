@@ -29,7 +29,7 @@ from comp2comp.utils.run import find_files, get_dicom_paths_and_num, get_file_na
 from comp2comp.utils import dl_utils, spine_utils
 from comp2comp.io.io import DicomFinder
 from comp2comp.visualization.visualization import MuscleAdiposeTissueVisualizer
-from comp2comp.utils.io_utils import find_dicom_files
+from comp2comp.io.io_utils import find_dicom_files
 from comp2comp.inference_pipeline import InferencePipeline
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
