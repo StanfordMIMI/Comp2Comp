@@ -15,12 +15,12 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
         super().__init__()
 
         self._spine_colors = {
-            "T12": [255, 0, 0], 
-            "L1": [0, 255, 0],
-            "L2": [255, 255, 0],
-            "L3": [255, 128, 0], 
-            "L4": [0, 255, 255],
-            "L5": [255, 0, 255]
+            "L5": [255, 0, 0], 
+            "L4": [0, 255, 0],
+            "L3": [255, 255, 0],
+            "L2": [255, 128, 0], 
+            "L1": [0, 255, 255],
+            "T12": [255, 0, 255]
         }
 
         self._muscle_fat_colors = {
@@ -42,6 +42,11 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
     def __call__(self, inference_pipeline, images, results):
         self.output_dir = inference_pipeline.output_dir
         self.dicom_file_names = inference_pipeline.dicom_file_names
+        # if spine is an attribute of the inference pipeline, use it
+        if not hasattr(inference_pipeline, "spine"):
+            spine = False
+        else:
+            spine = True
 
         for i, (image, result) in enumerate(zip(images, results)):
             # now, result is a dict with keys for each tissue
@@ -49,7 +54,8 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
             self.save_binary_segmentation_overlay(
                 image,
                 result,
-                dicom_file_name
+                dicom_file_name,
+                spine
             )
         # pass along for next class in pipeline
         return {"results": results}
@@ -58,7 +64,8 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
         self,
         image,
         result,
-        dicom_file_name
+        dicom_file_name,
+        spine
     ):
         file_name = dicom_file_name + ".png"
         tissues = result.keys()
@@ -98,6 +105,25 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
             font_size=9,
             horizontal_alignment="left"
         )
+
+        if spine:
+            spine_color = np.array(self._spine_colors[dicom_file_name]) / 255.0
+            vis.draw_box(
+                box_coord=(1, 1, img_in.shape[0] - 1, img_in.shape[1] - 1),
+                alpha=1,
+                edge_color=spine_color,
+            )
+            # draw the level T12 - L5 in the upper left corner
+            if dicom_file_name == "T12":
+                position = (40, 15)
+            else:
+                position = (30, 15)
+            vis.draw_text(
+                text = dicom_file_name,
+                position = position,
+                color = spine_color,
+                font_size = 24
+            )
 
         for idx, tissue in enumerate(result.keys()):
             alpha_val = 0.9
@@ -210,7 +236,7 @@ class SpineMuscleAdiposeTissueReport(InferenceClass):
         new_im.paste(im_cor, (8, 8))
         im_sag.thumbnail((im_cor_width, 512))
         new_im.paste(im_sag, (8, 528))
-        new_im.save(os.path.join(image_dir, "panel.png"))
+        new_im.save(os.path.join(image_dir, "report.png"))
         im_cor.close()
         im_sag.close()
         new_im.close()

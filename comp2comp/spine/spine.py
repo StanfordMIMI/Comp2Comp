@@ -202,5 +202,6 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
         dicom_files = inference_pipeline.dicom_files
         # convert to list of paths
         dicom_files = [Path(d) for d in dicom_files]
+        inference_pipeline.spine = True
     
         return {"dicom_file_paths": dicom_files}

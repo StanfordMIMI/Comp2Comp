@@ -314,13 +314,14 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
         self.dicom_file_paths = inference_pipeline.dicom_file_paths
         self.dicom_file_names = inference_pipeline.dicom_file_names
         self.save_results(results)
+        return {}
 
     def save_results(self, results):
         """Save results to a CSV file."""
         categories = self.model_type.categories
         cats = list(categories.keys())
         df = pd.DataFrame(columns=[
-            "File Name"
+            "File Name",
             "File Path",
             "Muscle HU", 
             "Muscle CSA (cm^2)", 
