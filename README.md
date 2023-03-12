@@ -13,19 +13,19 @@ For installing on the Apple M1 chip, see [these instructions](https://github.com
 
 ## Basic Usage
 ```bash
-# To run 3D spine, muscle, and adipose tissue body composition analysis, use the following command. input_path should contain a DICOM series or subfolders that contain DICOM series.
+# To run spine, muscle, and adipose tissue body composition analysis, use the following command. input_path should contain a DICOM series or subfolders that contain DICOM series.
 bin/C2C spine_muscle_adipose_tissue --input_path path/to/input/folder
 
-# To run 2D muscle and adipose tissue body composition analysis, use the following command. DICOM files within the input_path folder and subfolders of input_path will be processed.
+# To run muscle and adipose tissue body composition analysis on user-defined axial slices, use the following command. DICOM files within the input_path folder and subfolders of input_path will be processed.
 bin/C2C muscle_adipose_tissue --input_path path/to/input/folder
 ```
 
 For running on slurm, modify the above commands as follow:
 ```bash
-# For 3D spine, muscle, and adipose tissue body composition analysis with slurm, can use the following:
+# For spine, muscle, and adipose tissue body composition analysis with slurm, use the following:
 bin/C2C-slurm spine_muscle_adipose_tissue --input_path path/to/input/folder
 
-# For 2D processing with slurm, can use the following:
+# For muscle and adipose tissue body composition analysis on user-defined axial slices with slurm, use the following:
 bin/C2C-slurm muscle_adipose_tissue --input_path path/to/input/folder
 ```
 
