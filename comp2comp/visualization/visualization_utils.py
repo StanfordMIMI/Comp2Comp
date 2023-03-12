@@ -271,28 +271,6 @@ def save_binary_segmentation_overlay(
                     horizontal_alignment="center"
                 )
 
-                '''
-                vis.draw_text(
-                    text=f"{_TISSUES[num_bin_masks - 1]} HU: " + hu_val,
-                    position=(
-                        mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT,
-                        _MUSCLE_FAT_TEXT_HORIZONTAL_SPACING * (num_bin_masks - 1) + text_start_vertical_offset,
-                    ),
-                    color=_2D_COLORS[num_bin_masks - 1],
-                    font_size=7,
-                )
-                vis.draw_text(
-                    text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + area_val,
-                    position=(
-                        mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT,
-                        _MUSCLE_FAT_TEXT_HORIZONTAL_SPACING * (num_bin_masks - 1)
-                        + text_start_vertical_offset
-                        + (_MUSCLE_FAT_TEXT_HORIZONTAL_SPACING / 2),
-                    ),
-                    color=_2D_COLORS[num_bin_masks - 1],
-                    font_size=7,
-                )
-                '''
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(images_base_path, file_name))
 
