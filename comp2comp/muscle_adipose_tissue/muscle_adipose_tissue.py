@@ -62,7 +62,9 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         inference_pipeline.muscle_adipose_tissue_model_type = self.model_type
         inference_pipeline.muscle_adipose_tissue_model_name = self.model_name
         inference_pipeline.dicom_file_paths = dicom_file_paths
-        inference_pipeline.dicom_file_names = [dicom_file_path.stem for dicom_file_path in dicom_file_paths]
+        # if dicom_file_names not an attribute of inference_pipeline, add it
+        if not hasattr(inference_pipeline, "dicom_file_names"):
+            inference_pipeline.dicom_file_names = [dicom_file_path.stem for dicom_file_path in dicom_file_paths]
         self.model = self.model_type.load_model(inference_pipeline.model_dir)
 
         results = self.forward_pass_2d(

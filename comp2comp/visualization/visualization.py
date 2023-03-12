@@ -171,12 +171,12 @@ class SpineMuscleAdiposeTissueReport(InferenceClass):
         self.image_files = [
             "spine_coronal.png",
             "spine_sagittal.png",
-            "T12_seg.png",
-            "L3_seg.png",
-            "L1_seg.png",
-            "L4_seg.png",
-            "L2_seg.png",
-            "L5_seg.png",
+            "T12.png",
+            "L3.png",
+            "L1.png",
+            "L4.png",
+            "L2.png",
+            "L5.png",
         ]
 
     def __call__(self, inference_pipeline):

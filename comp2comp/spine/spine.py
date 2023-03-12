@@ -172,6 +172,7 @@ class SpineFindDicoms(InferenceClass):
 
         inference_pipeline.dicom_files = dicom_files
         inference_pipeline.names = names
+        inference_pipeline.dicom_file_names = names
         inference_pipeline.centroids = centroids
 
         return {}

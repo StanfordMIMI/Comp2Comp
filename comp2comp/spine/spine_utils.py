@@ -40,7 +40,7 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
     instance_numbers = []
 
     # TODO Make these names configurable
-    label_text = ["T12_seg", "L1_seg", "L2_seg", "L3_seg", "L4_seg", "L5_seg"]
+    label_text = ["T12", "L1", "L2", "L3", "L4", "L5"]
 
     # if flip_si is True, then flip the vertical positions
     if flip_si:
