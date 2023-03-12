@@ -8,8 +8,6 @@ from keras.models import load_model
 import wget
 from pathlib import Path
 
-from comp2comp.preferences import PREFERENCES
-
 
 class Models(enum.Enum):
     ABCT_V_0_0_1 = (
@@ -63,7 +61,7 @@ class Models(enum.Enum):
         obj.windows = windows
         return obj
 
-    def load_model(self, logger):
+    def load_model(self, model_dir):
         """Load the model from the models directory.
 
         Args:
@@ -72,42 +70,17 @@ class Models(enum.Enum):
         Returns:
             keras.models.Model: Model.
         """
-        # hf_hub_download(
-        #     repo_id="lblankem/stanford_abct_v0.0.1",
-        #     filename="stanford_v0.0.1.h5",
-        #     cache_dir=PREFERENCES.MODELS_DIR,
-             # use_auth_token=PREFERENCES.HF_TOKEN,
-        # )
         try:
             filename = Models.find_model_weights(self.model_name)
         except:
-            logger.info("Downloading muscle/fat model from hugging face")
-            Path(PREFERENCES.MODELS_DIR).mkdir(parents=True, exist_ok=True)
-            weights_file_name = wget.download(f"https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/{self.model_name}.h5", out=os.path.join(PREFERENCES.MODELS_DIR, f"{self.model_name}.h5"))
-            filename = Models.find_model_weights(self.model_name)
+            print("Downloading muscle/fat model from hugging face")
+            Path(model_dir).mkdir(parents=True, exist_ok=True)
+            weights_file_name = wget.download(f"https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/{self.model_name}.h5", out=os.path.join(model_dir, f"{self.model_name}.h5"))
+            filename = Models.find_model_weights(self.model_name, model_dir)
+            print("")
      
-        logger.info("Loading muscle/fat model from {}".format(filename))
+        print("Loading muscle/fat model from {}".format(filename))
         return load_model(filename)
-
-    def preds_to_mask(self, preds):
-        """Convert model predictions to a mask.
-
-        Args:
-            preds (np.ndarray): Model predictions.
-
-        Returns:
-            np.ndarray: Mask.
-        """
-        if self.use_softmax:
-            # softmax
-            labels = np.zeros_like(preds, dtype=np.uint8)
-            l_argmax = np.argmax(preds, axis=-1)
-            for c in range(labels.shape[-1]):
-                labels[l_argmax == c, c] = 1
-            return labels.astype(np.bool)
-        else:
-            # sigmoid
-            return preds >= 0.5
 
     @staticmethod
     def model_from_name(model_name):
@@ -125,8 +98,8 @@ class Models(enum.Enum):
         return None
 
     @staticmethod
-    def find_model_weights(file_name):
-        for root, _, files in os.walk(PREFERENCES.MODELS_DIR):
+    def find_model_weights(file_name, model_dir):
+        for root, _, files in os.walk(model_dir):
             for file in files:
                 if file.startswith(file_name):
                     filename = os.path.join(root, file)

@@ -3,8 +3,7 @@ import os
 import re
 from typing import Dict, Sequence, Union
 
-from comp2comp.metrics import CrossSectionalArea, HounsfieldUnits
-from comp2comp.preferences import PREFERENCES
+from comp2comp.metrics.metrics import CrossSectionalArea, HounsfieldUnits
 
 logger = logging.getLogger(__name__)
 
@@ -128,43 +127,6 @@ def find_files(
 
     return sorted(set(out_files))
 
-
-def compute_results(x, mask, categories: Dict, params: Dict):
-    """Compute results for a given segmentation.
-
-    Args:
-        x (np.ndarray): Image.
-        mask (np.ndarray): Segmentation mask.
-        categories (Dict): Categories.
-        params (Dict): Parameters.
-
-    Returns:
-        Dict: Results.
-    """
-    hu = HounsfieldUnits()
-    spacing = params.get("spacing", None)
-    csa_units = "cm^2" if spacing else ""
-    csa = CrossSectionalArea(csa_units)
-
-    hu_vals = hu(mask, x, category_dim=-1)
-    csa_vals = csa(mask=mask, spacing=spacing, category_dim=-1)
-
-    assert mask.shape[-1] == len(
-        categories
-    ), "{} categories found in mask, " "but only {} categories specified".format(
-        mask.shape[-1], len(categories)
-    )
-
-    results = {
-        cat: {
-            "mask": mask[..., idx],
-            hu.name(): hu_vals[idx],
-            csa.name(): csa_vals[idx],
-        }
-        for idx, cat in enumerate(categories.keys())
-    }
-
-    return results
 
 
 def get_dicom_paths_and_num(path):

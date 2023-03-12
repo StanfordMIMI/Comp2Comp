@@ -64,3 +64,5 @@ comp2comp/preferences.yaml
 
 # ignore outputs file
 **/outputs/
+
+**/models/

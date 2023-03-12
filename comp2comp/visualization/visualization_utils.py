@@ -5,18 +5,7 @@ from typing import Union
 import numpy as np
 from PIL import Image
 
-from comp2comp.utils.visualizer import Visualizer
-
-_image_files = [
-    "spine_coronal.png",
-    "spine_sagittal.png",
-    "T12_seg.png",
-    "L3_seg.png",
-    "L1_seg.png",
-    "L4_seg.png",
-    "L2_seg.png",
-    "L5_seg.png",
-]
+from comp2comp.visualization.detectron_visualizer import Visualizer
 
 _COLORS = (
     np.array(
@@ -87,7 +76,6 @@ def save_binary_segmentation_overlay(
     pixel_spacing=None
 ):
     """Save binary segmentation overlay.
-
     Args:
         img_in (Union[str, Path]): Path to the input image.
         mask (Union[str, Path]): Path to the mask.
@@ -283,75 +271,15 @@ def save_binary_segmentation_overlay(
                     horizontal_alignment="center"
                 )
 
-                '''
-                vis.draw_text(
-                    text=f"{_TISSUES[num_bin_masks - 1]} HU: " + hu_val,
-                    position=(
-                        mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT,
-                        _MUSCLE_FAT_TEXT_HORIZONTAL_SPACING * (num_bin_masks - 1) + text_start_vertical_offset,
-                    ),
-                    color=_2D_COLORS[num_bin_masks - 1],
-                    font_size=7,
-                )
-                vis.draw_text(
-                    text=f"{_TISSUES[num_bin_masks - 1]} AREA: " + area_val,
-                    position=(
-                        mask.shape[1] - _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT,
-                        _MUSCLE_FAT_TEXT_HORIZONTAL_SPACING * (num_bin_masks - 1)
-                        + text_start_vertical_offset
-                        + (_MUSCLE_FAT_TEXT_HORIZONTAL_SPACING / 2),
-                    ),
-                    color=_2D_COLORS[num_bin_masks - 1],
-                    font_size=7,
-                )
-                '''
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(images_base_path, file_name))
 
 
 def normalize_img(img: np.ndarray) -> np.ndarray:
     """Normalize the image.
-
     Args:
         img (np.ndarray): Input image.
-
     Returns:
         np.ndarray: Normalized image.
     """
     return (img - img.min()) / (img.max() - img.min())
-
-
-def generate_panel(image_dir: Union[str, Path]):
-    """Generate panel.
-
-    Args:
-        image_dir (Union[str, Path]): Path to the image directory.
-    """
-    image_files = [os.path.join(image_dir, path) for path in _image_files]
-    im_cor = Image.open(image_files[0])
-    im_sag = Image.open(image_files[1])
-    im_cor_width = int(im_cor.width / im_cor.height * 512)
-    width = (8 + im_cor_width + 8) + ((512 + 8) * 3)
-    height = 1048
-    new_im = Image.new("RGB", (width, height))
-
-    index = 2 
-    for i in range(8 + im_cor_width + 8, width, 520):
-        for j in range(8, height, 520):
-            im = Image.open(image_files[index])
-            im.thumbnail((512, 512))
-            new_im.paste(im, (i, j))
-            index += 1
-            im.close()
-    
-    im_cor.thumbnail((im_cor_width, 512))
-    new_im.paste(im_cor, (8, 8))
-    im_sag.thumbnail((im_cor_width, 512))
-    new_im.paste(im_sag, (8, 528))
-    new_im.save(os.path.join(image_dir, "panel.png"))
-    im_cor.close()
-    im_sag.close()
-    new_im.close()
-
-
-

@@ -102,48 +102,6 @@ class Dataset(k_utils.Sequence):
         return xs, params
 
 
-# function that fills in holes in a segmentation mask
-def _fill_holes(mask: np.ndarray, mask_id: int):
-    """Fill in holes in a segmentation mask.
-
-    Args:
-        mask (ndarray): NxHxW
-        mask_id (int): Label of the mask.
-
-    Returns:
-        ndarray: Filled mask.
-    """
-    int_mask = ((1 - mask) > 0.5).astype(np.int8)
-    components, output, stats, _ = cv2.connectedComponentsWithStats(int_mask, connectivity=8)
-    sizes = stats[1:, -1]
-    components = components - 1
-    # Larger threshold for SAT
-    # TODO make this configurable / parameter
-    if mask_id == 2:
-        min_size = 200
-    else:
-        #min_size = 50  # Smaller threshold for everything else
-        min_size = 20
-    img_out = np.ones_like(mask)
-    for i in range(0, components):
-        if sizes[i] > min_size:
-            img_out[output == i + 1] = 0
-    return img_out
-
-
-def fill_holes(ys: List):
-    """Take an array of size NxHxWxC and for each channel fill in holes.
-
-    Args:
-        ys (list): List of segmentation masks.
-    """
-    segs = []
-    for n in range(len(ys)):
-        ys_out = [_fill_holes(ys[n][..., i], i) for i in range(ys[n].shape[-1])]
-        segs.append(np.stack(ys_out, axis=2).astype(float))
-
-    return segs
-
 
 def _swap_muscle_imap(xs, ys, muscle_idx: int, imat_idx: int, threshold=-30.0):
     """
@@ -173,7 +131,7 @@ def _swap_muscle_imap(xs, ys, muscle_idx: int, imat_idx: int, threshold=-30.0):
     return labels
 
 
-def postprocess(xs: np.ndarray, ys: np.ndarray, params: dict):
+def postprocess(xs: np.ndarray, ys: np.ndarray):
     """Built-in post-processing.
 
     TODO: Make this configurable.
@@ -187,8 +145,6 @@ def postprocess(xs: np.ndarray, ys: np.ndarray, params: dict):
     Returns:
         ndarray: Post-processed labels.
     """
-    assert params
-    categories = params["categories"]
 
     # Add another channel full of zeros to ys
     ys = np.concatenate([ys, np.zeros_like(ys[..., :1])], axis=-1)
@@ -215,8 +171,6 @@ def predict(
     num_workers: int = 1,
     max_queue_size: int = 10,
     use_multiprocessing: bool = False,
-    use_postprocessing: bool = False,
-    postprocessing_params: dict = None,
 ):
     """Predict segmentation masks for a dataset.
 
@@ -249,9 +203,8 @@ def predict(
         x, p_dicts = next(output_generator)
         y = model.predict(x, batch_size=batch_size)
 
-        if use_postprocessing:
-            image = np.stack([out["image"] for out in p_dicts], axis=0)
-            y = postprocess(image, y, postprocessing_params)
+        image = np.stack([out["image"] for out in p_dicts], axis=0)
+        y = postprocess(image, y)
 
         params.extend(p_dicts)
         xs.extend([x[i, ...] for i in range(len(x))])
