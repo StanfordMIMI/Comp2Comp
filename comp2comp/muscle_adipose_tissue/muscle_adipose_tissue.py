@@ -310,6 +310,7 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
         self.csv_output_dir = os.path.join(self.output_dir, "metrics")
         os.makedirs(self.csv_output_dir, exist_ok=True)
         self.dicom_file_paths = inference_pipeline.dicom_file_paths
+        self.dicom_file_names = inference_pipeline.dicom_file_names
         self.save_results(results)
 
     def save_results(self, results):
@@ -317,6 +318,7 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
         categories = self.model_type.categories
         cats = list(categories.keys())
         df = pd.DataFrame(columns=[
+            "File Name"
             "File Path",
             "Muscle HU", 
             "Muscle CSA (cm^2)", 
@@ -330,6 +332,7 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
 
         for i, result in enumerate(results):
             row = []
+            row.append(self.dicom_file_names[i])
             row.append(self.dicom_file_paths[i])
             for cat in cats:
                 row.append(result[cat]["Hounsfield Unit"])

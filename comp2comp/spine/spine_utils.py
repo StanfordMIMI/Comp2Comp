@@ -13,7 +13,7 @@ import os
 from scipy.ndimage import zoom
 
 from comp2comp.models.models import Models
-from comp2comp.visualization import visualization
+from comp2comp.visualization import visualization_utils
 
 
 def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
@@ -190,7 +190,6 @@ def mean_img_mask(
     mask: np.ndarray,
     rescale_slope: float,
     rescale_intercept: float,
-    save_dir: str,
     index: int
 ):
     """Compute the mean of an image inside a mask.
@@ -212,7 +211,7 @@ def mean_img_mask(
     return mean
 
 
-def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, save_dir, pixel_spacing):
+def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, pixel_spacing):
     """Compute the ROIs for the spine.
 
     Args:
@@ -245,7 +244,7 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, s
         center_of_mass = compute_center_of_mass(slice)
         centroid = np.array([center_of_mass[1], centroids[i], center_of_mass[0]])
         roi = roi_from_mask(img, centroid, pixel_spacing)
-        spine_hus.append(mean_img_mask(img, roi, rescale_slope, rescale_intercept, save_dir, i))
+        spine_hus.append(mean_img_mask(img, roi, rescale_slope, rescale_intercept, i))
         rois.append(roi)
         centroids_3d.append(centroid)
     return (spine_hus, rois, centroids_3d)
@@ -385,7 +384,7 @@ def visualize_coronal_sagittal_spine(
             axis=2,
         )
 
-    visualization.save_binary_segmentation_overlay(
+    visualization_utils.save_binary_segmentation_overlay(
         coronal_image,
         one_hot_cor_label,
         output_dir,
@@ -395,7 +394,7 @@ def visualize_coronal_sagittal_spine(
         model_type=model_type,
         pixel_spacing=pixel_spacing
     )
-    visualization.save_binary_segmentation_overlay(
+    visualization_utils.save_binary_segmentation_overlay(
         np.transpose(sagittal_image),
         np.transpose(one_hot_sag_label, (1, 0, 2)),
         output_dir,

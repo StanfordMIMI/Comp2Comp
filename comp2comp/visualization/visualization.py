@@ -6,12 +6,13 @@ import sys
 import numpy as np
 from PIL import Image
 
-from comp2comp.visualization.visualizer import Visualizer
+from comp2comp.visualization.detectron_visualizer import Visualizer
 from comp2comp.inference_class_base import InferenceClass
 
 class MuscleAdiposeTissueVisualizer(InferenceClass):
 
     def __init__(self):
+        super().__init__()
 
         self._spine_colors = {
             "T12": [255, 0, 0], 
@@ -161,13 +162,34 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
         """
         return (img - img.min()) / (img.max() - img.min())
 
+
+class SpineMuscleAdiposeTissueReport(InferenceClass):
+    """Spine muscle adipose tissue report class.
+    """
+    def __init__(self):
+        super().__init__()
+        self.image_files = [
+            "spine_coronal.png",
+            "spine_sagittal.png",
+            "T12_seg.png",
+            "L3_seg.png",
+            "L1_seg.png",
+            "L4_seg.png",
+            "L2_seg.png",
+            "L5_seg.png",
+        ]
+
+    def __call__(self, inference_pipeline):
+        image_dir = Path(inference_pipeline.output_dir) / "images"
+        self.generate_panel(image_dir)
+
+    
     def generate_panel(self, image_dir: Union[str, Path]):
         """Generate panel.
-
         Args:
             image_dir (Union[str, Path]): Path to the image directory.
         """
-        image_files = [os.path.join(image_dir, path) for path in _image_files]
+        image_files = [os.path.join(image_dir, path) for path in self.image_files]
         im_cor = Image.open(image_files[0])
         im_sag = Image.open(image_files[1])
         im_cor_width = int(im_cor.width / im_cor.height * 512)
@@ -192,6 +214,7 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
         im_cor.close()
         im_sag.close()
         new_im.close()
+
 
 
 

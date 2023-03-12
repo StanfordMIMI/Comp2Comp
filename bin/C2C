@@ -21,16 +21,15 @@ from tqdm import tqdm
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-from comp2comp import metrics
-from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import *
-from comp2comp.models.models import Models
-from comp2comp.spine.nn_unet import spine_seg
-from comp2comp.utils.run import find_files, get_dicom_paths_and_num, get_file_names
-from comp2comp.utils import dl_utils, spine_utils
+from comp2comp.models.models import Models 
 from comp2comp.io.io import DicomFinder
-from comp2comp.visualization.visualization import MuscleAdiposeTissueVisualizer
-from comp2comp.io.io_utils import find_dicom_files
+from comp2comp.utils.run import get_dicom_paths_and_num
 from comp2comp.inference_pipeline import InferencePipeline
+
+from comp2comp.visualization.visualization import MuscleAdiposeTissueVisualizer, SpineMuscleAdiposeTissueReport
+from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import *
+
+from comp2comp.spine.spine import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
@@ -71,28 +70,44 @@ def spine_muscle_adipose_tissue(args):
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
+    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
     for path, num in get_dicom_paths_and_num(args.input_path):
 
-        parent_dir = Path(os.path.basename(path))
-        output_path = base_output_path / parent_dir
+        print("Processing: ", path, " with ", num, " slices")
+
+        if num < 300:
+            print("Number of slices is less than 300, skipping\n")
+            continue
+        
+        print("")
+
+        sys.stdout.flush()
 
         output_dir = Path(os.path.join(
             os.path.dirname(os.path.abspath(__file__)), 
-            "../outputs", 
-            datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            "../outputs",
+            date_time,
+            Path(os.path.basename(path))
             ))
-            
+
         if not os.path.exists(output_dir):
             output_dir.mkdir(parents=True)
 
         # Each class within InferencePipeline can modify InferencePipeline and access its attributes
         pipeline = InferencePipeline([
-            DicomSeriesFinder(args.input_path),
-            SpineSegmentation(),
-            MuscleAdiposeTissueSegmentation(),
-            Visualizer(),
-            H5Saver(),
-            MetricsSaver(),
+            SpineSegmentation(path),
+            SpineReorient(),
+            SpineComputeROIs(args.spine_model),
+            SpineFindDicoms(),
+            SpineCoronalSagittalVisualizer(),
+            MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
+            MuscleAdiposeTissuePostProcessing(),
+            MuscleAdiposeTissueComputeMetrics(),
+            MuscleAdiposeTissueVisualizer(),
+            MuscleAdiposeTissueH5Saver(),
+            MuscleAdiposeTissueMetricsSaver(),
+            SpineMuscleAdiposeTissueReport(),
             ],
         config={
             "output_dir": output_dir,
@@ -137,6 +152,12 @@ def argument_parser():
         default="abCT_v0.0.1",
         type=str,
         help="muscle + fat segmentation model to use for inference",
+    )
+    spine_muscle_adipose_tissue_parser.add_argument(
+        "--spine_model",
+        default="ts_spine",
+        type=str,
+        help="spine model to use for inference",
     )
     return parser
 
