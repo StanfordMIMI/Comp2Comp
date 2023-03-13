@@ -1,8 +1,6 @@
 import math
 from typing import List, Sequence
-import matplotlib.pyplot as plt
 
-import cv2
 import keras.utils as k_utils
 import numpy as np
 import pydicom
@@ -102,7 +100,6 @@ class Dataset(k_utils.Sequence):
         return xs, params
 
 
-
 def _swap_muscle_imap(xs, ys, muscle_idx: int, imat_idx: int, threshold=-30.0):
     """
     If pixel labeled as muscle but has HU < threshold, change label to imat.
@@ -151,7 +148,7 @@ def postprocess(xs: np.ndarray, ys: np.ndarray):
 
     # If muscle hu is < -30, assume it is imat.
 
-    '''
+    """
     if "muscle" in categories and "imat" in categories:
         ys = _swap_muscle_imap(
             xs,
@@ -159,7 +156,7 @@ def postprocess(xs: np.ndarray, ys: np.ndarray):
             muscle_idx=categories["muscle"],
             imat_idx=categories["imat"],
         )
-    '''
+    """
 
     return ys
 

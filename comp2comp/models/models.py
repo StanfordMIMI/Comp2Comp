@@ -1,12 +1,10 @@
 import enum
 import os
+from pathlib import Path
 from typing import Dict, Sequence
 
-import numpy as np
-from huggingface_hub import hf_hub_download
-from keras.models import load_model
 import wget
-from pathlib import Path
+from keras.models import load_model
 
 
 class Models(enum.Enum):
@@ -72,13 +70,16 @@ class Models(enum.Enum):
         """
         try:
             filename = Models.find_model_weights(self.model_name)
-        except:
+        except Exception:
             print("Downloading muscle/fat model from hugging face")
             Path(model_dir).mkdir(parents=True, exist_ok=True)
-            weights_file_name = wget.download(f"https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/{self.model_name}.h5", out=os.path.join(model_dir, f"{self.model_name}.h5"))
+            wget.download(
+                f"https://huggingface.co/stanfordmimi/stanford_abct_v0.0.1/resolve/main/{self.model_name}.h5",
+                out=os.path.join(model_dir, f"{self.model_name}.h5"),
+            )
             filename = Models.find_model_weights(self.model_name, model_dir)
             print("")
-     
+
         print("Loading muscle/fat model from {}".format(filename))
         return load_model(filename)
 

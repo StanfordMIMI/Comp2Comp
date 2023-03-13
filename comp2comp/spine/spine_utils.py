@@ -3,16 +3,10 @@ from glob import glob
 from typing import List
 
 import cv2
-import dosma as dm
 import numpy as np
 from pydicom.filereader import dcmread
-import nibabel as nib
-from itertools import groupby
-import re
-import os
 from scipy.ndimage import zoom
 
-from comp2comp.models.models import Models
 from comp2comp.visualization import visualization_utils
 
 
@@ -57,7 +51,7 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
             instance_numbers.append(instance_number)
 
     if flip_si:
-        dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files), reverse = True)]
+        dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files), reverse=True)]
     else:
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
     vertical_positions.sort(reverse=True)
@@ -163,13 +157,13 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray, pixel_spacing):
     length_k = int(5.0 / pixel_spacing[2])
 
     # cubic ROI around centroid
-    '''
+    """
     roi[
         int(centroid[0] - length) : int(centroid[0] + length),
         int(centroid[1] - length) : int(centroid[1] + length),
         int(centroid[2] - length) : int(centroid[2] + length),
     ] = 1
-    '''
+    """
     # spherical ROI around centroid
     roi = np.zeros(img.shape)
     i_lower = int(centroid[0] - length_i)
@@ -178,7 +172,9 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray, pixel_spacing):
     for i in range(i_lower, i_lower + 2 * length_i):
         for j in range(j_lower, j_lower + 2 * length_j):
             for k in range(k_lower, k_lower + 2 * length_k):
-                if (i - centroid[0]) ** 2 / length_i ** 2 + (j - centroid[1]) ** 2 / length_j ** 2 + (k - centroid[2]) ** 2 / length_k ** 2 <= 1:
+                if (i - centroid[0]) ** 2 / length_i**2 + (
+                    j - centroid[1]
+                ) ** 2 / length_j**2 + (k - centroid[2]) ** 2 / length_k**2 <= 1:
                     roi[i, j, k] = 1
     return roi
 
@@ -186,11 +182,7 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray, pixel_spacing):
 # Function that takes a 3d image and a 3d binary mask and returns that average
 # value of the image inside the mask
 def mean_img_mask(
-    img: np.ndarray,
-    mask: np.ndarray,
-    rescale_slope: float,
-    rescale_intercept: float,
-    index: int
+    img: np.ndarray, mask: np.ndarray, rescale_slope: float, rescale_intercept: float, index: int
 ):
     """Compute the mean of an image inside a mask.
 
@@ -233,7 +225,7 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, p
     # Delete right most connected component
     if spine_model_type.model_name == "ts_spine":
         for i, slice in enumerate(slices):
-            # keep only the two largest connected components 
+            # keep only the two largest connected components
             two_largest = keep_two_largest_connected_components(slice)
             slices[i] = delete_right_most_connected_component(two_largest)
     # Compute ROIs
@@ -248,6 +240,7 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, p
         rois.append(roi)
         centroids_3d.append(centroid)
     return (spine_hus, rois, centroids_3d)
+
 
 def keep_two_largest_connected_components(mask: np.ndarray):
     """Keep the two largest connected components.
@@ -323,7 +316,7 @@ def visualize_coronal_sagittal_spine(
     output_dir: str,
     spine_hus=None,
     model_type=None,
-    pixel_spacing=None
+    pixel_spacing=None,
 ):
     """Visualize the coronal and sagittal planes of the spine.
 
@@ -337,24 +330,18 @@ def visualize_coronal_sagittal_spine(
         spine_hus (List[float], optional): List of HU values. Defaults to None.
         model_type (Models, optional): Model type. Defaults to None.
     """
-    # Get minimum and maximum values of the model_type.catogories dict values
-    min_val = min(model_type.categories.values())
-    max_val = max(model_type.categories.values())
-    for_centroid = np.logical_and(seg >= min_val, seg <= max_val).astype(int)
-    sagittal_centroid = compute_centroid(for_centroid, "sagittal", 1)
-    coronal_centroid = compute_centroid(for_centroid, "coronal", 1)
 
     sagittal_vals, coronal_vals = curved_planar_reformation(mvs, centroids_3d)
     sagittal_image = mvs[:, sagittal_vals, range(len(sagittal_vals))]
     sagittal_label = seg[:, sagittal_vals, range(len(sagittal_vals))]
     zoom_factor = pixel_spacing[2] / pixel_spacing[1]
-    sagittal_image = zoom(sagittal_image, (1, zoom_factor), order = 3)
-    sagittal_label = zoom(sagittal_label, (1, zoom_factor), order = 0).astype(int)
+    sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3)
+    sagittal_label = zoom(sagittal_label, (1, zoom_factor), order=0).astype(int)
 
     one_hot_sag_label = to_one_hot(sagittal_label, model_type)
     for roi in rois:
         one_hot_roi_label = roi[:, sagittal_vals, range(len(sagittal_vals))]
-        one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order = 0).astype(int)
+        one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order=0).astype(int)
         one_hot_sag_label = np.concatenate(
             (
                 one_hot_sag_label,
@@ -367,13 +354,13 @@ def visualize_coronal_sagittal_spine(
 
     coronal_image = mvs[coronal_vals, :, range(len(coronal_vals))]
     coronal_label = seg[coronal_vals, :, range(len(coronal_vals))]
-    coronal_image = zoom(coronal_image, (zoom_factor, 1), order = 3)
-    coronal_label = zoom(coronal_label, (zoom_factor, 1), order = 0).astype(int)
+    coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
+    coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
 
     one_hot_cor_label = to_one_hot(coronal_label, model_type)
     for roi in rois:
         one_hot_roi_label = roi[coronal_vals, :, range(len(coronal_vals))]
-        one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order = 0).astype(int)
+        one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order=0).astype(int)
         one_hot_cor_label = np.concatenate(
             (
                 one_hot_cor_label,
@@ -392,7 +379,7 @@ def visualize_coronal_sagittal_spine(
         centroids,
         spine_hus=spine_hus,
         model_type=model_type,
-        pixel_spacing=pixel_spacing
+        pixel_spacing=pixel_spacing,
     )
     visualization_utils.save_binary_segmentation_overlay(
         np.transpose(sagittal_image),
@@ -402,30 +389,26 @@ def visualize_coronal_sagittal_spine(
         centroids,
         spine_hus=spine_hus,
         model_type=model_type,
-        pixel_spacing=pixel_spacing
+        pixel_spacing=pixel_spacing,
     )
 
+
 def curved_planar_reformation(mvs, centroids):
-    # first index gives coronal plane, second index gives sagittal plane, third index gives axial plane
-    # order the centroids by the axial plane
     centroids = sorted(centroids, key=lambda x: x[2])
-    # change type to int
     centroids = [(int(x[0]), int(x[1]), int(x[2])) for x in centroids]
-    # extract the sagittal centroids
     sagittal_centroids = [centroids[i][1] for i in range(0, len(centroids))]
-    # extract the coronal centroids
     coronal_centroids = [centroids[i][0] for i in range(0, len(centroids))]
-    # extract the axial centroids
     axial_centroids = [centroids[i][2] for i in range(0, len(centroids))]
-    current_axial_centroid = 0
     sagittal_vals = [sagittal_centroids[0]] * axial_centroids[0]
     coronal_vals = [coronal_centroids[0]] * axial_centroids[0]
+
     for i in range(1, len(axial_centroids)):
         num = axial_centroids[i] - axial_centroids[i - 1]
         interp = list(np.linspace(sagittal_centroids[i - 1], sagittal_centroids[i], num=num))
         sagittal_vals.extend(interp)
         interp = list(np.linspace(coronal_centroids[i - 1], coronal_centroids[i], num=num))
         coronal_vals.extend(interp)
+
     sagittal_vals.extend([sagittal_centroids[-1]] * (mvs.shape[2] - len(sagittal_vals)))
     coronal_vals.extend([coronal_centroids[-1]] * (mvs.shape[2] - len(coronal_vals)))
     sagittal_vals = np.array(sagittal_vals)
@@ -436,7 +419,8 @@ def curved_planar_reformation(mvs, centroids):
     return (sagittal_vals, coronal_vals)
 
 
-def compare_ts_stanford_centroids(labels_path):
+'''
+def compare_ts_stanford_centroids(labels_path, pred_centroids):
     """Compare the centroids of the Stanford dataset with the centroids of the TS dataset.
 
     Args:
@@ -451,14 +435,14 @@ def compare_ts_stanford_centroids(labels_path):
     num_skipped = 0
 
     labels = glob(labels_path + "/*")
-    for i, label_path in enumerate(labels):
+    for label_path in labels:
         # modify label_path to give pred_path
-        pred_path = label_path.replace('labelsTs', 'predTs_TS')
-        print(label_path.split('/')[-1])
-        label_nib  = nib.load(label_path)
+        pred_path = label_path.replace("labelsTs", "predTs_TS")
+        print(label_path.split("/")[-1])
+        label_nib = nib.load(label_path)
         label = label_nib.get_fdata()
         spacing = label_nib.header.get_zooms()[2]
-        pred_nib  = nib.load(pred_path)
+        pred_nib = nib.load(pred_path)
         pred = pred_nib.get_fdata()
         if True:
             pred[pred == 18] = 6
@@ -467,41 +451,41 @@ def compare_ts_stanford_centroids(labels_path):
             pred[pred == 21] = 3
             pred[pred == 22] = 2
             pred[pred == 23] = 1
-        
+
         for label_idx in range(1, 7):
             label_level = label == label_idx
             indexes = np.array(range(label.shape[2]))
-            sums = np.sum(label_level, axis = (0, 1))
+            sums = np.sum(label_level, axis=(0, 1))
             normalized_sums = sums / np.sum(sums)
             label_centroid = np.sum(indexes * normalized_sums)
             print(f"Centroid for label {label_idx}: {label_centroid}")
-    
+
             if False:
                 try:
                     pred_centroid = pred_centroids[6 - label_idx]
-                except:
+                except Exception:
                     # Change this part
                     print("Something wrong with pred_centroids, skipping!")
                     num_skipped += 1
                     break
-            
-            #if revert_to_original:
+
+            # if revert_to_original:
             if True:
                 pred_level = pred == label_idx
-                sums = np.sum(pred_level, axis = (0, 1))
+                sums = np.sum(pred_level, axis=(0, 1))
                 indices = list(range(sums.shape[0]))
                 groupby_input = zip(indices, list(sums))
-                g = groupby(groupby_input, key=lambda x:x[1]>0.0)
-                m = max([list(s) for v, s in g if v > 0], key = lambda x:np.sum(list(zip(*x))[1]))
+                g = groupby(groupby_input, key=lambda x: x[1] > 0.0)
+                m = max([list(s) for v, s in g if v > 0], key=lambda x: np.sum(list(zip(*x))[1]))
                 res = list(zip(*m))
                 indexes = list(res[0])
                 sums = list(res[1])
                 normalized_sums = sums / np.sum(sums)
                 pred_centroid = np.sum(indexes * normalized_sums)
             print(f"Centroid for prediction {label_idx}: {pred_centroid}")
-            
+
             diff = np.absolute(pred_centroid - label_centroid) * spacing
-            
+
             if label_idx == 1:
                 t12_diff.append(diff)
             elif label_idx == 2:
@@ -514,13 +498,26 @@ def compare_ts_stanford_centroids(labels_path):
                 l4_diff.append(diff)
             elif label_idx == 6:
                 l5_diff.append(diff)
-            
-    print(f"Processed {i + 1} scans!\n")
+
     print(f"Skipped {num_skipped}")
-    print(f"The final mean differences in mm:")
-    print(np.mean(t12_diff), np.mean(l1_diff), np.mean(l2_diff), np.mean(l3_diff), np.mean(l4_diff), np.mean(l5_diff))
-    print(f"The final median differences in mm:")
-    print(np.median(t12_diff), np.median(l1_diff), np.median(l2_diff), np.median(l3_diff), np.median(l4_diff), np.median(l5_diff))
+    print("The final mean differences in mm:")
+    print(
+        np.mean(t12_diff),
+        np.mean(l1_diff),
+        np.mean(l2_diff),
+        np.mean(l3_diff),
+        np.mean(l4_diff),
+        np.mean(l5_diff),
+    )
+    print("The final median differences in mm:")
+    print(
+        np.median(t12_diff),
+        np.median(l1_diff),
+        np.median(l2_diff),
+        np.median(l3_diff),
+        np.median(l4_diff),
+        np.median(l5_diff),
+    )
 
 
 def compare_ts_stanford_roi_hus(image_path):
@@ -533,9 +530,9 @@ def compare_ts_stanford_roi_hus(image_path):
     ground_truth = np.zeros((40, 6))
     for i, img_path in enumerate(img_paths):
         print(f"Image number {i + 1}")
-        image_path_no_0000 = re.sub(r'_0000', '', img_path)
-        ts_seg_path = image_path_no_0000.replace('imagesTs', 'predTs_TS')
-        stanford_seg_path = image_path_no_0000.replace('imagesTs', 'labelsTs')
+        image_path_no_0000 = re.sub(r"_0000", "", img_path)
+        ts_seg_path = image_path_no_0000.replace("imagesTs", "predTs_TS")
+        stanford_seg_path = image_path_no_0000.replace("imagesTs", "labelsTs")
         img = nib.load(img_path).get_fdata()
         img = np.swapaxes(img, 0, 1)
         ts_seg = nib.load(ts_seg_path).get_fdata()
@@ -545,7 +542,9 @@ def compare_ts_stanford_roi_hus(image_path):
         ts_model_type = Models.model_from_name("ts_spine")
         (spine_hus_ts, rois, centroids_3d) = compute_rois(ts_seg, img, 1, 0, ts_model_type)
         stanford_model_type = Models.model_from_name("stanford_spine_v0.0.1")
-        (spine_hus_stanford, rois, centroids_3d) = compute_rois(stanford_seg, img, 1, 0, stanford_model_type)
+        (spine_hus_stanford, rois, centroids_3d) = compute_rois(
+            stanford_seg, img, 1, 0, stanford_model_type
+        )
         difference_vals = np.abs(np.array(spine_hus_ts) - np.array(spine_hus_stanford))
         print(f"Differences {difference_vals}\n")
         differences[i, :] = difference_vals
@@ -562,7 +561,7 @@ def compare_ts_stanford_roi_hus(image_path):
     print(median_percent_change)
     # print average difference
     average_difference = np.mean(differences, axis=0)
-    median_difference = np.median(differences, axis = 0)
+    median_difference = np.median(differences, axis=0)
     print("Average difference from ground truth:")
     print(average_difference)
     print("Median difference from ground truth:")
@@ -575,49 +574,51 @@ def process_post_hoc(pred_path):
     Args:
         pred_path (str): Path to the prediction.
     """
-    pred_nib  = nib.load(pred_path)
-    spacing = pred_nib.header.get_zooms()[2]
+    pred_nib = nib.load(pred_path)
     pred = pred_nib.get_fdata()
 
     pred_bodies = np.logical_and(pred >= 1, pred <= 6)
     pred_bodies = pred_bodies.astype(np.int64)
-    
+
     labels_out, N = cc3d.connected_components(pred_bodies, return_N=True, connectivity=6)
-    
+
     stats = cc3d.statistics(labels_out)
     print(stats)
-    
+
     labels_out_list = []
-    voxel_counts_list = list(stats['voxel_counts'])
+    voxel_counts_list = list(stats["voxel_counts"])
     for idx_lab in range(1, N + 2):
         labels_out_list.append(labels_out == idx_lab)
-    
-    centroids_list = list(stats['centroids'][:, 2])
-    
+
+    centroids_list = list(stats["centroids"][:, 2])
+
     labels = []
     centroids = []
     voxels = []
-    
+
     for idx, count in enumerate(voxel_counts_list):
         if count > 10000:
             labels.append(labels_out_list[idx])
             centroids.append(centroids_list[idx])
             voxels.append(count)
-        
-    top_comps = [(counts0, labels0, centroids0) for counts0, labels0, centroids0 in sorted(zip(voxels, labels, centroids), reverse = True)]
+
+    top_comps = [
+        (counts0, labels0, centroids0)
+        for counts0, labels0, centroids0 in sorted(zip(voxels, labels, centroids), reverse=True)
+    ]
     top_comps = top_comps[1:7]
-    
+
     # ====== Check whether the connected components are fusing vertebral bodies ======
     revert_to_original = False
-    
+
     volumes = list(zip(*top_comps))[0]
     if volumes[0] > 1.5 * volumes[1]:
         revert_to_original = True
         print("Reverting to original...")
-    
+
     labels = list(zip(*top_comps))[1]
     centroids = list(zip(*top_comps))[2]
-        
+
     top_comps = zip(centroids, labels)
     pred_centroids = [x for x, _ in sorted(top_comps)]
 
@@ -627,22 +628,25 @@ def process_post_hoc(pred_path):
                 pred_centroid = pred_centroids[6 - label_idx]
             except:
                 # Change this part
-                print("Something went wrong with post processing, probably < 6 predicted bodies. Reverting to original labels.")
+                print(
+                    "Post processing failure, probably < 6 predicted bodies. Reverting to original labels."
+                )
                 revert_to_original = True
-                
+
         if revert_to_original:
             pred_level = pred == label_idx
-            sums = np.sum(pred_level, axis = (0, 1))
+            sums = np.sum(pred_level, axis=(0, 1))
             indices = list(range(sums.shape[0]))
             groupby_input = zip(indices, list(sums))
-            #sys.exit()
-            g = groupby(groupby_input, key=lambda x:x[1]>0.0)
-            m = max([list(s) for v, s in g if v > 0], key = lambda x:np.sum(list(zip(*x))[1]))
-            #sys.exit()
-            #m = max([list(s) for v, s in g], key=lambda np.sum)
+            # sys.exit()
+            g = groupby(groupby_input, key=lambda x: x[1] > 0.0)
+            m = max([list(s) for v, s in g if v > 0], key=lambda x: np.sum(list(zip(*x))[1]))
+            # sys.exit()
+            # m = max([list(s) for v, s in g], key=lambda np.sum)
             res = list(zip(*m))
             indexes = list(res[0])
             sums = list(res[1])
             normalized_sums = sums / np.sum(sums)
             pred_centroid = np.sum(indexes * normalized_sums)
         print(f"Centroid for prediction {label_idx}: {pred_centroid}")
+'''

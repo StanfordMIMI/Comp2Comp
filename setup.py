@@ -53,7 +53,7 @@ setup(
         "pycocotools",
         "wget",
         "tensorflow>=2.0.0",
-        'totalsegmentator @ git+https://github.com/StanfordMIMI/TotalSegmentator.git'
+        "totalsegmentator @ git+https://github.com/StanfordMIMI/TotalSegmentator.git",
     ],
     extras_require={
         "all": ["shapely", "psutil"],

@@ -1,42 +1,32 @@
-import argparse
-import logging
 import os
+from pathlib import Path
 from time import perf_counter
 from typing import List
-from pathlib import Path
 
-import silx.io.dictdump as sio
+import cv2
+import h5py
+import numpy as np
+import pandas as pd
 from keras import backend as K
 from tqdm import tqdm
-import numpy as np
-import cv2
-import sys
-import matplotlib.pyplot as plt
-import h5py
-import pandas as pd
-
-from comp2comp.muscle_adipose_tissue.data import Dataset, predict
-from comp2comp.models.models import Models
-from comp2comp.utils import dl_utils
-from comp2comp.metrics.metrics import CrossSectionalArea, HounsfieldUnits
 
 from comp2comp.inference_class_base import InferenceClass
+from comp2comp.metrics.metrics import CrossSectionalArea, HounsfieldUnits
+from comp2comp.models.models import Models
+from comp2comp.muscle_adipose_tissue.data import Dataset, predict
 
 
 class MuscleAdiposeTissueSegmentation(InferenceClass):
     """Muscle adipose tissue segmentation class."""
+
     def __init__(self, batch_size: int, model_name: str, model_dir: str = None):
         super().__init__()
         self.batch_size = batch_size
         self.model_name = model_name
         self.model_type = Models.model_from_name(model_name)
 
-    def forward_pass_2d(
-        self,
-        files
-    ):
+    def forward_pass_2d(self, files):
         dataset = Dataset(files, windows=self.model_type.windows)
-        categories = self.model_type.categories
         num_workers = 1
 
         print("Computing segmentation masks using {}...".format(self.model_name))
@@ -49,27 +39,25 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
             batch_size=self.batch_size,
         )
         K.clear_session()
-        print(f"Completed {len(files)} segmentations in {(perf_counter() - start_time):.2f} seconds.")
+        print(
+            f"Completed {len(files)} segmentations in {(perf_counter() - start_time):.2f} seconds."
+        )
         for i in range(len(results)):
             results[i]["preds"] = preds[i]
         return results
 
-    def __call__(
-        self,
-        inference_pipeline,
-        dicom_file_paths: List[Path]
-    ):
+    def __call__(self, inference_pipeline, dicom_file_paths: List[Path]):
         inference_pipeline.muscle_adipose_tissue_model_type = self.model_type
         inference_pipeline.muscle_adipose_tissue_model_name = self.model_name
         inference_pipeline.dicom_file_paths = dicom_file_paths
         # if dicom_file_names not an attribute of inference_pipeline, add it
         if not hasattr(inference_pipeline, "dicom_file_names"):
-            inference_pipeline.dicom_file_names = [dicom_file_path.stem for dicom_file_path in dicom_file_paths]
+            inference_pipeline.dicom_file_names = [
+                dicom_file_path.stem for dicom_file_path in dicom_file_paths
+            ]
         self.model = self.model_type.load_model(inference_pipeline.model_dir)
 
-        results = self.forward_pass_2d(
-            dicom_file_paths
-        )
+        results = self.forward_pass_2d(dicom_file_paths)
         images = []
         for result in results:
             images.append(result["image"])
@@ -80,15 +68,12 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         for result in results:
             spacings.append(result["spacing"])
 
-        return {
-            "images": images,
-            "preds": preds,
-            "spacings": spacings
-        }
+        return {"images": images, "preds": preds, "spacings": spacings}
 
 
 class MuscleAdiposeTissuePostProcessing(InferenceClass):
     """Post-process muscle and adipose tissue segmentation."""
+
     def __init__(self):
         super().__init__()
 
@@ -121,7 +106,9 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
 
     def remove_small_objects(self, mask, min_size=10):
         mask = mask.astype(np.uint8)
-        components, output, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
+        components, output, stats, centroids = cv2.connectedComponentsWithStats(
+            mask, connectivity=8
+        )
         sizes = stats[1:, -1]
         mask = np.zeros((output.shape))
         for i in range(0, components - 1):
@@ -135,41 +122,37 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
         preds,
         spacings,
     ):
-        m_name = self.model_name
         categories = self.model_type.categories
 
         start_time = perf_counter()
 
         masks = [self.preds_to_mask(p) for p in preds]
 
-        for i, mask in enumerate(masks):
+        for i, _ in enumerate(masks):
             # Keep only channels from the model_type categories dict
-            masks[i] = masks[i][
-                ..., [categories[cat] for cat in categories]
-            ]
+            masks[i] = masks[i][..., [categories[cat] for cat in categories]]
 
         masks = self.fill_holes(masks)
 
         cats = list(categories.keys())
-        
-        if "muscle" in categories and "imat" in categories:
-            muscle_idx = cats.index("muscle")
 
         file_idx = 0
         for mask, image in tqdm(zip(masks, images), total=len(masks)):
             muscle_mask = mask[..., cats.index("muscle")]
             imat_mask = mask[..., cats.index("imat")]
-            imat_mask = (np.logical_and((image * muscle_mask) <= -30, (image * muscle_mask) >= -190)).astype(int)
+            imat_mask = (
+                np.logical_and((image * muscle_mask) <= -30, (image * muscle_mask) >= -190)
+            ).astype(int)
             imat_mask = self.remove_small_objects(imat_mask)
             mask[..., cats.index("imat")] += imat_mask
             mask[..., cats.index("muscle")][imat_mask == 1] = 0
             masks[file_idx] = mask
             images[file_idx] = image
             file_idx += 1
-        
+
         print(f"Completed post-processing in {(perf_counter() - start_time):.2f} seconds.")
 
-        return {"images": images, "masks": masks, "spacings": spacings} 
+        return {"images": images, "masks": masks, "spacings": spacings}
 
     # function that fills in holes in a segmentation mask
     def _fill_holes(self, mask: np.ndarray, mask_id: int):
@@ -191,14 +174,13 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
         if mask_id == 2:
             min_size = 200
         else:
-            #min_size = 50  # Smaller threshold for everything else
+            # min_size = 50  # Smaller threshold for everything else
             min_size = 20
         img_out = np.ones_like(mask)
         for i in range(0, components):
             if sizes[i] > min_size:
                 img_out[output == i + 1] = 0
         return img_out
-
 
     def fill_holes(self, ys: List):
         """Take an array of size NxHxWxC and for each channel fill in holes.
@@ -216,6 +198,7 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
 
 class MuscleAdiposeTissueComputeMetrics(InferenceClass):
     """Compute muscle and adipose tissue metrics."""
+
     def __init__(self):
         super().__init__()
 
@@ -242,8 +225,7 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
         return {"images": images, "results": results}
 
     def compute_metrics(self, x, mask, spacing):
-        """Compute results for a given segmentation.
-        """
+        """Compute results for a given segmentation."""
         categories = self.model_type.categories
 
         hu = HounsfieldUnits()
@@ -272,6 +254,7 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
 
 class MuscleAdiposeTissueH5Saver(InferenceClass):
     """Save results to an HDF5 file."""
+
     def __init__(self):
         super().__init__()
 
@@ -299,8 +282,10 @@ class MuscleAdiposeTissueH5Saver(InferenceClass):
                     mask = result[cat]["mask"]
                     f.create_dataset(name=cat, data=np.array(mask, dtype=np.uint8))
 
+
 class MuscleAdiposeTissueMetricsSaver(InferenceClass):
     """Save metrics to a CSV file."""
+
     def __init__(self):
         super().__init__()
 
@@ -320,18 +305,20 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
         """Save results to a CSV file."""
         categories = self.model_type.categories
         cats = list(categories.keys())
-        df = pd.DataFrame(columns=[
-            "File Name",
-            "File Path",
-            "Muscle HU", 
-            "Muscle CSA (cm^2)", 
-            "IMAT HU", 
-            "IMAT CSA (cm^2)", 
-            "SAT HU", 
-            "SAT CSA (cm^2)", 
-            "VAT HU", 
-            "VAT CSA (cm^2)"
-            ])
+        df = pd.DataFrame(
+            columns=[
+                "File Name",
+                "File Path",
+                "Muscle HU",
+                "Muscle CSA (cm^2)",
+                "IMAT HU",
+                "IMAT CSA (cm^2)",
+                "SAT HU",
+                "SAT CSA (cm^2)",
+                "VAT HU",
+                "VAT CSA (cm^2)",
+            ]
+        )
 
         for i, result in enumerate(results):
             row = []
@@ -342,7 +329,3 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
                 row.append(result[cat]["Cross-sectional Area (cm^2)"])
             df.loc[i] = row
         df.to_csv(os.path.join(self.csv_output_dir, "metrics.csv"), index=False)
-
-
-
-    

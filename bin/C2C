@@ -2,18 +2,18 @@
 import argparse
 import logging
 import os
+import shutil
 import sys
+import traceback
+from datetime import datetime
 from pathlib import Path
 from time import time
-import shutil
-import traceback
 
-import h5py
-import pandas as pd
 import dosma
-import numpy as np
-from datetime import datetime
+import h5py
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 # import voxel as vx
 from tqdm import tqdm
@@ -21,15 +21,16 @@ from tqdm import tqdm
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-from comp2comp.models.models import Models 
-from comp2comp.io.io import DicomFinder
-from comp2comp.utils.run import get_dicom_paths_and_num
 from comp2comp.inference_pipeline import InferencePipeline
-
-from comp2comp.visualization.visualization import MuscleAdiposeTissueVisualizer, SpineMuscleAdiposeTissueReport
+from comp2comp.io.io import DicomFinder
+from comp2comp.models.models import Models
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import *
-
 from comp2comp.spine.spine import *
+from comp2comp.utils.run import get_dicom_paths_and_num
+from comp2comp.visualization.visualization import (
+    MuscleAdiposeTissueVisualizer,
+    SpineMuscleAdiposeTissueReport,
+)
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
