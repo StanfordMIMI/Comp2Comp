@@ -47,7 +47,7 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
         else:
             spine = True
 
-        for i, (image, result) in enumerate(zip(images, results, strict=True)):
+        for i, (image, result) in enumerate(zip(images, results)):
             # now, result is a dict with keys for each tissue
             dicom_file_name = self.dicom_file_names[i]
             self.save_binary_segmentation_overlay(image, result, dicom_file_name, spine)

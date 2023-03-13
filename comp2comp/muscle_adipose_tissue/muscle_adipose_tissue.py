@@ -137,7 +137,7 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
         cats = list(categories.keys())
 
         file_idx = 0
-        for mask, image in tqdm(zip(masks, images, strict=True), total=len(masks)):
+        for mask, image in tqdm(zip(masks, images), total=len(masks)):
             muscle_mask = mask[..., cats.index("muscle")]
             imat_mask = mask[..., cats.index("imat")]
             imat_mask = (
@@ -220,7 +220,7 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
             Dict: Results.
         """
         results = []
-        for image, mask, spacing in zip(images, masks, spacings, strict=True):
+        for image, mask, spacing in zip(images, masks, spacings):
             results.append(self.compute_metrics(image, mask, spacing))
         return {"images": images, "results": results}
 

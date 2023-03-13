@@ -88,9 +88,7 @@ class Dataset(k_utils.Sequence):
 
         xs = [(x.pixel_array + int(x.RescaleIntercept)).astype("float32") for x in dcms]
 
-        params = [
-            {"spacing": header.PixelSpacing, "image": x} for header, x in zip(dcms, xs, strict=True)
-        ]
+        params = [{"spacing": header.PixelSpacing, "image": x} for header, x in zip(dcms, xs)]
 
         # Preprocess xs via windowing.
         xs = np.stack(xs, axis=0)

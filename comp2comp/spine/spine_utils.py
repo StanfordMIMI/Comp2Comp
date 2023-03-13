@@ -51,11 +51,9 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
             instance_numbers.append(instance_number)
 
     if flip_si:
-        dicom_files = [
-            x for _, x in sorted(zip(instance_numbers, dicom_files, strict=True), reverse=True)
-        ]
+        dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files), reverse=True)]
     else:
-        dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files, strict=True))]
+        dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
     vertical_positions.sort(reverse=True)
 
     return (dicom_files, label_text, vertical_positions)
@@ -476,10 +474,10 @@ def compare_ts_stanford_centroids(labels_path, pred_centroids):
                 pred_level = pred == label_idx
                 sums = np.sum(pred_level, axis=(0, 1))
                 indices = list(range(sums.shape[0]))
-                groupby_input = zip(indices, list(sums), strict=True)
+                groupby_input = zip(indices, list(sums))
                 g = groupby(groupby_input, key=lambda x: x[1] > 0.0)
-                m = max([list(s) for v, s in g if v > 0], key=lambda x: np.sum(list(zip(*x, strict=True))[1]))
-                res = list(zip(*m, strict=True))
+                m = max([list(s) for v, s in g if v > 0], key=lambda x: np.sum(list(zip(*x))[1]))
+                res = list(zip(*m))
                 indexes = list(res[0])
                 sums = list(res[1])
                 normalized_sums = sums / np.sum(sums)

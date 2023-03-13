@@ -1,4 +1,4 @@
-from Typing import Dict
+from typing import Dict
 
 
 class InferenceClass:
