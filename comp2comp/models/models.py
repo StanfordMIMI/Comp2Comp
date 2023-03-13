@@ -69,7 +69,7 @@ class Models(enum.Enum):
             keras.models.Model: Model.
         """
         try:
-            filename = Models.find_model_weights(self.model_name)
+            filename = Models.find_model_weights(self.model_name, model_dir)
         except Exception:
             print("Downloading muscle/fat model from hugging face")
             Path(model_dir).mkdir(parents=True, exist_ok=True)
