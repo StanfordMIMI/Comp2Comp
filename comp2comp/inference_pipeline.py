@@ -1,16 +1,13 @@
-from typing import List, Dict, Tuple, Union, Optional, Any
 import inspect
-import logging
 import os
-import sys
-from pathlib import Path
-import dosma as dm
+from typing import Dict, List
 
 from comp2comp.io.io import DicomLoader, NiftiSaver
 
+
 class InferencePipeline:
-    """Inference pipeline.
-    """
+    """Inference pipeline."""
+
     def __init__(self, inference_classes: List = None, config: Dict = None):
         self.config = config
         # assign values from config to attributes
@@ -36,18 +33,27 @@ class InferencePipeline:
             function_keys = set(inspect.signature(inference_class).parameters.keys())
             function_keys.remove("inference_pipeline")
 
-            assert function_keys == set(output.keys()), \
-                "Input to inference class, {}, does not have the correct parameters".format(inference_class.__repr__())
+            assert function_keys == set(
+                output.keys()
+            ), "Input to inference class, {}, does not have the correct parameters".format(
+                inference_class.__repr__()
+            )
 
-            print("Running {} with input keys {}".format(inference_class.__repr__(),
-                inspect.signature(inference_class).parameters.keys()))
+            print(
+                "Running {} with input keys {}".format(
+                    inference_class.__repr__(), inspect.signature(inference_class).parameters.keys()
+                )
+            )
 
             output = inference_class(self, **output)
 
             # if not the last inference class, check that the output keys are correct
             if inference_class != self.inference_classes[-1]:
-                print("Finished {} with output keys {}\n".format(inference_class.__repr__(), 
-                    output.keys()))
+                print(
+                    "Finished {} with output keys {}\n".format(
+                        inference_class.__repr__(), output.keys()
+                    )
+                )
 
         print("Inference pipeline finished.\n")
 
@@ -55,8 +61,7 @@ class InferencePipeline:
 
 
 if __name__ == "__main__":
-    """Example usage of InferencePipeline.
-    """
+    """Example usage of InferencePipeline."""
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -68,14 +73,9 @@ if __name__ == "__main__":
         os.mkdir(output_dir)
     output_file_path = os.path.join(output_dir, "test.nii.gz")
 
-    pipeline = InferencePipeline([
-        DicomLoader(args.dicom_dir),
-        NiftiSaver()
-    ],
-    config={
-        "output_dir": output_file_path
-    })
+    pipeline = InferencePipeline(
+        [DicomLoader(args.dicom_dir), NiftiSaver()], config={"output_dir": output_file_path}
+    )
     pipeline()
 
     print("Done.")
-

@@ -1,25 +1,23 @@
-import logging
 import os
 from pathlib import Path
 from time import time
 from typing import Union
+
 import dosma
 import numpy as np
-
 from totalsegmentator.libs import (
     download_pretrained_weights,
     nostdout,
     setup_nnunet,
 )
 
-from comp2comp.models.models import Models
-
 from comp2comp.inference_class_base import InferenceClass
+from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
 
+
 class SpineSegmentation(InferenceClass):
-    """Spine segmentation.
-    """
+    """Spine segmentation."""
 
     def __init__(self, input_path):
         super().__init__()
@@ -97,7 +95,6 @@ class SpineSegmentation(InferenceClass):
 
 
 class SpineReorient(InferenceClass):
-
     def __init__(self):
         super().__init__()
 
@@ -106,7 +103,9 @@ class SpineReorient(InferenceClass):
         pixel_spacing = medical_volume.pixel_spacing
 
         # Flip / transpose the axes if necessary
-        transpose_idxs = dosma.core.get_transpose_inds(medical_volume.orientation, ('AP', 'RL', 'SI'))
+        transpose_idxs = dosma.core.get_transpose_inds(
+            medical_volume.orientation, ("AP", "RL", "SI")
+        )
         mv_ndarray = np.transpose(mv_ndarray, transpose_idxs)
         seg = np.transpose(segmentation, transpose_idxs)
         # apply same transformation to pixel spacing
@@ -114,7 +113,7 @@ class SpineReorient(InferenceClass):
         for i in range(3):
             pixel_spacing_list.append(pixel_spacing[transpose_idxs[i]])
 
-        flip_idxs = dosma.core.get_flip_inds(medical_volume.orientation, ('AP', 'RL', 'SI'))
+        flip_idxs = dosma.core.get_flip_inds(medical_volume.orientation, ("AP", "RL", "SI"))
         mv_ndarray = np.flip(mv_ndarray, flip_idxs)
         seg = np.flip(seg, flip_idxs)
 
@@ -130,6 +129,7 @@ class SpineReorient(InferenceClass):
 
         return {}
 
+
 class SpineComputeROIs(InferenceClass):
     def __init__(self, spine_model):
         super().__init__()
@@ -138,7 +138,7 @@ class SpineComputeROIs(InferenceClass):
 
     def __call__(self, inference_pipeline):
         # Compute ROIs
-        inference_pipeline.spine_model_type = self.spine_model_type 
+        inference_pipeline.spine_model_type = self.spine_model_type
 
         (spine_hus, rois, centroids_3d) = spine_utils.compute_rois(
             inference_pipeline.segmentation,
@@ -146,7 +146,7 @@ class SpineComputeROIs(InferenceClass):
             inference_pipeline.medical_volume.get_metadata("RescaleSlope"),
             inference_pipeline.medical_volume.get_metadata("RescaleIntercept"),
             self.spine_model_type,
-            inference_pipeline.pixel_spacing_list
+            inference_pipeline.pixel_spacing_list,
         )
 
         spine_hus = spine_hus[::-1]
@@ -156,6 +156,7 @@ class SpineComputeROIs(InferenceClass):
         inference_pipeline.centroids_3d = centroids_3d
 
         return {}
+
 
 class SpineFindDicoms(InferenceClass):
     def __init__(self):
@@ -167,7 +168,7 @@ class SpineFindDicoms(InferenceClass):
             inference_pipeline.segmentation,
             inference_pipeline.dicom_series_path,
             inference_pipeline.spine_model_type,
-            inference_pipeline.flip_si
+            inference_pipeline.flip_si,
         )
 
         inference_pipeline.dicom_files = dicom_files
@@ -176,6 +177,7 @@ class SpineFindDicoms(InferenceClass):
         inference_pipeline.centroids = centroids
 
         return {}
+
 
 class SpineCoronalSagittalVisualizer(InferenceClass):
     def __init__(self):
@@ -196,12 +198,12 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
             output_path,
             spine_hus=inference_pipeline.spine_hus,
             model_type=spine_model_type,
-            pixel_spacing=inference_pipeline.pixel_spacing_list
+            pixel_spacing=inference_pipeline.pixel_spacing_list,
         )
 
         dicom_files = inference_pipeline.dicom_files
         # convert to list of paths
         dicom_files = [Path(d) for d in dicom_files]
         inference_pipeline.spine = True
-    
+
         return {"dicom_file_paths": dicom_files}

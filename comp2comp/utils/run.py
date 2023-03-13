@@ -1,9 +1,7 @@
 import logging
 import os
 import re
-from typing import Dict, Sequence, Union
-
-from comp2comp.metrics.metrics import CrossSectionalArea, HounsfieldUnits
+from typing import Sequence, Union
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +23,6 @@ def format_output_path(
     Returns:
         str: Output path.
     """
-    if not save_dir:
-        save_dir = PREFERENCES.OUTPUT_PATH
 
     dirname = os.path.dirname(file_path) if not save_dir else save_dir
 
@@ -126,7 +122,6 @@ def find_files(
         out_files.extend(_get_files(0, d))
 
     return sorted(set(out_files))
-
 
 
 def get_dicom_paths_and_num(path):
