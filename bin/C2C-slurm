@@ -24,4 +24,4 @@ def python_submit(command, node=None):
 
 
 print(f'Submitted the command "{command}" to slurm.')
-python_submit(command)
+python_submit(command, "amalfi")

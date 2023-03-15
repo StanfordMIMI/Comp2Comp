@@ -19,7 +19,7 @@ from comp2comp.spine import spine_utils
 class SpineSegmentation(InferenceClass):
     """Spine segmentation."""
 
-    def __init__(self, input_path):
+    def __init__(self, input_path, model_name):
         super().__init__()
         self.input_path = input_path
 
