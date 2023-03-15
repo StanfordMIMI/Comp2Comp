@@ -223,10 +223,11 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, p
     # Get slices
     slices = get_slices(seg, centroids, spine_model_type)
     # Delete right most connected component
-    if spine_model_type.model_name == "ts_spine":
-        for i, slice in enumerate(slices):
-            # keep only the two largest connected components
-            two_largest = keep_two_largest_connected_components(slice)
+    # if spine_model_type.model_name == "ts_spine":
+    for i, slice in enumerate(slices):
+        # keep only the two largest connected components
+        two_largest, two = keep_two_largest_connected_components(slice)
+        if two:
             slices[i] = delete_right_most_connected_component(two_largest)
     # Compute ROIs
     rois = []
@@ -258,9 +259,13 @@ def keep_two_largest_connected_components(mask: np.ndarray):
     sorted_indices = np.argsort(stats)[::-1]
     # keep only the two largest connected components
     mask = np.zeros(mask.shape)
-    for i in range(2):
-        mask[labels == sorted_indices[i] + 1] = 1
-    return mask
+    mask[labels == sorted_indices[0] + 1] = 1
+    two = True
+    try:
+        mask[labels == sorted_indices[1] + 1] = 1
+    except Exception:
+        two = False
+    return (mask, two)
 
 
 def compute_centroid(seg: np.ndarray, plane: str, label: int):

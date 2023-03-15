@@ -1,10 +1,12 @@
 import os
+import zipfile
 from pathlib import Path
 from time import time
 from typing import Union
 
 import dosma
 import numpy as np
+import wget
 from totalsegmentator.libs import (
     download_pretrained_weights,
     nostdout,
@@ -19,9 +21,10 @@ from comp2comp.spine import spine_utils
 class SpineSegmentation(InferenceClass):
     """Spine segmentation."""
 
-    def __init__(self, input_path):
+    def __init__(self, input_path, model_name):
         super().__init__()
         self.input_path = input_path
+        self.model_name = model_name
 
     def __call__(self, inference_pipeline):
         inference_pipeline.dicom_series_path = self.input_path
@@ -32,14 +35,57 @@ class SpineSegmentation(InferenceClass):
 
         self.model_dir = inference_pipeline.model_dir
 
-        seg, mv = self.spine_seg(self.input_path, self.output_dir_segmentations + "spine.nii.gz")
+        seg, mv = self.spine_seg(
+            self.input_path,
+            self.output_dir_segmentations + "spine.nii.gz",
+            inference_pipeline.model_dir,
+        )
         return {"segmentation": seg, "medical_volume": mv}
 
-    def spine_seg(
-        self,
-        input_path: Union[str, Path],
-        output_path: Union[str, Path],
-    ):
+    def setup_nnunet_c2c(self, model_dir: Union[str, Path]):
+        """Adapted from TotalSegmentator."""
+
+        model_dir = Path(model_dir)
+        config_dir = model_dir / Path("." + self.model_name)
+        (config_dir / "nnunet/results/nnUNet/3d_fullres").mkdir(exist_ok=True, parents=True)
+        (config_dir / "nnunet/results/nnUNet/2d").mkdir(exist_ok=True, parents=True)
+        weights_dir = config_dir / "nnunet/results"
+        self.weights_dir = weights_dir
+
+        os.environ["nnUNet_raw_data_base"] = str(
+            weights_dir
+        )  # not needed, just needs to be an existing directory
+        os.environ["nnUNet_preprocessed"] = str(
+            weights_dir
+        )  # not needed, just needs to be an existing directory
+        os.environ["RESULTS_FOLDER"] = str(weights_dir)
+
+    def download_spine_model(self, model_dir: Union[str, Path]):
+        download_dir = Path(
+            os.path.join(
+                self.weights_dir,
+                "nnUNet/3d_fullres/Task252_Spine/nnUNetTrainerV2_ep4000_nomirror__nnUNetPlansv2.1",
+            )
+        )
+        fold_0_path = download_dir / "fold_0"
+        if not os.path.exists(fold_0_path):
+            download_dir.mkdir(parents=True, exist_ok=True)
+            wget.download(
+                "https://huggingface.co/louisblankemeier/spine_v1/resolve/main/fold_0.zip",
+                out=os.path.join(download_dir, "fold_0.zip"),
+            )
+            with zipfile.ZipFile(os.path.join(download_dir, "fold_0.zip"), "r") as zip_ref:
+                zip_ref.extractall(download_dir)
+            os.remove(os.path.join(download_dir, "fold_0.zip"))
+            wget.download(
+                "https://huggingface.co/louisblankemeier/spine_v1/resolve/main/plans.pkl",
+                out=os.path.join(download_dir, "plans.pkl"),
+            )
+            print("Spine model downloaded.")
+        else:
+            print("Spine model already downloaded.")
+
+    def spine_seg(self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir):
         """Run spine segmentation.
 
         Args:
@@ -52,14 +98,20 @@ class SpineSegmentation(InferenceClass):
         os.environ["SCRATCH"] = self.model_dir
 
         # Setup nnunet
-        task_id = [252]
         model = "3d_fullres"
         folds = [0]
         trainer = "nnUNetTrainerV2_ep4000_nomirror"
         crop_path = None
+        task_id = [252]
 
-        setup_nnunet()
-        download_pretrained_weights(task_id[0])
+        if self.model_name == "ts_spine":
+            setup_nnunet()
+            download_pretrained_weights(task_id[0])
+        elif self.model_name == "stanford_spine_v0.0.1":
+            self.setup_nnunet_c2c(model_dir)
+            self.download_spine_model(model_dir)
+        else:
+            raise ValueError("Invalid model name.")
 
         from totalsegmentator.nnunet import nnUNet_predict_image
 
@@ -90,6 +142,10 @@ class SpineSegmentation(InferenceClass):
 
         # Log total time for spine segmentation
         print(f"Total time for spine segmentation: {end-st:.2f}s.")
+
+        if self.model_name == "stanford_spine_v0.0.1":
+            # subtract 17 from seg values except for 0
+            seg = np.where(seg == 0, 0, seg - 17)
 
         return seg, mvs
 

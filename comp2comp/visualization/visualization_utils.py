@@ -96,7 +96,9 @@ def save_binary_segmentation_overlay(
 
     _2D_COLORS = _2D_COLORS / 255.0
 
-    if model_type and (model_type.model_name == "ts_spine"):
+    if model_type and (
+        (model_type.model_name == "ts_spine") or (model_type.model_name == "stanford_spine_v0.0.1")
+    ):
         _SPINE_LEVELS = list(model_type.categories.keys())
         # reverse the list
         _SPINE_LEVELS = _SPINE_LEVELS[::-1]

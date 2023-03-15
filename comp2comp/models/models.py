@@ -37,7 +37,7 @@ class Models(enum.Enum):
         4,
         "stanford_spine_v0.0.1",
         # Category name mapped to channel index
-        {"L5": 6, "L4": 5, "L3": 4, "L2": 3, "L1": 2, "T12": 1},
+        {"L5": 24, "L4": 23, "L3": 22, "L2": 21, "L1": 20, "T12": 19},
         False,
         (),
     )
