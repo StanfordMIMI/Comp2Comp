@@ -98,9 +98,8 @@ def spine_muscle_adipose_tissue(args):
             output_dir.mkdir(parents=True)
 
         try:
-            # Each class within InferencePipeline can modify InferencePipeline and access its attributes
             pipeline = InferencePipeline([
-                SpineSegmentation(path),
+                SpineSegmentation(path, args.spine_model),
                 SpineReorient(),
                 SpineComputeROIs(args.spine_model),
                 SpineFindDicoms(),
@@ -123,12 +122,15 @@ def spine_muscle_adipose_tissue(args):
 
             print(f"Finished processing {path} in {time() - st} seconds\n")
 
+
         except Exception as e:
             shutil.rmtree(output_dir)
             print(f"ERROR PROCESSING {path}")
             traceback.print_exc()
+            sys.exit()
             continue
 
+        
 
 def argument_parser():
     parser = argparse.ArgumentParser("Comp2Comp command line interface")
