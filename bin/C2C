@@ -127,7 +127,6 @@ def spine_muscle_adipose_tissue(args):
             shutil.rmtree(output_dir)
             print(f"ERROR PROCESSING {path}")
             traceback.print_exc()
-            sys.exit()
             continue
 
         
