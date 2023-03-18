@@ -117,7 +117,7 @@ class SpineSegmentation(InferenceClass):
 
         with nostdout():
 
-            seg, mvs = nnUNet_predict_image(
+            img, seg = nnUNet_predict_image(
                 input_path,
                 output_path,
                 task_id,
@@ -143,11 +143,13 @@ class SpineSegmentation(InferenceClass):
         # Log total time for spine segmentation
         print(f"Total time for spine segmentation: {end-st:.2f}s.")
 
+        seg = seg.get_fdata()
+
         if self.model_name == "stanford_spine_v0.0.1":
             # subtract 17 from seg values except for 0
             seg = np.where(seg == 0, 0, seg - 17)
 
-        return seg, mvs
+        return seg, img
 
 
 class SpineReorient(InferenceClass):
