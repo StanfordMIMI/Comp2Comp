@@ -1,11 +1,13 @@
 import logging
 from glob import glob
 from typing import List
+import sys
 
 import cv2
 import numpy as np
 from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
+import matplotlib.pyplot as plt
 
 from comp2comp.visualization import visualization_utils
 
@@ -21,6 +23,8 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
     Returns:
         List[str]: List of dicom files.
     """
+    # flip the last axis of seg
+    seg = np.flip(seg, 2)
     vertical_positions = []
     label_idxs = list(model_type.categories.values())
     for label_idx in label_idxs:
@@ -100,7 +104,7 @@ def get_slices(seg: np.ndarray, centroids: List[int], spine_model_type):
     slices = []
     for i, centroid in enumerate(centroids):
         label_idx = label_idxs[i]
-        slices.append((seg[:, centroid, :] == label_idx).astype(int))
+        slices.append((seg[centroid, :, :] == label_idx).astype(int))
     return slices
 
 
@@ -118,7 +122,7 @@ def delete_right_most_connected_component(mask: np.ndarray):
     """
     mask = mask.astype(np.uint8)
     _, labels, _, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
-    right_most_connected_component = np.argmax(centroids[1:, 1]) + 1
+    right_most_connected_component = np.argmin(centroids[1:, 1]) + 1
     mask[labels == right_most_connected_component] = 0
     return mask
 
@@ -141,7 +145,7 @@ def compute_center_of_mass(mask: np.ndarray):
 
 # Function that takes a 3d centroid and retruns a binary mask with a 3d
 # roi around the centroid
-def roi_from_mask(img: np.ndarray, centroid: np.ndarray, pixel_spacing):
+def roi_from_mask(img, centroid: np.ndarray):
     """Compute a 3D ROI from a 3D mask.
 
     Args:
@@ -152,6 +156,10 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray, pixel_spacing):
         np.ndarray: ROI volume.
     """
     roi = np.zeros(img.shape)
+
+    img_np = img.get_fdata()
+
+    pixel_spacing = img.header.get_zooms()
     length_i = int(5.0 / pixel_spacing[0])
     length_j = int(5.0 / pixel_spacing[1])
     length_k = int(5.0 / pixel_spacing[2])
@@ -165,7 +173,7 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray, pixel_spacing):
     ] = 1
     """
     # spherical ROI around centroid
-    roi = np.zeros(img.shape)
+    roi = np.zeros(img_np.shape)
     i_lower = int(centroid[0] - length_i)
     j_lower = int(centroid[1] - length_j)
     k_lower = int(centroid[2] - length_k)
@@ -182,7 +190,7 @@ def roi_from_mask(img: np.ndarray, centroid: np.ndarray, pixel_spacing):
 # Function that takes a 3d image and a 3d binary mask and returns that average
 # value of the image inside the mask
 def mean_img_mask(
-    img: np.ndarray, mask: np.ndarray, rescale_slope: float, rescale_intercept: float, index: int
+    img: np.ndarray, mask: np.ndarray, index: int
 ):
     """Compute the mean of an image inside a mask.
 
@@ -198,12 +206,13 @@ def mean_img_mask(
     img = img.astype(np.float32)
     mask = mask.astype(np.float32)
     img_masked = (img * mask)[mask > 0]
-    mean = (rescale_slope * np.mean(img_masked)) + rescale_intercept
+    #mean = (rescale_slope * np.mean(img_masked)) + rescale_intercept
     # median = (rescale_slope * np.median(img_masked)) + rescale_intercept
+    mean = np.mean(img_masked)
     return mean
 
 
-def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, pixel_spacing):
+def compute_rois(seg, img, spine_model_type):
     """Compute the ROIs for the spine.
 
     Args:
@@ -219,9 +228,10 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, p
         centroids_3d (List[np.ndarray]): List of centroids.
     """
     # Compute centroids
-    centroids = compute_centroids(seg, spine_model_type)
+    seg_np = seg.get_fdata()
+    centroids = compute_centroids(seg_np, spine_model_type)
     # Get slices
-    slices = get_slices(seg, centroids, spine_model_type)
+    slices = get_slices(seg_np, centroids, spine_model_type)
     # Delete right most connected component
     # if spine_model_type.model_name == "ts_spine":
     for i, slice in enumerate(slices):
@@ -229,15 +239,23 @@ def compute_rois(seg, img, rescale_slope, rescale_intercept, spine_model_type, p
         two_largest, two = keep_two_largest_connected_components(slice)
         if two:
             slices[i] = delete_right_most_connected_component(two_largest)
+
+    plt.imshow(slices[0])
+    plt.savefig("first_slice_deleted.png")
+    plt.imshow(slices[1])
+    plt.savefig("second_slice_deleted.png")
+    plt.imshow(slices[2])
+    plt.savefig("third_slice_deleted.png")
+
     # Compute ROIs
     rois = []
     spine_hus = []
     centroids_3d = []
     for i, slice in enumerate(slices):
         center_of_mass = compute_center_of_mass(slice)
-        centroid = np.array([center_of_mass[1], centroids[i], center_of_mass[0]])
-        roi = roi_from_mask(img, centroid, pixel_spacing)
-        spine_hus.append(mean_img_mask(img, roi, rescale_slope, rescale_intercept, i))
+        centroid = np.array([centroids[i], center_of_mass[1], center_of_mass[0]])
+        roi = roi_from_mask(img, centroid)
+        spine_hus.append(mean_img_mask(img.get_fdata(), roi, i))
         rois.append(roi)
         centroids_3d.append(centroid)
     return (spine_hus, rois, centroids_3d)
@@ -282,10 +300,10 @@ def compute_centroid(seg: np.ndarray, plane: str, label: int):
     if plane == "axial":
         sum_out_axes = (0, 1)
         sum_axis = 2
-    elif plane == "coronal":
+    elif plane == "sagittal":
         sum_out_axes = (1, 2)
         sum_axis = 0
-    elif plane == "sagittal":
+    elif plane == "coronal":
         sum_out_axes = (0, 2)
         sum_axis = 1
     sums = np.sum(seg == label, axis=sum_out_axes)
@@ -376,21 +394,40 @@ def visualize_coronal_sagittal_spine(
             axis=2,
         )
 
+    # flip both axes of coronal image
+    coronal_image = np.flip(coronal_image, axis=0)
+    coronal_image = np.flip(coronal_image, axis=1)
+
+    # flip both axes of coronal label
+    one_hot_cor_label = np.flip(one_hot_cor_label, axis=0)
+    one_hot_cor_label = np.flip(one_hot_cor_label, axis=1)
+
+    sagittal_image = np.transpose(sagittal_image)
+    one_hot_sag_label = np.transpose(one_hot_sag_label, (1, 0, 2))
+
+    # flip both axes of sagittal image
+    sagittal_image = np.flip(sagittal_image, axis=0)
+    sagittal_image = np.flip(sagittal_image, axis=1)
+
+    # flip both axes of sagittal label
+    one_hot_sag_label = np.flip(one_hot_sag_label, axis=0)
+    one_hot_sag_label = np.flip(one_hot_sag_label, axis=1)
+
     visualization_utils.save_binary_segmentation_overlay(
         coronal_image,
         one_hot_cor_label,
         output_dir,
-        "spine_coronal.png",
+        "spine_sagittal.png",
         centroids,
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
     )
     visualization_utils.save_binary_segmentation_overlay(
-        np.transpose(sagittal_image),
-        np.transpose(one_hot_sag_label, (1, 0, 2)),
+        sagittal_image,
+        one_hot_sag_label,
         output_dir,
-        "spine_sagittal.png",
+        "spine_coronal.png",
         centroids,
         spine_hus=spine_hus,
         model_type=model_type,

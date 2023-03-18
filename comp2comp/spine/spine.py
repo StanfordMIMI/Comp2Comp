@@ -3,6 +3,7 @@ import zipfile
 from pathlib import Path
 from time import time
 from typing import Union
+import nibabel as nib
 
 import dosma
 import numpy as np
@@ -40,7 +41,9 @@ class SpineSegmentation(InferenceClass):
             self.output_dir_segmentations + "spine.nii.gz",
             inference_pipeline.model_dir,
         )
-        return {"segmentation": seg, "medical_volume": mv}
+        inference_pipeline.segmentation = seg
+        inference_pipeline.medical_volume = mv
+        return {}
 
     def setup_nnunet_c2c(self, model_dir: Union[str, Path]):
         """Adapted from TotalSegmentator."""
@@ -143,11 +146,11 @@ class SpineSegmentation(InferenceClass):
         # Log total time for spine segmentation
         print(f"Total time for spine segmentation: {end-st:.2f}s.")
 
-        seg = seg.get_fdata()
-
         if self.model_name == "stanford_spine_v0.0.1":
+            seg_data = seg.get_fdata()
             # subtract 17 from seg values except for 0
-            seg = np.where(seg == 0, 0, seg - 17)
+            seg_data = np.where(seg_data == 0, 0, seg_data - 17)
+            seg = nib.Nifti1Image(seg_data, seg.affine, seg.header)
 
         return seg, img
 
@@ -156,35 +159,17 @@ class SpineReorient(InferenceClass):
     def __init__(self):
         super().__init__()
 
-    def __call__(self, inference_pipeline, segmentation, medical_volume):
-        mv_ndarray = medical_volume.volume
-        pixel_spacing = medical_volume.pixel_spacing
+    def __call__(self, inference_pipeline):
+        inference_pipeline.flip_si = False # necessary for finding dicoms in correct order
+        if "I" in nib.aff2axcodes(inference_pipeline.medical_volume.affine):
+            inference_pipeline.flip_si = True
 
-        # Flip / transpose the axes if necessary
-        transpose_idxs = dosma.core.get_transpose_inds(
-            medical_volume.orientation, ("AP", "RL", "SI")
-        )
-        mv_ndarray = np.transpose(mv_ndarray, transpose_idxs)
-        seg = np.transpose(segmentation, transpose_idxs)
-        # apply same transformation to pixel spacing
-        pixel_spacing_list = []
-        for i in range(3):
-            pixel_spacing_list.append(pixel_spacing[transpose_idxs[i]])
+        canonical_segmentation = nib.as_closest_canonical(inference_pipeline.segmentation)
+        canonical_medical_volume = nib.as_closest_canonical(inference_pipeline.medical_volume)
 
-        flip_idxs = dosma.core.get_flip_inds(medical_volume.orientation, ("AP", "RL", "SI"))
-        mv_ndarray = np.flip(mv_ndarray, flip_idxs)
-        seg = np.flip(seg, flip_idxs)
-
-        flip_si = False
-        if 2 in flip_idxs:
-            flip_si = True
-
-        inference_pipeline.segmentation = seg
-        inference_pipeline.medical_volume = medical_volume
-        inference_pipeline.mv_ndarray = mv_ndarray
-        inference_pipeline.pixel_spacing_list = pixel_spacing_list
-        inference_pipeline.flip_si = flip_si
-
+        inference_pipeline.segmentation = canonical_segmentation
+        inference_pipeline.medical_volume = canonical_medical_volume
+        inference_pipeline.pixel_spacing_list = canonical_medical_volume.header.get_zooms()
         return {}
 
 
@@ -200,11 +185,8 @@ class SpineComputeROIs(InferenceClass):
 
         (spine_hus, rois, centroids_3d) = spine_utils.compute_rois(
             inference_pipeline.segmentation,
-            inference_pipeline.mv_ndarray,
-            inference_pipeline.medical_volume.get_metadata("RescaleSlope"),
-            inference_pipeline.medical_volume.get_metadata("RescaleIntercept"),
+            inference_pipeline.medical_volume,
             self.spine_model_type,
-            inference_pipeline.pixel_spacing_list,
         )
 
         spine_hus = spine_hus[::-1]
@@ -223,7 +205,7 @@ class SpineFindDicoms(InferenceClass):
     def __call__(self, inference_pipeline):
 
         dicom_files, names, centroids = spine_utils.find_spine_dicoms(
-            inference_pipeline.segmentation,
+            inference_pipeline.segmentation.get_fdata(),
             inference_pipeline.dicom_series_path,
             inference_pipeline.spine_model_type,
             inference_pipeline.flip_si,
@@ -247,9 +229,9 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
         spine_model_type = inference_pipeline.spine_model_type
 
         spine_utils.visualize_coronal_sagittal_spine(
-            inference_pipeline.segmentation,
+            inference_pipeline.segmentation.get_fdata(),
             inference_pipeline.rois,
-            inference_pipeline.mv_ndarray,
+            inference_pipeline.medical_volume.get_fdata(),
             inference_pipeline.centroids,
             inference_pipeline.centroids_3d,
             inference_pipeline.names,
