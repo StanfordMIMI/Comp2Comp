@@ -3,9 +3,8 @@ import zipfile
 from pathlib import Path
 from time import time
 from typing import Union
-import nibabel as nib
 
-import dosma
+import nibabel as nib
 import numpy as np
 import wget
 from totalsegmentator.libs import (
@@ -160,7 +159,7 @@ class SpineReorient(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
-        inference_pipeline.flip_si = False # necessary for finding dicoms in correct order
+        inference_pipeline.flip_si = False  # necessary for finding dicoms in correct order
         if "I" in nib.aff2axcodes(inference_pipeline.medical_volume.affine):
             inference_pipeline.flip_si = True
 

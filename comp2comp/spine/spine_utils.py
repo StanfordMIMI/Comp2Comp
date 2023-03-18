@@ -1,13 +1,12 @@
 import logging
 from glob import glob
 from typing import List
-import sys
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
-import matplotlib.pyplot as plt
 
 from comp2comp.visualization import visualization_utils
 
@@ -189,9 +188,7 @@ def roi_from_mask(img, centroid: np.ndarray):
 
 # Function that takes a 3d image and a 3d binary mask and returns that average
 # value of the image inside the mask
-def mean_img_mask(
-    img: np.ndarray, mask: np.ndarray, index: int
-):
+def mean_img_mask(img: np.ndarray, mask: np.ndarray, index: int):
     """Compute the mean of an image inside a mask.
 
     Args:
@@ -206,7 +203,7 @@ def mean_img_mask(
     img = img.astype(np.float32)
     mask = mask.astype(np.float32)
     img_masked = (img * mask)[mask > 0]
-    #mean = (rescale_slope * np.mean(img_masked)) + rescale_intercept
+    # mean = (rescale_slope * np.mean(img_masked)) + rescale_intercept
     # median = (rescale_slope * np.median(img_masked)) + rescale_intercept
     mean = np.mean(img_masked)
     return mean
