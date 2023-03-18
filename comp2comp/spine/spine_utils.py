@@ -3,7 +3,6 @@ from glob import glob
 from typing import List
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
@@ -236,13 +235,6 @@ def compute_rois(seg, img, spine_model_type):
         two_largest, two = keep_two_largest_connected_components(slice)
         if two:
             slices[i] = delete_right_most_connected_component(two_largest)
-
-    plt.imshow(slices[0])
-    plt.savefig("first_slice_deleted.png")
-    plt.imshow(slices[1])
-    plt.savefig("second_slice_deleted.png")
-    plt.imshow(slices[2])
-    plt.savefig("third_slice_deleted.png")
 
     # Compute ROIs
     rois = []
