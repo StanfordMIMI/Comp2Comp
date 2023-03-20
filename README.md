@@ -11,6 +11,16 @@ cd Comp2Comp && bin/install.sh
 ```
 For installing on the Apple M1 chip, see [these instructions](https://github.com/StanfordMIMI/Comp2Comp/blob/master/Local%20Implementation%20%40%20M1%20arm64%20Silicon.md).
 
+## Basic Usage
+```bash
+bin/C2C <pipeline_name> --input_path <path/to/input/folder>
+```
+
+For running on slurm, modify the above commands as follow:
+```bash
+bin/C2C-slurm <pipeline_name> --input_path <path/to/input/folder>
+```
+
 ## Inference Pipeline
 We have designed Comp2Comp to be highly extensible and to enable the development of complex clinically-relevant applications. We observed that many clinical applications require chaining several machine learning or other computational modules together to generate complex insights. The inference pipeline system is designed to make this easy. Furthermore, we seek to make the code readable and modular, so that the community can easily contribute to the project. 
 
@@ -29,16 +39,6 @@ Currently, Comp2Comp has two pipelines, muscle_adipose_tissue and spine_muscle_a
 ## In Progess
 - abdominal_aortic_aneurysm
 - contrast_phase_detection
-
-## Basic Usage
-```bash
-bin/C2C <pipeline_name> --input_path <path/to/input/folder>
-```
-
-For running on slurm, modify the above commands as follow:
-```bash
-bin/C2C-slurm <pipeline_name> --input_path path/to/input/folder
-```
 
 ## Example image output from spine_muscle_adipose_tissue
 ![Alt text](figures/panel_example.png?raw=true "Comp2Comp Panel Example")
