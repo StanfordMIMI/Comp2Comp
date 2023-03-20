@@ -31,7 +31,7 @@ The first argument of the __call__ function of InferenceClass must be the Infere
 Currently, Comp2Comp has two pipelines, muscle_adipose_tissue and spine_muscle_adipose_tissue, and two more pipelines, abdominal_aortic_aneurysm and contrast_phase_detection, are in progress.
 
 ## Current Pipelines
-- muscle_adipose_tissuex
+- muscle_adipose_tissue
   - DICOM files within the input_path folder and subfolders of input_path will be processed.
 - spine_muscle_adipose_tissue
   - input_path should contain a DICOM series or subfolders that contain DICOM series.
