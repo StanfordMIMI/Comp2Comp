@@ -26,7 +26,7 @@ from comp2comp.io.io import DicomFinder
 from comp2comp.models.models import Models
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import *
 from comp2comp.spine.spine import *
-from comp2comp.utils.run import get_dicom_paths_and_num
+from comp2comp.io.io_utils import get_dicom_paths_and_num, get_dicom_nifti_paths_and_num
 from comp2comp.visualization.visualization import (
     MuscleAdiposeTissueVisualizer,
     SpineMuscleAdiposeTissueReport,
@@ -73,16 +73,19 @@ def spine_muscle_adipose_tissue(args):
 
     date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    for path, num in get_dicom_paths_and_num(args.input_path):
+    for path, num in get_dicom_nifti_paths_and_num(args.input_path):
 
         st = time()
 
-        print("Processing: ", path, " with ", num, " slices")
-
-        if num < 300:
-            print("Number of slices is less than 300, skipping\n")
-            continue
+        if os.path.isdir(path):
+            print("Processing: ", path, " with ", num, " slices")
+            if num < 300:
+                print("Number of slices is less than 300, skipping\n")
+                continue
         
+        else:
+            print("Processing: ", path)
+
         print("")
 
         sys.stdout.flush()

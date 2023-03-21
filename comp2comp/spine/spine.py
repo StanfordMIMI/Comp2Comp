@@ -117,29 +117,29 @@ class SpineSegmentation(InferenceClass):
 
         from totalsegmentator.nnunet import nnUNet_predict_image
 
-        with nostdout():
+        # with nostdout():
 
-            img, seg = nnUNet_predict_image(
-                input_path,
-                output_path,
-                task_id,
-                model=model,
-                folds=folds,
-                trainer=trainer,
-                tta=False,
-                multilabel_image=True,
-                resample=1.5,
-                crop=None,
-                crop_path=crop_path,
-                task_name="total",
-                nora_tag=None,
-                preview=False,
-                nr_threads_resampling=1,
-                nr_threads_saving=6,
-                quiet=False,
-                verbose=False,
-                test=0,
-            )
+        img, seg = nnUNet_predict_image(
+            input_path,
+            output_path,
+            task_id,
+            model=model,
+            folds=folds,
+            trainer=trainer,
+            tta=False,
+            multilabel_image=True,
+            resample=1.5,
+            crop=None,
+            crop_path=crop_path,
+            task_name="total",
+            nora_tag=None,
+            preview=False,
+            nr_threads_resampling=1,
+            nr_threads_saving=6,
+            quiet=False,
+            verbose=False,
+            test=0,
+        )
         end = time()
 
         # Log total time for spine segmentation
