@@ -14,6 +14,10 @@ from PIL import Image
 
 import dicom2nifti
 import math
+import pydicom
+import operator
+import moviepy.video.io.ImageSequenceClip
+from tkinter import Tcl
 
 from totalsegmentator.libs import (
     download_pretrained_weights,
@@ -177,9 +181,9 @@ class AortaSegmentation(InferenceClass):
 
         from totalsegmentator.nnunet import nnUNet_predict_image
 
-        with nostdout():
+        # with nostdout():
 
-            img, seg = nnUNet_predict_image(
+        img, seg = nnUNet_predict_image(
                 input_path,
                 output_path,
                 task_id,
@@ -224,6 +228,15 @@ class AortaDiameter(InferenceClass):
 
 class AortaVisualizer(InferenceClass):
 
+    def __init__(self):
+        super().__init__()
+        self.image_files = [
+            "slice1.png",
+            "slice2.png",
+            "slice3.png",
+            "diameter_graph.png",
+        ]
+
     def normalize_img(self, img: np.ndarray) -> np.ndarray:
         """Normalize the image.
         Args:
@@ -254,10 +267,24 @@ class AortaVisualizer(InferenceClass):
         
 
         # image output directory 
-        # output_dir = inference_pipeline.output_dir
-        # output_dir_images = os.path.join(output_dir, "images/")
-        # if not os.path.exists(output_dir_images):
-        #     os.makedirs(output_dir_images)
+        output_dir = inference_pipeline.output_dir
+        output_dir_slices = os.path.join(output_dir, "images/slices/")
+        if not os.path.exists(output_dir_slices):
+            os.makedirs(output_dir_slices)
+
+        output_dir = inference_pipeline.output_dir
+        output_dir_summary = os.path.join(output_dir, "images/summary/")
+        if not os.path.exists(output_dir_summary):
+            os.makedirs(output_dir_summary)
+
+        DICOM_PATH=inference_pipeline.dicom_series_path
+        x=pydicom.dcmread(DICOM_PATH+"/"+os.listdir(DICOM_PATH)[0])
+        
+        x.PhotometricInterpretation = 'YBR_FULL'
+        pixel_conversion = x.PixelSpacing
+        print("Pixel conversion: "+str(pixel_conversion))
+        RATIO_PIXEL_TO_MM = pixel_conversion[0]
+
 
         # plt.imshow(ct_img[SLICE_NUM], cmap="gray")
         # plt.savefig(output_dir_images + "ct_img.png")
@@ -269,6 +296,7 @@ class AortaVisualizer(InferenceClass):
         # img = scipy.misc.toimage(ct_img[:, :, 130])
 
         SLICE_COUNT = len(ct_img)
+        diameterDict = {}
         
         for i in range(len(ct_img)):
 
@@ -302,7 +330,7 @@ class AortaVisualizer(InferenceClass):
                     overlay = img.copy()
 
                     back = img.copy()
-                    cv2.drawContours(back, [contours], 0, (0,0,255), -1)
+                    cv2.drawContours(back, [contours], 0, (0,255,0), -1)
 
                     # blend with original image
                     alpha = 0.25
@@ -323,6 +351,10 @@ class AortaVisualizer(InferenceClass):
                     ### ELLIPSE
                     ellipse = cv2.fitEllipse(contours)
                     (xc,yc),(d1,d2),angle = ellipse
+
+                    # minor_axis = ellipse.axesLength
+                    # print("Major axis: "+str(minor_axis[0]))
+                    # print("Minor axis: "+str(minor_axis[1]))
             
                     cv2.ellipse(img, ellipse, (0, 255, 0), 1)
                     
@@ -330,29 +362,49 @@ class AortaVisualizer(InferenceClass):
                     xc, yc = ellipse[0]
                     cv2.circle(img, (int(xc),int(yc)), 5, (0, 0, 255), -1)
 
-                    rmajor = min(d1,d2)/2
+                    rmajor = max(d1,d2)/2
+                    rminor = min(d1,d2)/2
+                    print("Rminor: "+str(rminor))
+                    print("Rmajor: "+str(rmajor))
                     # rmajor = max(d1,d2)/2
                     if angle > 90:
                         angle = angle - 90
                     else:
                         angle = angle + 90
                     print(angle)
-                    xtop = xc + math.sin(math.radians(angle))*rmajor
-                    ytop = yc + math.cos(math.radians(angle))*rmajor
-                    xbot = xc + math.sin(math.radians(angle+180))*rmajor
-                    ybot = yc + math.cos(math.radians(angle+180))*rmajor
+                    
+                    ### RMINOR
+                    xtop = xc + math.sin(math.radians(angle))*rminor
+                    ytop = yc + math.cos(math.radians(angle))*rminor
+                    xbot = xc + math.sin(math.radians(angle+180))*rminor
+                    ybot = yc + math.cos(math.radians(angle+180))*rminor
                     line = cv2.line(img, (int(xtop),int(ytop)), (int(xbot),int(ybot)), (0, 0, 255), 2)
+                    # line2 = cv2.line(img, (int(ytop),int(xtop)), (int(ybot),int(xbot)), (0, 0, 255), 2)
 
                     pixel_length = math.sqrt( (xtop-xbot)**2 + (ytop-ybot)**2 )
+                    print("Pixel_length_minor: "+str(pixel_length))
+
+                    ### RMAJOR
+                    # xtop1 = xc + math.cos(math.radians(angle))*rmajor
+                    # ytop1 = yc + math.sin(math.radians(angle))*rmajor
+                    # xbot1 = xc + math.cos(math.radians(angle+180))*rmajor
+                    # ybot1 = yc + math.sin(math.radians(angle+180))*rmajor
+                    # line2 = cv2.line(img, (int(xtop1),int(ytop1)), (int(xbot1),int(ybot1)), (0, 0, 255), 2)
+
+                    # pixel_length1 = math.sqrt( (xtop1-xbot1)**2 + (ytop1-ybot1)**2 )
+                    # print("Pixel_length_major: "+str(pixel_length1))
 
                     area_px = cv2.contourArea(contours)
-                    area_mm = area_px
-                    # area_mm = round(area_px*RATIO_PIXEL_TO_MM)
-                    area_cm = area_px
+                    area_mm = round(area_px*RATIO_PIXEL_TO_MM)
+                    area_cm = area_mm/10
                     
                     # diameter_mm = round((pixel_length)*RATIO_PIXEL_TO_MM)
-                    diameter_mm = pixel_length
-                    diameter_cm = pixel_length
+                    diameter_mm = round((pixel_length)*RATIO_PIXEL_TO_MM)
+                    diameter_cm = diameter_mm/10
+
+                    diameterDict[(SLICE_COUNT-(i))] = diameter_cm
+
+                    img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
                     h,w,c = img.shape
                     lbls = ["Area (mm): "+str(area_mm)+"mm", "Area (cm): "+str(area_cm)+"cm", "Diameter (mm): "+str(diameter_mm)+"mm", "Diameter (cm): "+str(diameter_cm)+"cm", "Slice: "+str(SLICE_COUNT-(i))]
@@ -372,7 +424,110 @@ class AortaVisualizer(InferenceClass):
 
                     cv2.putText(img, lbls[4], (10, 160), font, fontScale, (0, 255, 0), 2)
 
-                    cv2.imwrite(output_dir_images+"slice"+str(SLICE_COUNT-(i))+".png", img)
+                    cv2.imwrite(output_dir_slices+"slice"+str(SLICE_COUNT-(i))+".png", img)
+
+        plt.bar(list(diameterDict.keys()), diameterDict.values(), color='b')
+
+        plt.title(r"$\bf{Diameter}$" + " " + r"$\bf{Progression}$")
+
+
+        plt.xlabel('Slice Number')
+
+        plt.ylabel('Diameter Measurement (cm)')
+        plt.savefig(output_dir_summary+"diameter_graph.png", dpi=500)
+
+        print(diameterDict)
+        print(max(diameterDict.items(), key=operator.itemgetter(1))[0])
+        print(diameterDict[max(diameterDict.items(), key=operator.itemgetter(1))[0]])
+
+        img = ct_img[SLICE_COUNT-(max(diameterDict.items(), key=operator.itemgetter(1))[0])]
+        img = np.clip(img, -300, 1800)
+        img = self.normalize_img(img) * 255.0
+        img = img.reshape((img.shape[0], img.shape[1], 1))
+        img2 = np.tile(img, (1, 1, 3))
+        img2 = cv2.rotate(img2, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+        img1 = cv2.imread(output_dir_slices+'slice'+str(max(diameterDict.items(), key=operator.itemgetter(1))[0])+'.png')
+        # img2 = cv2.imread('img2.png')
+
+        border_size = 3
+        img1 = cv2.copyMakeBorder(
+            img1,
+            top=border_size,
+            bottom=border_size,
+            left=border_size,
+            right=border_size,
+            borderType=cv2.BORDER_CONSTANT,
+            value=[0, 244, 0]
+        )
+        img2 = cv2.copyMakeBorder(
+            img2,
+            top=border_size,
+            bottom=border_size,
+            left=border_size,
+            right=border_size,
+            borderType=cv2.BORDER_CONSTANT,
+            value=[244, 0, 0]
+        )
+
+        vis = np.concatenate((img2, img1), axis=1)
+        cv2.imwrite(output_dir_summary+'out.png', vis)
+
+        image_folder=output_dir_slices
+        # image_folder_sorted = Tcl().call('lsort', '-dict', os.listdir(image_folder))
+
+        fps=20
+
+        # image_files = [img for img in image_folder if img.endswith(".png")]
+
+        image_files = [os.path.join(image_folder,img)
+                    for img in Tcl().call('lsort', '-dict', os.listdir(image_folder))
+                    if img.endswith(".png")]
+        clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(image_files, fps=fps)
+        clip.write_videofile(output_dir_summary+'my_video.mp4')
+
+
+
+
+        # print("Before panel generation: "+output_dir_images)
+        
+        # img1 = cv2.imread(output_dir_images+'diameter_graph.png')
+        # img2 = cv2.imread(output_dir_images+'slice1.png')
+        # vis = np.concatenate((img1, img2), axis=1)
+        # cv2.imwrite(output_dir_images+'out.png', vis)
+
+        # image_dir = Path(output_dir_images)
+
+        # def generate_panel(image_dir: Union[str, Path]):
+   
+        #     image_files = [os.path.join(image_dir, path) for path in self.image_files]
+        #     im_cor = Image.open(image_files[0])
+        #     im_sag = Image.open(image_files[1])
+        #     im_cor_width = int(im_cor.width / im_cor.height * 512)
+        #     width = (8 + im_cor_width + 8) + ((512 + 8) * 3)
+        #     height = 1048
+        #     new_im = Image.new("RGB", (width, height))
+
+        #     index = 2
+        #     for i in range(8 + im_cor_width + 8, width, 520):
+        #         for j in range(8, height, 520):
+        #             im = Image.open(image_files[index])
+        #             im.thumbnail((512, 512))
+        #             new_im.paste(im, (i, j))
+        #             index += 1
+        #             im.close()
+
+        #     im_cor.thumbnail((im_cor_width, 512))
+        #     new_im.paste(im_cor, (8, 8))
+        #     im_sag.thumbnail((im_cor_width, 512))
+        #     new_im.paste(im_sag, (8, 528))
+        #     new_im.save(os.path.join(image_dir, "report.png"))
+        #     im_cor.close()
+        #     im_sag.close()
+        #     new_im.close()
+
+        # generate_panel(image_dir=image_dir)
+        
 
         #either save things to the inference_pipeline or return them for the next class
         return {}
