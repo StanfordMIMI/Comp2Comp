@@ -9,7 +9,7 @@ git clone https://github.com/StanfordMIMI/Comp2Comp/
 # Install script requires Anaconda/Miniconda.
 cd Comp2Comp && bin/install.sh
 ```
-For installing on the Apple M1 chip, see [these instructions](docs/Local Implementation @ M1 arm64 Silicon.md).
+For installing on the Apple M1 chip, see [these instructions](https://github.com/StanfordMIMI/Comp2Comp/blob/docs/docs/Local%20Implementation%20%40%20M1%20arm64%20Silicon.md).
 
 ## Basic Usage
 ```bash
