@@ -188,8 +188,6 @@ class SpineComputeROIs(InferenceClass):
             self.spine_model_type,
         )
 
-        spine_hus = spine_hus[::-1]
-
         inference_pipeline.spine_hus = spine_hus
         inference_pipeline.rois = rois
         inference_pipeline.centroids_3d = centroids_3d
@@ -208,6 +206,7 @@ class SpineFindDicoms(InferenceClass):
             inference_pipeline.dicom_series_path,
             inference_pipeline.spine_model_type,
             inference_pipeline.flip_si,
+            list(inference_pipeline.rois.keys())
         )
 
         inference_pipeline.dicom_files = dicom_files
@@ -229,13 +228,13 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
 
         spine_utils.visualize_coronal_sagittal_spine(
             inference_pipeline.segmentation.get_fdata(),
-            inference_pipeline.rois,
+            list(inference_pipeline.rois.values()),
             inference_pipeline.medical_volume.get_fdata(),
             inference_pipeline.centroids,
-            inference_pipeline.centroids_3d,
+            list(inference_pipeline.centroids_3d.values()),
             inference_pipeline.names,
             output_path,
-            spine_hus=inference_pipeline.spine_hus,
+            spine_hus=list(inference_pipeline.spine_hus.values()),
             model_type=spine_model_type,
             pixel_spacing=inference_pipeline.pixel_spacing_list,
         )

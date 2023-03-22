@@ -24,13 +24,27 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder
 from comp2comp.models.models import Models
-from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import *
-from comp2comp.spine.spine import *
-from comp2comp.utils.run import get_dicom_paths_and_num
-from comp2comp.visualization.visualization import (
-    MuscleAdiposeTissueVisualizer,
-    SpineMuscleAdiposeTissueReport,
+from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
+    MuscleAdiposeTissueSegmentation,
+    MuscleAdiposeTissuePostProcessing,
+    MuscleAdiposeTissueComputeMetrics,
+    MuscleAdiposeTissueH5Saver,
+    MuscleAdiposeTissueMetricsSaver
 )
+
+from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue_visualization import (
+    MuscleAdiposeTissueVisualizer,
+    SpineMuscleAdiposeTissueReport
+)
+from comp2comp.spine.spine import (
+    SpineSegmentation,
+    SpineReorient,
+    SpineComputeROIs,
+    SpineFindDicoms,
+    SpineCoronalSagittalVisualizer
+)
+
+from comp2comp.utils.run import get_dicom_paths_and_num
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 

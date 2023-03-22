@@ -1,16 +1,17 @@
 import logging
 from glob import glob
-from typing import List
+from typing import List, Dict
+import sys
 
 import cv2
 import numpy as np
 from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
 
-from comp2comp.visualization import visualization_utils
+from comp2comp.spine import spine_visualization
 
 
-def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
+def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si, levels):
     """Find the dicom files corresponding to the spine T12 - L5 levels.
 
     Args:
@@ -24,23 +25,20 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
     # flip the last axis of seg
     seg = np.flip(seg, 2)
     vertical_positions = []
-    label_idxs = list(model_type.categories.values())
-    for label_idx in label_idxs:
+
+    # extract label_idxs using levels
+    label_idxs = [model_type.categories[level] for level in levels]
+    for i, label_idx in enumerate(label_idxs):
+        level = levels[i]
         pos = compute_centroid(seg, "axial", label_idx)
         vertical_positions.append(pos)
-
-    # Log vertical positions
-    logging.info(f"Instance numbers: {vertical_positions}")
 
     folder_in = path
     instance_numbers = []
 
-    # TODO Make these names configurable
-    label_text = ["T12", "L1", "L2", "L3", "L4", "L5"]
-
     # if flip_si is True, then flip the vertical positions
     if flip_si:
-        vertical_positions_dcm = [(seg.shape[2] - x) for x in vertical_positions]
+        vertical_positions_dcm = [(seg.shape[2] - x) for x in vertical_positions.values()]
     else:
         vertical_positions_dcm = vertical_positions
 
@@ -58,7 +56,7 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
     vertical_positions.sort(reverse=True)
 
-    return (dicom_files, label_text, vertical_positions)
+    return (dicom_files, levels, vertical_positions)
 
 
 # Function that takes a numpy array as input, computes the
@@ -77,17 +75,22 @@ def compute_centroids(seg: np.ndarray, spine_model_type):
     # take values of spine_model_type.categories dictionary
     # and convert to list
     label_idxs = list(spine_model_type.categories.values())
-    centroids = []
-    for label_idx in label_idxs:
-        pos = compute_centroid(seg, "sagittal", label_idx)
-        centroids.append(pos)
+    label_keys = list(spine_model_type.categories.keys())
+    idxs_keys = list(zip(label_idxs, label_keys))
+    centroids = {}
+    for label_idx, label_key in idxs_keys:
+        try:
+            pos = compute_centroid(seg, "sagittal", label_idx)
+            centroids[label_key] = pos
+        except Exception:
+            logging.warning(f"Label {label_key} not found in segmentation volume.")
     return centroids
 
 
 # Function that takes a numpy array as input, as well as a list of centroids,
 # takes a slice through the centroid on axis = 1 for each centroid
 # and returns a list of the slices
-def get_slices(seg: np.ndarray, centroids: List[int], spine_model_type):
+def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
     """Get the slices corresponding to the centroids.
 
     Args:
@@ -98,11 +101,14 @@ def get_slices(seg: np.ndarray, centroids: List[int], spine_model_type):
     Returns:
         List[np.ndarray]: List of slices.
     """
-    label_idxs = list(spine_model_type.categories.values())
-    slices = []
+    keys_with_centroids = list(centroids.keys())
+    keys_to_idxs = spine_model_type.categories
+    label_idxs = [keys_to_idxs[key] for key in keys_with_centroids]
+    slices = {}
     for i, centroid in enumerate(centroids):
         label_idx = label_idxs[i]
-        slices.append((seg[centroid, :, :] == label_idx).astype(int))
+        level = keys_with_centroids[i]
+        slices[level] = (seg[centroids[level], :, :] == label_idx).astype(int)
     return slices
 
 
@@ -223,34 +229,34 @@ def compute_rois(seg, img, spine_model_type):
         rois (List[np.ndarray]): List of ROIs.
         centroids_3d (List[np.ndarray]): List of centroids.
     """
-    # Compute centroids
     seg_np = seg.get_fdata()
     centroids = compute_centroids(seg_np, spine_model_type)
-    # Get slices
     slices = get_slices(seg_np, centroids, spine_model_type)
-    # Delete right most connected component
-    # if spine_model_type.model_name == "ts_spine":
-    for i, slice in enumerate(slices):
+    # zip keys and values
+    slices_zip = zip(list(slices.keys()), list(slices.values()))
+    for i, (level, slice) in enumerate(slices_zip):
         # keep only the two largest connected components
         two_largest, two = keep_two_largest_connected_components(slice)
         if two:
-            slices[i] = delete_right_most_connected_component(two_largest)
+            slices[level] = delete_right_most_connected_component(two_largest)
 
     # Compute ROIs
-    rois = []
-    spine_hus = []
-    centroids_3d = []
-    for i, slice in enumerate(slices):
+    rois = {}
+    spine_hus = {}
+    centroids_3d = {}
+    # zip
+    slices_zip = zip(list(slices.keys()), list(slices.values()))
+    for i, (level, slice) in enumerate(slices_zip):
         center_of_mass = compute_center_of_mass(slice)
-        centroid = np.array([centroids[i], center_of_mass[1], center_of_mass[0]])
+        centroid = np.array([centroids[level], center_of_mass[1], center_of_mass[0]])
         roi = roi_from_mask(img, centroid)
-        spine_hus.append(mean_img_mask(img.get_fdata(), roi, i))
-        rois.append(roi)
-        centroids_3d.append(centroid)
+        spine_hus[level] = mean_img_mask(img.get_fdata(), roi, i)
+        rois[level] = roi
+        centroids_3d[level] = centroid
     return (spine_hus, rois, centroids_3d)
 
 
-def keep_two_largest_connected_components(mask: np.ndarray):
+def keep_two_largest_connected_components(mask: Dict):
     """Keep the two largest connected components.
 
     Args:
@@ -402,7 +408,7 @@ def visualize_coronal_sagittal_spine(
     one_hot_sag_label = np.flip(one_hot_sag_label, axis=0)
     one_hot_sag_label = np.flip(one_hot_sag_label, axis=1)
 
-    visualization_utils.save_binary_segmentation_overlay(
+    spine_visualization.save_binary_segmentation_overlay(
         coronal_image,
         one_hot_cor_label,
         output_dir,
@@ -411,8 +417,9 @@ def visualize_coronal_sagittal_spine(
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
+        levels=label_text
     )
-    visualization_utils.save_binary_segmentation_overlay(
+    spine_visualization.save_binary_segmentation_overlay(
         sagittal_image,
         one_hot_sag_label,
         output_dir,
@@ -421,6 +428,7 @@ def visualize_coronal_sagittal_spine(
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
+        levels=label_text
     )
 
 
