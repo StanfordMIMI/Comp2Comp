@@ -56,6 +56,9 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si, levels):
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
     vertical_positions.sort(reverse=True)
 
+    # reverse the order of levels
+    levels.reverse()
+
     return (dicom_files, levels, vertical_positions)
 
 

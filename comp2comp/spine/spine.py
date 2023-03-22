@@ -151,6 +151,9 @@ class SpineSegmentation(InferenceClass):
             seg_data = np.where(seg_data == 0, 0, seg_data - 17)
             seg = nib.Nifti1Image(seg_data, seg.affine, seg.header)
 
+        # take middle slices
+        
+
         return seg, img
 
 
