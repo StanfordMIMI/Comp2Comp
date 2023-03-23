@@ -379,6 +379,18 @@ class AortaVisualizer(InferenceClass):
                     xbot = xc + math.sin(math.radians(angle+180))*rminor
                     ybot = yc + math.cos(math.radians(angle+180))*rminor
                     line = cv2.line(img, (int(xtop),int(ytop)), (int(xbot),int(ybot)), (0, 0, 255), 2)
+
+
+                    ### BACKUP
+                    # xtop = xc + math.sin(math.radians(angle))*rminor
+                    # ytop = yc + math.cos(math.radians(angle))*rminor
+                    # xbot = xc + math.sin(math.radians(angle+180))*rminor
+                    # ybot = yc + math.cos(math.radians(angle+180))*rminor
+                    # line = cv2.line(img, (int(xtop),int(ytop)), (int(xbot),int(ybot)), (0, 0, 255), 2)
+
+
+
+        
                     # line2 = cv2.line(img, (int(ytop),int(xtop)), (int(ybot),int(xbot)), (0, 0, 255), 2)
 
                     pixel_length = math.sqrt( (xtop-xbot)**2 + (ytop-ybot)**2 )
