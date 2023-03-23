@@ -34,14 +34,15 @@ from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
 
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue_visualization import (
     MuscleAdiposeTissueVisualizer,
-    SpineMuscleAdiposeTissueReport
 )
 from comp2comp.spine.spine import (
     SpineSegmentation,
     SpineReorient,
     SpineComputeROIs,
+    SpineMetricsSaver,
     SpineFindDicoms,
-    SpineCoronalSagittalVisualizer
+    SpineCoronalSagittalVisualizer,
+    SpineMuscleAdiposeTissueReport
 )
 
 from comp2comp.utils.run import get_dicom_paths_and_num
@@ -116,6 +117,7 @@ def spine_muscle_adipose_tissue(args):
                 SpineSegmentation(path, args.spine_model),
                 SpineReorient(),
                 SpineComputeROIs(args.spine_model),
+                SpineMetricsSaver(),
                 SpineFindDicoms(),
                 SpineCoronalSagittalVisualizer(),
                 MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),

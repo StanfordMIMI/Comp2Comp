@@ -27,24 +27,6 @@ _COLORS = (
             1.000,
             0.000,
             1.000,
-            1.000,
-            0.340,
-            0.200,
-            1.000,
-            0.340,
-            0.200,
-            1.000,
-            0.340,
-            0.200,
-            1.000,
-            0.340,
-            0.200,
-            1.000,
-            0.340,
-            0.200,
-            1.000,
-            0.340,
-            0.200,
         ]
     )
     .astype(np.float32)
@@ -60,6 +42,9 @@ _MUSCLE_FAT_TEXT_VERTICAL_SPACING = 14.0
 _MUSCLE_FAT_TEXT_OFFSET_FROM_TOP = 22.0
 _MUSCLE_FAT_TEXT_OFFSET_FROM_RIGHT = 181.0
 
+_ROI_COLOR = np.array([1.000, 0.340, 0.200])
+
+_COLOR_MAP = {"L5": 0, "L4": 1, "L3": 2, "L2": 3, "L1": 4, "T12": 5}
 
 def save_binary_segmentation_overlay(
     img_in: Union[str, Path],
@@ -86,6 +71,7 @@ def save_binary_segmentation_overlay(
         spine (bool, optional): Spine flag. Defaults to True.
         model_type (Models): Model type. Defaults to None.
     """
+    label_map = {"T12": 0, "L1": 1, "L2": 2, "L3": 3, "L4": 4, "L5": 5}
 
     _SPINE_LEVELS = levels
     img_in = np.clip(img_in, -300, 1800)
@@ -99,8 +85,7 @@ def save_binary_segmentation_overlay(
 
     vis = Visualizer(img_rgb)
 
-    num_total = mask.shape[2]
-    half_total = int(num_total / 2)
+    num_levels = len(levels)
 
     print("SPINE LEVELS: ", _SPINE_LEVELS)
     print("SPINE HUS: ", spine_hus)
@@ -109,17 +94,25 @@ def save_binary_segmentation_overlay(
     print("NUM TOTAL: ", num_total)
     print("IMG in SHAPE: ", img_in.shape)
 
-    # draw the masks
-    for num_bin_masks in range(num_total):
-        if num_bin_masks > (half_total - 1):
-            color = _COLORS[num_bin_masks]
-            edge_color = color
-        else:
+    # draw seg masks
+    for i, level in enumerate(levels):
+            color = _COLORS[_COLOR_MAP[level]]
             edge_color = None
             alpha_val = 0.2
-            color = _COLORS[num_bin_masks]
         vis.draw_binary_mask(
-            mask[:, :, num_bin_masks].astype(int),
+            mask[:, :, num_levels - 1 - i].astype(int),
+            color=color,
+            edge_color=edge_color,
+            alpha=alpha_val,
+            area_threshold=0,
+        )
+
+    # draw rois 
+    for i, level in enumerate(levels):
+            color = _ROI_COLOR
+            edge_color = color
+        vis.draw_binary_mask(
+            mask[:, :, num_levels - 1 - i].astype(int),
             color=color,
             edge_color=edge_color,
             alpha=alpha_val,
@@ -127,15 +120,15 @@ def save_binary_segmentation_overlay(
         )
     
     # draw text and lines
-    for num_bin_masks in range(half_total):
+    for i, level in enumerate(levels):
         vis.draw_text(
-            text=f"{_SPINE_LEVELS[num_bin_masks]}: {round(float(spine_hus[num_bin_masks]))}",
+            text=f"{level}: {round(float(spine_hus[level]))}",
             position=(
                 mask.shape[1] - _SPINE_TEXT_OFFSET_FROM_RIGHT,
                 _SPINE_TEXT_VERTICAL_SPACING * num_bin_masks
                 + _SPINE_TEXT_OFFSET_FROM_TOP,
             ),
-            color=_COLORS[half_total - 1 - num_bin_masks],
+            color=_COLORS[num_levels - 1 - i],
             font_size=9,
             horizontal_alignment="left",
         )
@@ -143,10 +136,10 @@ def save_binary_segmentation_overlay(
         vis.draw_line(
             x_data=(0, mask.shape[1] - 1),
             y_data=(
-                int(centroids[num_bin_masks] * (pixel_spacing[2] / pixel_spacing[1])),
-                int(centroids[num_bin_masks] * (pixel_spacing[2] / pixel_spacing[1])),
+                int(centroids[i] * (pixel_spacing[2] / pixel_spacing[1])),
+                int(centroids[i] * (pixel_spacing[2] / pixel_spacing[1])),
             ),
-            color=_COLORS[num_bin_masks],
+            color=_COLORS[num_levels],
             linestyle="dashed",
             linewidth=0.25,
         )

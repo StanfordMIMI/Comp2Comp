@@ -312,7 +312,7 @@ def compute_centroid(seg: np.ndarray, plane: str, label: int):
     return pos
 
 
-def to_one_hot(label: np.ndarray, model_type):
+def to_one_hot(label: np.ndarray, model_type, levels):
     """Convert a label to one-hot encoding.
 
     Args:
@@ -322,10 +322,11 @@ def to_one_hot(label: np.ndarray, model_type):
     Returns:
         np.ndarray: One-hot encoding volume.
     """
-    label_idxs = list(model_type.categories.values())
-    one_hot_label = np.zeros((label.shape[0], label.shape[1], len(label_idxs)))
-    for i, idx in enumerate(label_idxs):
-        one_hot_label[:, :, i] = (label == idx).astype(int)
+    
+    one_hot_label = np.zeros((label.shape[0], label.shape[1], len(levels)))
+    for i, level in enumerate(levels):
+        label_idx = model_type.categories[level]
+        one_hot_label[:, :, i] = (label == label_idx).astype(int)
     return one_hot_label
 
 
@@ -354,6 +355,8 @@ def visualize_coronal_sagittal_spine(
         model_type (Models, optional): Model type. Defaults to None.
     """
 
+    print("rois")
+
     sagittal_vals, coronal_vals = curved_planar_reformation(mvs, centroids_3d)
     sagittal_image = mvs[:, sagittal_vals, range(len(sagittal_vals))]
     sagittal_label = seg[:, sagittal_vals, range(len(sagittal_vals))]
@@ -361,7 +364,7 @@ def visualize_coronal_sagittal_spine(
     sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3)
     sagittal_label = zoom(sagittal_label, (1, zoom_factor), order=0).astype(int)
 
-    one_hot_sag_label = to_one_hot(sagittal_label, model_type)
+    one_hot_sag_label = to_one_hot(sagittal_label, model_type, label_text)
     for roi in rois:
         one_hot_roi_label = roi[:, sagittal_vals, range(len(sagittal_vals))]
         one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order=0).astype(int)
@@ -380,7 +383,7 @@ def visualize_coronal_sagittal_spine(
     coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
     coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
 
-    one_hot_cor_label = to_one_hot(coronal_label, model_type)
+    one_hot_cor_label = to_one_hot(coronal_label, model_type, label_text)
     for roi in rois:
         one_hot_roi_label = roi[coronal_vals, :, range(len(coronal_vals))]
         one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order=0).astype(int)
