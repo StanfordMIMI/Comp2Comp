@@ -103,17 +103,13 @@ def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
     Returns:
         List[np.ndarray]: List of slices.
     """
+    seg = seg.astype(np.uint8)
     slices = {}
-    print("unique values in seg")
-    print(np.unique(seg))
     for level in centroids:
-        print(level)
         label_idx = spine_model_type.categories[level]
-        print(label_idx)
-        print(centroids[level])
-        slices[level] = (seg[centroids[level], :, :] == label_idx).astype(int)
-        # print the sum of the slice to check if it is correct
-        print(np.sum(slices[level]))
+        binary_seg = (seg[centroids[level], :, :] == label_idx).astype(int)
+        if np.sum(binary_seg) > 400: # heuristic to make sure enough of the body is showing
+            slices[level] = binary_seg
     return slices
 
 
@@ -253,7 +249,7 @@ def compute_rois(seg, img, spine_model_type):
     spine_hus = {}
     centroids_3d = {}
     for i, level in enumerate(slices):
-        slice = level[slices]
+        slice = slices[level]
         center_of_mass = compute_center_of_mass(slice)
         centroid = np.array([centroids[level], center_of_mass[1], center_of_mass[0]])
         roi = roi_from_mask(img, centroid)
