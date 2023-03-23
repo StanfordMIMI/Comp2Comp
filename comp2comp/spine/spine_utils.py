@@ -104,6 +104,8 @@ def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
         List[np.ndarray]: List of slices.
     """
     slices = {}
+    print("unique values in seg")
+    print(np.unique(seg))
     for level in centroids:
         print(level)
         label_idx = spine_model_type.categories[level]
