@@ -102,6 +102,13 @@ def save_binary_segmentation_overlay(
     num_total = mask.shape[2]
     half_total = int(num_total / 2)
 
+    print("SPINE LEVELS: ", _SPINE_LEVELS)
+    print("SPINE HUS: ", spine_hus)
+    print("CENTROIDS: ", centroids)
+    print("MASK SHAPE: ", mask.shape)
+    print("NUM TOTAL: ", num_total)
+    print("IMG in SHAPE: ", img_in.shape)
+
     # draw the masks
     for num_bin_masks in range(num_total):
         if num_bin_masks > (half_total - 1):
