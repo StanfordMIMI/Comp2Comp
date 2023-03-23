@@ -104,9 +104,14 @@ def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
         List[np.ndarray]: List of slices.
     """
     slices = {}
-    for i, level in enumerate(centroids):
+    for level in centroids:
+        print(level)
         label_idx = spine_model_type.categories[level]
+        print(label_idx)
+        print(centroids[level])
         slices[level] = (seg[centroids[level], :, :] == label_idx).astype(int)
+        # print the sum of the slice to check if it is correct
+        print(np.sum(slices[level]))
     return slices
 
 
