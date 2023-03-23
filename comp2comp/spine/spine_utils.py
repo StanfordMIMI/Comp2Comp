@@ -78,16 +78,14 @@ def compute_centroids(seg: np.ndarray, spine_model_type):
     """
     # take values of spine_model_type.categories dictionary
     # and convert to list
-    label_idxs = list(spine_model_type.categories.values())
-    label_keys = list(spine_model_type.categories.keys())
-    idxs_keys = list(zip(label_idxs, label_keys))
     centroids = {}
-    for label_idx, label_key in idxs_keys:
+    for level in spine_model_type.categories:
+        label_idx = spine_model_type.categories[level]
         try:
             pos = compute_centroid(seg, "sagittal", label_idx)
-            centroids[label_key] = pos
+            centroids[level] = pos
         except Exception:
-            logging.warning(f"Label {label_key} not found in segmentation volume.")
+            logging.warning(f"Label {level} not found in segmentation volume.")
     return centroids
 
 
