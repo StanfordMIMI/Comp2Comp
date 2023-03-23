@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
+import matplotlib.pyplot as plt
 
 from comp2comp.spine import spine_visualization
 
@@ -104,13 +105,9 @@ def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
     Returns:
         List[np.ndarray]: List of slices.
     """
-    keys_with_centroids = list(centroids.keys())
-    keys_to_idxs = spine_model_type.categories
-    label_idxs = [keys_to_idxs[key] for key in keys_with_centroids]
     slices = {}
-    for i, centroid in enumerate(centroids):
-        label_idx = label_idxs[i]
-        level = keys_with_centroids[i]
+    for i, level in enumerate(centroids):
+        label_idx = spine_model_type.categories[level]
         slices[level] = (seg[centroids[level], :, :] == label_idx).astype(int)
     return slices
 
@@ -234,10 +231,13 @@ def compute_rois(seg, img, spine_model_type):
     """
     seg_np = seg.get_fdata()
     centroids = compute_centroids(seg_np, spine_model_type)
+    print("centroids: ", centroids)
     slices = get_slices(seg_np, centroids, spine_model_type)
-    # zip keys and values
-    slices_zip = zip(list(slices.keys()), list(slices.values()))
-    for i, (level, slice) in enumerate(slices_zip):
+    print("slices: ", slices)
+    for level in slices:
+        slice = slices[level]
+        print(level)
+        print(slice)
         # keep only the two largest connected components
         two_largest, two = keep_two_largest_connected_components(slice)
         if two:
@@ -247,9 +247,8 @@ def compute_rois(seg, img, spine_model_type):
     rois = {}
     spine_hus = {}
     centroids_3d = {}
-    # zip
-    slices_zip = zip(list(slices.keys()), list(slices.values()))
-    for i, (level, slice) in enumerate(slices_zip):
+    for i, level in enumerate(slices):
+        slice = level[slices]
         center_of_mass = compute_center_of_mass(slice)
         centroid = np.array([centroids[level], center_of_mass[1], center_of_mass[0]])
         roi = roi_from_mask(img, centroid)
@@ -268,6 +267,8 @@ def keep_two_largest_connected_components(mask: Dict):
     Returns:
         np.ndarray: Mask volume.
     """
+    plt.imshow(mask)
+    plt.savefig('./mask.png')
     mask = mask.astype(np.uint8)
     # sort connected components by size
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
