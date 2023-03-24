@@ -165,6 +165,11 @@ class SpineReorient(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
+        """
+        First dim goes from L to R.
+        Second dim goes from P to A. 
+        Third dim goes from I to S.
+        """
         inference_pipeline.flip_si = False  # necessary for finding dicoms in correct order
         if "I" in nib.aff2axcodes(inference_pipeline.medical_volume.affine):
             inference_pipeline.flip_si = True
@@ -237,7 +242,7 @@ class SpineFindDicoms(InferenceClass):
 
     def __call__(self, inference_pipeline):
 
-        dicom_files, names, centroids = spine_utils.find_spine_dicoms(
+        dicom_files, names, inferior_superior_centers = spine_utils.find_spine_dicoms(
             inference_pipeline.segmentation.get_fdata(),
             inference_pipeline.dicom_series_path,
             inference_pipeline.spine_model_type,
@@ -248,7 +253,7 @@ class SpineFindDicoms(InferenceClass):
         inference_pipeline.dicom_files = dicom_files
         inference_pipeline.names = names
         inference_pipeline.dicom_file_names = names
-        inference_pipeline.centroids = centroids
+        inference_pipeline.inferior_superior_centers = inferior_superior_centers
 
         return {}
 
@@ -266,7 +271,7 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
             inference_pipeline.segmentation.get_fdata(),
             list(inference_pipeline.rois.values()),
             inference_pipeline.medical_volume.get_fdata(),
-            inference_pipeline.centroids,
+            inference_pipeline.inferior_superior_centers,
             list(inference_pipeline.centroids_3d.values()),
             inference_pipeline.names,
             output_path,

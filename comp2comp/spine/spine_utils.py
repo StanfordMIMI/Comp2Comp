@@ -108,7 +108,7 @@ def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
     for level in centroids:
         label_idx = spine_model_type.categories[level]
         binary_seg = (seg[centroids[level], :, :] == label_idx).astype(int)
-        if np.sum(binary_seg) > 400: # heuristic to make sure enough of the body is showing
+        if np.sum(binary_seg) > 200: # heuristic to make sure enough of the body is showing
             slices[level] = binary_seg
     return slices
 
@@ -232,13 +232,9 @@ def compute_rois(seg, img, spine_model_type):
     """
     seg_np = seg.get_fdata()
     centroids = compute_centroids(seg_np, spine_model_type)
-    print("centroids: ", centroids)
     slices = get_slices(seg_np, centroids, spine_model_type)
-    print("slices: ", slices)
     for level in slices:
         slice = slices[level]
-        print(level)
-        print(slice)
         # keep only the two largest connected components
         two_largest, two = keep_two_largest_connected_components(slice)
         if two:
@@ -268,8 +264,6 @@ def keep_two_largest_connected_components(mask: Dict):
     Returns:
         np.ndarray: Mask volume.
     """
-    plt.imshow(mask)
-    plt.savefig('./mask.png')
     mask = mask.astype(np.uint8)
     # sort connected components by size
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
@@ -334,7 +328,7 @@ def visualize_coronal_sagittal_spine(
     seg: np.ndarray,
     rois: List[np.ndarray],
     mvs: np.ndarray,
-    centroids: List[int],
+    centroids: Dict,
     centroids_3d: np.ndarray,
     label_text: List[str],
     output_dir: str,
@@ -354,8 +348,6 @@ def visualize_coronal_sagittal_spine(
         spine_hus (List[float], optional): List of HU values. Defaults to None.
         model_type (Models, optional): Model type. Defaults to None.
     """
-
-    print("rois")
 
     sagittal_vals, coronal_vals = curved_planar_reformation(mvs, centroids_3d)
     sagittal_image = mvs[:, sagittal_vals, range(len(sagittal_vals))]
@@ -416,7 +408,7 @@ def visualize_coronal_sagittal_spine(
     one_hot_sag_label = np.flip(one_hot_sag_label, axis=0)
     one_hot_sag_label = np.flip(one_hot_sag_label, axis=1)
 
-    spine_visualization.save_binary_segmentation_overlay(
+    spine_visualization.spine_binary_segmentation_overlay(
         coronal_image,
         one_hot_cor_label,
         output_dir,
@@ -427,7 +419,7 @@ def visualize_coronal_sagittal_spine(
         pixel_spacing=pixel_spacing,
         levels=label_text
     )
-    spine_visualization.save_binary_segmentation_overlay(
+    spine_visualization.spine_binary_segmentation_overlay(
         sagittal_image,
         one_hot_sag_label,
         output_dir,
