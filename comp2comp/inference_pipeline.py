@@ -32,7 +32,7 @@ class InferencePipeline:
 
             function_keys = set(inspect.signature(inference_class).parameters.keys())
             function_keys.remove("inference_pipeline")
-
+            
             assert function_keys == set(
                 output.keys()
             ), "Input to inference class, {}, does not have the correct parameters".format(
