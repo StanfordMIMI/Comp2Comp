@@ -39,6 +39,7 @@ Currently, Comp2Comp has two pipelines, muscle_adipose_tissue and spine_muscle_a
 ## In Progess
 - abdominal_aortic_aneurysm
 - contrast_phase_detection
+- liver_spleen_pancreas
 
 ## Example image output from spine_muscle_adipose_tissue
 ![Alt text](figures/panel_example.png?raw=true "Comp2Comp Panel Example")
