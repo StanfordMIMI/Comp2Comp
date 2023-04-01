@@ -90,32 +90,35 @@ def spine_muscle_adipose_tissue(args):
 
     for path, num in get_dicom_paths_and_num(args.input_path):
 
-        st = time()
-
-        print("Processing: ", path, " with ", num, " slices")
-
-        if num < 50:
-            print("Number of slices is less than 50, skipping\n")
-            continue
-        
-        print("")
-
-        sys.stdout.flush()
-
-        output_dir = Path(os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 
-            "../outputs",
-            date_time,
-            Path(os.path.basename(path))
-            ))
-
-        if not os.path.exists(output_dir):
-            output_dir.mkdir(parents=True)
-
         try:
+            st = time()
+
+            print("Processing: ", path, " with ", num, " slices")
+
+            if num < 50:
+                print("Number of slices is less than 50, skipping\n")
+                continue
+            
+            print("")
+
+            try:
+                sys.stdout.flush()
+            except Exception:
+                pass
+
+            output_dir = Path(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), 
+                "../outputs",
+                date_time,
+                Path(os.path.basename(path))
+                ))
+
+            if not os.path.exists(output_dir):
+                output_dir.mkdir(parents=True)
+
             pipeline = InferencePipeline([
                 SpineSegmentation(path, args.spine_model),
-                SpineReorient(),
+                SpineToCanonical(),
                 SpineComputeROIs(args.spine_model),
                 SpineMetricsSaver(),
                 SpineFindDicoms(),
@@ -140,7 +143,8 @@ def spine_muscle_adipose_tissue(args):
 
 
         except Exception as e:
-            shutil.rmtree(output_dir)
+            if os.path.exists(output_dir):
+                shutil.rmtree(output_dir)
             print(f"ERROR PROCESSING {path}")
             traceback.print_exc()
             continue

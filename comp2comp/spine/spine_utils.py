@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from comp2comp.spine import spine_visualization
 
 
-def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si, levels):
+def find_spine_dicoms(seg: np.ndarray, centroids: list, path: str, model_type, flip_si, levels):
     """Find the dicom files corresponding to the spine T12 - L5 levels.
 
     Args:
@@ -22,6 +22,8 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si, levels):
 
     Returns:
         List[str]: List of dicom files.
+    """
+
     """
     # flip the last axis of seg
     seg = np.flip(seg, 2)
@@ -33,9 +35,14 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si, levels):
         level = levels[i]
         pos = compute_centroid(seg, "axial", label_idx)
         vertical_positions.append(pos)
+    """
+
+    vertical_positions = []
+    for level in centroids:
+        centroid = centroids[level]
+        vertical_positions.append(centroid[2])
 
     folder_in = path
-    instance_numbers = []
 
     # if flip_si is True, then flip the vertical positions
     if flip_si:
@@ -350,16 +357,17 @@ def visualize_coronal_sagittal_spine(
     """
 
     sagittal_vals, coronal_vals = curved_planar_reformation(mvs, centroids_3d)
-    sagittal_image = mvs[:, sagittal_vals, range(len(sagittal_vals))]
-    sagittal_label = seg[:, sagittal_vals, range(len(sagittal_vals))]
     zoom_factor = pixel_spacing[2] / pixel_spacing[1]
-    sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3)
-    sagittal_label = zoom(sagittal_label, (1, zoom_factor), order=0).astype(int)
+
+    sagittal_image = mvs[sagittal_vals, :, range(len(sagittal_vals))]
+    sagittal_label = seg[sagittal_vals, :, range(len(sagittal_vals))]
+    sagittal_image = zoom(sagittal_image, (zoom_factor, 1), order=3)
+    sagittal_label = zoom(sagittal_label, (zoom_factor, 1), order=0).astype(int)
 
     one_hot_sag_label = to_one_hot(sagittal_label, model_type, label_text)
     for roi in rois:
-        one_hot_roi_label = roi[:, sagittal_vals, range(len(sagittal_vals))]
-        one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order=0).astype(int)
+        one_hot_roi_label = roi[sagittal_vals, :, range(len(sagittal_vals))]
+        one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order=0).astype(int)
         one_hot_sag_label = np.concatenate(
             (
                 one_hot_sag_label,
@@ -370,15 +378,19 @@ def visualize_coronal_sagittal_spine(
             axis=2,
         )
 
-    coronal_image = mvs[coronal_vals, :, range(len(coronal_vals))]
-    coronal_label = seg[coronal_vals, :, range(len(coronal_vals))]
-    coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
-    coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
+
+    coronal_image = mvs[:, coronal_vals, range(len(coronal_vals))]
+    coronal_label = seg[:, coronal_vals, range(len(coronal_vals))]
+    coronal_image = zoom(coronal_image, (1, zoom_factor), order=3)
+    coronal_label = zoom(coronal_label, (1, zoom_factor), order=0).astype(int)
+
+    #coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
+    #coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
 
     one_hot_cor_label = to_one_hot(coronal_label, model_type, label_text)
     for roi in rois:
-        one_hot_roi_label = roi[coronal_vals, :, range(len(coronal_vals))]
-        one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order=0).astype(int)
+        one_hot_roi_label = roi[:, coronal_vals, range(len(coronal_vals))]
+        one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order=0).astype(int)
         one_hot_cor_label = np.concatenate(
             (
                 one_hot_cor_label,
@@ -390,27 +402,27 @@ def visualize_coronal_sagittal_spine(
         )
 
     # flip both axes of coronal image
-    coronal_image = np.flip(coronal_image, axis=0)
-    coronal_image = np.flip(coronal_image, axis=1)
-
-    # flip both axes of coronal label
-    one_hot_cor_label = np.flip(one_hot_cor_label, axis=0)
-    one_hot_cor_label = np.flip(one_hot_cor_label, axis=1)
-
-    sagittal_image = np.transpose(sagittal_image)
-    one_hot_sag_label = np.transpose(one_hot_sag_label, (1, 0, 2))
-
-    # flip both axes of sagittal image
     sagittal_image = np.flip(sagittal_image, axis=0)
     sagittal_image = np.flip(sagittal_image, axis=1)
 
-    # flip both axes of sagittal label
+    # flip both axes of coronal label
     one_hot_sag_label = np.flip(one_hot_sag_label, axis=0)
     one_hot_sag_label = np.flip(one_hot_sag_label, axis=1)
 
+    coronal_image = np.transpose(coronal_image)
+    one_hot_cor_label = np.transpose(one_hot_cor_label, (1, 0, 2))
+
+    # flip both axes of sagittal image
+    coronal_image = np.flip(coronal_image, axis=0)
+    coronal_image = np.flip(coronal_image, axis=1)
+
+    # flip both axes of sagittal label
+    one_hot_cor_label = np.flip(one_hot_cor_label, axis=0)
+    one_hot_cor_label = np.flip(one_hot_cor_label, axis=1)
+
     spine_visualization.spine_binary_segmentation_overlay(
-        coronal_image,
-        one_hot_cor_label,
+        sagittal_image,
+        one_hot_sag_label,
         output_dir,
         "spine_sagittal.png",
         centroids,
@@ -420,8 +432,8 @@ def visualize_coronal_sagittal_spine(
         levels=label_text
     )
     spine_visualization.spine_binary_segmentation_overlay(
-        sagittal_image,
-        one_hot_sag_label,
+        coronal_image,
+        one_hot_cor_label,
         output_dir,
         "spine_coronal.png",
         centroids,
@@ -435,8 +447,8 @@ def visualize_coronal_sagittal_spine(
 def curved_planar_reformation(mvs, centroids):
     centroids = sorted(centroids, key=lambda x: x[2])
     centroids = [(int(x[0]), int(x[1]), int(x[2])) for x in centroids]
-    sagittal_centroids = [centroids[i][1] for i in range(0, len(centroids))]
-    coronal_centroids = [centroids[i][0] for i in range(0, len(centroids))]
+    sagittal_centroids = [centroids[i][0] for i in range(0, len(centroids))]
+    coronal_centroids = [centroids[i][1] for i in range(0, len(centroids))]
     axial_centroids = [centroids[i][2] for i in range(0, len(centroids))]
     sagittal_vals = [sagittal_centroids[0]] * axial_centroids[0]
     coronal_vals = [coronal_centroids[0]] * axial_centroids[0]

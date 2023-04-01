@@ -160,7 +160,7 @@ class SpineSegmentation(InferenceClass):
         return seg, img
 
 
-class SpineReorient(InferenceClass):
+class SpineToCanonical(InferenceClass):
     def __init__(self):
         super().__init__()
 
@@ -244,6 +244,7 @@ class SpineFindDicoms(InferenceClass):
 
         dicom_files, names, inferior_superior_centers = spine_utils.find_spine_dicoms(
             inference_pipeline.segmentation.get_fdata(),
+            inference_pipeline.centroids_3d,
             inference_pipeline.dicom_series_path,
             inference_pipeline.spine_model_type,
             inference_pipeline.flip_si,
