@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from comp2comp.spine import spine_visualization
 
 
-def find_spine_dicoms(seg: np.ndarray, centroids: list, path: str, model_type, flip_si, levels):
+def find_spine_dicoms(seg: np.ndarray, centroids: Dict, path: str, model_type, flip_si, levels):
     """Find the dicom files corresponding to the spine T12 - L5 levels.
 
     Args:
@@ -46,9 +46,10 @@ def find_spine_dicoms(seg: np.ndarray, centroids: list, path: str, model_type, f
 
     # if flip_si is True, then flip the vertical positions
     if flip_si:
-        vertical_positions_dcm = [(seg.shape[2] - x) for x in vertical_positions.values()]
+        vertical_positions_dcm = [(seg.shape[2] - x) for x in vertical_positions]
     else:
         vertical_positions_dcm = vertical_positions
+        
 
     dicom_files = []
     instance_numbers = []
@@ -58,16 +59,19 @@ def find_spine_dicoms(seg: np.ndarray, centroids: list, path: str, model_type, f
             dicom_files.append(dicom_path)
             instance_numbers.append(instance_number)
 
+    print("dicom_files: ", dicom_files)
+
     if flip_si:
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files), reverse=True)]
     else:
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
-    vertical_positions.sort(reverse=True)
+    
+    vertical_positions_dcm.sort(reverse=True)
 
     # reverse the order of levels
     levels.reverse()
 
-    return (dicom_files, levels, vertical_positions)
+    return (dicom_files, levels, vertical_positions_dcm)
 
 
 # Function that takes a numpy array as input, computes the

@@ -37,7 +37,7 @@ from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue_visualization import 
 )
 from comp2comp.spine.spine import (
     SpineSegmentation,
-    SpineReorient,
+    SpineToCanonical,
     SpineComputeROIs,
     SpineMetricsSaver,
     SpineFindDicoms,
