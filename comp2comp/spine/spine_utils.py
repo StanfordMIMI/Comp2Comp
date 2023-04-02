@@ -2,6 +2,7 @@ import logging
 from glob import glob
 from typing import List, Dict
 import sys
+import math
 
 import cv2
 import numpy as np
@@ -57,8 +58,6 @@ def find_spine_dicoms(seg: np.ndarray, centroids: Dict, path: str, model_type, f
         if instance_number in vertical_positions_dcm:
             dicom_files.append(dicom_path)
             instance_numbers.append(instance_number)
-
-    print("dicom_files: ", dicom_files)
 
     if flip_si:
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files), reverse=True)]
@@ -173,9 +172,11 @@ def roi_from_mask(img, centroid: np.ndarray):
     img_np = img.get_fdata()
 
     pixel_spacing = img.header.get_zooms()
-    length_i = ceil(5.0 / pixel_spacing[0])
-    length_j = ceil(5.0 / pixel_spacing[1])
-    length_k = ceil(5.0 / pixel_spacing[2])
+    length_i = 5.0 / pixel_spacing[0]
+    length_j = 5.0 / pixel_spacing[1]
+    length_k = 5.0 / pixel_spacing[2]
+
+    print(f"Computing ROI with centroid {centroid} and pixel spacing {pixel_spacing[0]}mm, {pixel_spacing[1]}mm, {pixel_spacing[2]}mm...")
 
     # cubic ROI around centroid
     """
@@ -187,16 +188,38 @@ def roi_from_mask(img, centroid: np.ndarray):
     """
     # spherical ROI around centroid
     roi = np.zeros(img_np.shape)
-    i_lower = floor(centroid[0] - length_i)
-    j_lower = floor(centroid[1] - length_j)
-    k_lower = floor(centroid[2] - length_k)
-    for i in range(i_lower, i_lower + 2 * length_i):
-        for j in range(j_lower, j_lower + 2 * length_j):
-            for k in range(k_lower, k_lower + 2 * length_k):
-                if (i - centroid[0]) ** 2 / length_i**2 + (
-                    j - centroid[1]
-                ) ** 2 / length_j**2 + (k - centroid[2]) ** 2 / length_k**2 <= 1:
+    i_lower = math.floor(centroid[0] - length_i)
+    j_lower = math.floor(centroid[1] - length_j)
+    k_lower = math.floor(centroid[2] - length_k)
+    i_lower = 1000
+    j_lower = 1000
+    k_lower = 1000
+    i_upper = 0
+    j_upper = 0
+    k_upper = 0
+    for i in range(i_lower, i_lower + 2 * math.ceil(length_i) + 1):
+        for j in range(j_lower, j_lower + 2 * math.ceil(length_j) + 1):
+            for k in range(k_lower, k_lower + 2 * math.ceil(length_k) + 1):
+                if (i - centroid[0]) ** 2 / length_i**2 + \
+                   (j - centroid[1]) ** 2 / length_j**2 + \
+                   (k - centroid[2]) ** 2 / length_k**2 <= 1:
                     roi[i, j, k] = 1
+                    if i < i_lower:
+                        i_lower = i
+                    if j < j_lower:
+                        j_lower = j
+                    if k < k_lower:
+                        k_lower = k
+                    if i > i_upper:
+                        i_upper = i
+                    if j > j_upper:
+                        j_upper = j
+                    if k > k_upper:
+                        k_upper = k
+    if np.sum(roi) == 0:
+        print("No pixels in ROI!")
+        raise ValueError 
+    print(f"Number of pixels included in i, j, and k directions: {i_upper - i_lower + 1}, {j_upper - j_lower + 1}, {k_upper - k_lower + 1}")
     return roi
 
 

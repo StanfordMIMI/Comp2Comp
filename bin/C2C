@@ -145,7 +145,7 @@ def spine_muscle_adipose_tissue(args):
         except Exception as e:
             if os.path.exists(output_dir):
                 shutil.rmtree(output_dir)
-            print(f"ERROR PROCESSING {path}")
+            print(f"ERROR PROCESSING {path}\n")
             traceback.print_exc()
             continue
 
