@@ -44,111 +44,45 @@ from comp2comp.spine.spine import (
     SpineSegmentation,
     SpineToCanonical,
 )
+from comp2comp.utils.process import process_2d, process_3d
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
-def muscle_adipose_tissue(args):
-    output_dir = Path(os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 
-        "../outputs", 
-        datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        ))
-    if not os.path.exists(output_dir):
-        output_dir.mkdir(parents=True)
-
-    model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
-    if not os.path.exists(model_dir):
-        os.mkdir(model_dir)
-
+def MuscleAdiposeTissuePipelineBuilder(args):
     pipeline = InferencePipeline([
-        DicomFinder(args.input_path),
         MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
         MuscleAdiposeTissuePostProcessing(),
         MuscleAdiposeTissueComputeMetrics(),
         MuscleAdiposeTissueVisualizer(),
         MuscleAdiposeTissueH5Saver(),
-        MuscleAdiposeTissueMetricsSaver(),
-        ],
-    config={
-        "output_dir": output_dir,
-        "model_dir": model_dir
-        }
+        MuscleAdiposeTissueMetricsSaver()
+        ]
     )
+    return pipeline
 
-    pipeline()
+def MuscleAdiposeTissueFullPipelineBuilder(args):
+    pipeline = InferencePipeline([
+        DicomFinder(args.input_path),
+        MuscleAdiposeTissuePipelineBuilder(args)
+        ]
+    )
+    return pipeline
 
+def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        SpineSegmentation(path, args.spine_model),
+        SpineToCanonical(),
+        SpineComputeROIs(args.spine_model),
+        SpineMetricsSaver(),
+        SpineFindDicoms(),
+        SpineCoronalSagittalVisualizer(),
+        MuscleAdiposeTissuePipelineBuilder(args),
+        SpineMuscleAdiposeTissueReport()
+        ]
+    )
+    return pipeline
 
-def spine_muscle_adipose_tissue(args):
-    model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
-    if not os.path.exists(model_dir):
-        os.mkdir(model_dir)
-
-    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-    for path, num in get_dicom_paths_and_num(args.input_path):
-
-        try:
-            st = time()
-
-            print("Processing: ", path, " with ", num, " slices")
-
-            min_slices = 30
-            if num < min_slices:
-                print(f"Number of slices is less than {min_slices}, skipping\n")
-                continue
-            
-            print("")
-
-            try:
-                sys.stdout.flush()
-            except Exception:
-                pass
-
-            output_dir = Path(os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), 
-                "../outputs",
-                date_time,
-                Path(os.path.basename(path))
-                ))
-
-            if not os.path.exists(output_dir):
-                output_dir.mkdir(parents=True)
-
-            pipeline = InferencePipeline([
-                SpineSegmentation(path, args.spine_model),
-                SpineToCanonical(),
-                SpineComputeROIs(args.spine_model),
-                SpineMetricsSaver(),
-                SpineFindDicoms(),
-                SpineCoronalSagittalVisualizer(),
-                MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
-                MuscleAdiposeTissuePostProcessing(),
-                MuscleAdiposeTissueComputeMetrics(),
-                MuscleAdiposeTissueVisualizer(),
-                MuscleAdiposeTissueH5Saver(),
-                MuscleAdiposeTissueMetricsSaver(),
-                SpineMuscleAdiposeTissueReport(),
-                ],
-            config={
-                "output_dir": output_dir,
-                "model_dir": model_dir
-                }
-            )
-
-            pipeline()
-
-            print(f"Finished processing {path} in {time() - st} seconds\n")
-
-
-        except Exception as e:
-            if os.path.exists(output_dir):
-                shutil.rmtree(output_dir)
-            print(f"ERROR PROCESSING {path}\n")
-            traceback.print_exc()
-            continue
-
-        
 
 def argument_parser():
     parser = argparse.ArgumentParser("Comp2Comp command line interface")
@@ -197,9 +131,9 @@ def argument_parser():
 def main():
     args = argument_parser().parse_args()
     if args.action == "muscle_adipose_tissue":
-        muscle_adipose_tissue(args)
+        process_2d(args, MuscleAdiposeTissueFullPipelineBuilder)
     elif args.action == "spine_muscle_adipose_tissue":
-        spine_muscle_adipose_tissue(args)
+        process_3d(args, SpineMuscleAdiposeTissuePipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 
