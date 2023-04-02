@@ -191,35 +191,33 @@ def roi_from_mask(img, centroid: np.ndarray):
     i_lower = math.floor(centroid[0] - length_i)
     j_lower = math.floor(centroid[1] - length_j)
     k_lower = math.floor(centroid[2] - length_k)
-    i_lower = 1000
-    j_lower = 1000
-    k_lower = 1000
-    i_upper = 0
-    j_upper = 0
-    k_upper = 0
+    i_lower_idx = 1000
+    j_lower_idx = 1000
+    k_lower_idx = 1000
+    i_upper_idx = 0
+    j_upper_idx = 0
+    k_upper_idx = 0
     for i in range(i_lower, i_lower + 2 * math.ceil(length_i) + 1):
         for j in range(j_lower, j_lower + 2 * math.ceil(length_j) + 1):
             for k in range(k_lower, k_lower + 2 * math.ceil(length_k) + 1):
-                if (i - centroid[0]) ** 2 / length_i**2 + \
-                   (j - centroid[1]) ** 2 / length_j**2 + \
-                   (k - centroid[2]) ** 2 / length_k**2 <= 1:
+                if (i - centroid[0])**2 / length_i**2 + (j - centroid[1])**2 / length_j**2 + (k - centroid[2])**2 / length_k**2 <= 1:
                     roi[i, j, k] = 1
-                    if i < i_lower:
-                        i_lower = i
-                    if j < j_lower:
-                        j_lower = j
-                    if k < k_lower:
-                        k_lower = k
-                    if i > i_upper:
-                        i_upper = i
-                    if j > j_upper:
-                        j_upper = j
-                    if k > k_upper:
-                        k_upper = k
+                    if i < i_lower_idx:
+                        i_lower_idx = i
+                    if j < j_lower_idx:
+                        j_lower_idx = j
+                    if k < k_lower_idx:
+                        k_lower_idx = k
+                    if i > i_upper_idx:
+                        i_upper_idx = i
+                    if j > j_upper_idx:
+                        j_upper_idx = j
+                    if k > k_upper_idx:
+                        k_upper_idx = k
     if np.sum(roi) == 0:
         print("No pixels in ROI!")
         raise ValueError 
-    print(f"Number of pixels included in i, j, and k directions: {i_upper - i_lower + 1}, {j_upper - j_lower + 1}, {k_upper - k_lower + 1}")
+    print(f"Number of pixels included in i, j, and k directions: {i_upper_idx - i_lower_idx + 1}, {j_upper_idx - j_lower_idx + 1}, {k_upper_idx - k_lower_idx + 1}")
     return roi
 
 
