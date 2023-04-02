@@ -1,15 +1,15 @@
+import math
 import os
 import zipfile
 from pathlib import Path
 from time import time
 from typing import Union
-import math
 
 import nibabel as nib
 import numpy as np
+import pandas as pd
 import wget
 from PIL import Image
-import pandas as pd
 from totalsegmentator.libs import (
     download_pretrained_weights,
     nostdout,
@@ -164,7 +164,7 @@ class SpineToCanonical(InferenceClass):
     def __call__(self, inference_pipeline):
         """
         First dim goes from L to R.
-        Second dim goes from P to A. 
+        Second dim goes from P to A.
         Third dim goes from I to S.
         """
         inference_pipeline.flip_si = False  # necessary for finding dicoms in correct order
@@ -202,6 +202,7 @@ class SpineComputeROIs(InferenceClass):
 
         return {}
 
+
 class SpineMetricsSaver(InferenceClass):
     """Save metrics to a CSV file."""
 
@@ -220,12 +221,7 @@ class SpineMetricsSaver(InferenceClass):
 
     def save_results(self):
         """Save results to a CSV file."""
-        df = pd.DataFrame(
-            columns=[
-                "Level",
-                "ROI HU"
-            ]
-        )
+        df = pd.DataFrame(columns=["Level", "ROI HU"])
         for i, level in enumerate(self.spine_hus):
             hu = self.spine_hus[level]
             row = [level, hu]
@@ -245,7 +241,7 @@ class SpineFindDicoms(InferenceClass):
             inference_pipeline.dicom_series_path,
             inference_pipeline.spine_model_type,
             inference_pipeline.flip_si,
-            list(inference_pipeline.rois.keys())
+            list(inference_pipeline.rois.keys()),
         )
 
         inference_pipeline.dicom_files = dicom_files
@@ -283,6 +279,7 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
         dicom_files = [Path(d) for d in dicom_files]
         inference_pipeline.spine = True
         return {"dicom_file_paths": dicom_files}
+
 
 class SpineMuscleAdiposeTissueReport(InferenceClass):
     """Spine muscle adipose tissue report class."""

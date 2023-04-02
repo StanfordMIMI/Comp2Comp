@@ -1,14 +1,12 @@
 import logging
-from glob import glob
-from typing import List, Dict
-import sys
 import math
+from glob import glob
+from typing import Dict, List
 
 import cv2
 import numpy as np
 from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
-import matplotlib.pyplot as plt
 
 from comp2comp.spine import spine_visualization
 
@@ -66,7 +64,7 @@ def find_spine_dicoms(seg: np.ndarray, centroids: Dict, path: str, model_type, f
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files), reverse=True)]
     else:
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
-    
+
     vertical_positions_dcm.sort(reverse=True)
     levels.reverse()
 
@@ -118,7 +116,7 @@ def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
     for level in centroids:
         label_idx = spine_model_type.categories[level]
         binary_seg = (seg[centroids[level], :, :] == label_idx).astype(int)
-        if np.sum(binary_seg) > 200: # heuristic to make sure enough of the body is showing
+        if np.sum(binary_seg) > 200:  # heuristic to make sure enough of the body is showing
             slices[level] = binary_seg
     return slices
 
@@ -179,7 +177,10 @@ def roi_from_mask(img, centroid: np.ndarray):
     length_j = 5.0 / pixel_spacing[1]
     length_k = 5.0 / pixel_spacing[2]
 
-    print(f"Computing ROI with centroid {centroid} and pixel spacing {pixel_spacing[0]}mm, {pixel_spacing[1]}mm, {pixel_spacing[2]}mm...")
+    print(
+        f"Computing ROI with centroid {centroid} and pixel spacing"
+        f"{pixel_spacing[0]}mm, {pixel_spacing[1]}mm, {pixel_spacing[2]}mm..."
+    )
 
     # cubic ROI around centroid
     """
@@ -204,7 +205,9 @@ def roi_from_mask(img, centroid: np.ndarray):
     for i in range(i_lower, i_lower + 2 * math.ceil(length_i) + 1):
         for j in range(j_lower, j_lower + 2 * math.ceil(length_j) + 1):
             for k in range(k_lower, k_lower + 2 * math.ceil(length_k) + 1):
-                if (i - centroid[0])**2 / length_i**2 + (j - centroid[1])**2 / length_j**2 + (k - centroid[2])**2 / length_k**2 <= 1:
+                if (i - centroid[0]) ** 2 / length_i**2 + (
+                    j - centroid[1]
+                ) ** 2 / length_j**2 + (k - centroid[2]) ** 2 / length_k**2 <= 1:
                     roi[i, j, k] = 1
                     if i < i_lower_idx:
                         i_lower_idx = i
@@ -222,7 +225,10 @@ def roi_from_mask(img, centroid: np.ndarray):
     if not found_pixels:
         print("No pixels in ROI!")
         raise ValueError
-    print(f"Number of pixels included in i, j, and k directions: {i_upper_idx - i_lower_idx + 1}, {j_upper_idx - j_lower_idx + 1}, {k_upper_idx - k_lower_idx + 1}")
+    print(
+        f"Number of pixels included in i, j, and k directions: {i_upper_idx - i_lower_idx + 1}, "
+        f"{j_upper_idx - j_lower_idx + 1}, {k_upper_idx - k_lower_idx + 1}"
+    )
     return roi
 
 
@@ -350,7 +356,7 @@ def to_one_hot(label: np.ndarray, model_type, levels):
     Returns:
         np.ndarray: One-hot encoding volume.
     """
-    
+
     one_hot_label = np.zeros((label.shape[0], label.shape[1], len(levels)))
     for i, level in enumerate(levels):
         label_idx = model_type.categories[level]
@@ -405,14 +411,13 @@ def visualize_coronal_sagittal_spine(
             axis=2,
         )
 
-
     coronal_image = mvs[:, coronal_vals, range(len(coronal_vals))]
     coronal_label = seg[:, coronal_vals, range(len(coronal_vals))]
     coronal_image = zoom(coronal_image, (1, zoom_factor), order=3)
     coronal_label = zoom(coronal_label, (1, zoom_factor), order=1).round()
 
-    #coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
-    #coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
+    # coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
+    # coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
 
     one_hot_cor_label = to_one_hot(coronal_label, model_type, label_text)
     for roi in rois:
@@ -456,7 +461,7 @@ def visualize_coronal_sagittal_spine(
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
-        levels=label_text
+        levels=label_text,
     )
     spine_visualization.spine_binary_segmentation_overlay(
         coronal_image,
@@ -467,7 +472,7 @@ def visualize_coronal_sagittal_spine(
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
-        levels=label_text
+        levels=label_text,
     )
 
 

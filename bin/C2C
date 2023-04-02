@@ -25,26 +25,24 @@ from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder
 from comp2comp.models.models import Models
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
-    MuscleAdiposeTissueSegmentation,
-    MuscleAdiposeTissuePostProcessing,
     MuscleAdiposeTissueComputeMetrics,
     MuscleAdiposeTissueH5Saver,
-    MuscleAdiposeTissueMetricsSaver
+    MuscleAdiposeTissueMetricsSaver,
+    MuscleAdiposeTissuePostProcessing,
+    MuscleAdiposeTissueSegmentation,
 )
-
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue_visualization import (
     MuscleAdiposeTissueVisualizer,
 )
 from comp2comp.spine.spine import (
+    SpineComputeROIs,
+    SpineCoronalSagittalVisualizer,
+    SpineFindDicoms,
+    SpineMetricsSaver,
+    SpineMuscleAdiposeTissueReport,
     SpineSegmentation,
     SpineToCanonical,
-    SpineComputeROIs,
-    SpineMetricsSaver,
-    SpineFindDicoms,
-    SpineCoronalSagittalVisualizer,
-    SpineMuscleAdiposeTissueReport
 )
-
 from comp2comp.utils.run import get_dicom_paths_and_num
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -95,8 +93,9 @@ def spine_muscle_adipose_tissue(args):
 
             print("Processing: ", path, " with ", num, " slices")
 
-            if num < 30:
-                print("Number of slices is less than 50, skipping\n")
+            min_slices = 30
+            if num < min_slices:
+                print(f"Number of slices is less than {min_slices}, skipping\n")
                 continue
             
             print("")

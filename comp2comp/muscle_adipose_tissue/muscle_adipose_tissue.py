@@ -328,4 +328,6 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
                 row.append(result[cat]["Hounsfield Unit"])
                 row.append(result[cat]["Cross-sectional Area (cm^2)"])
             df.loc[i] = row
-        df.to_csv(os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv"), index=False)
+        df.to_csv(
+            os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv"), index=False
+        )

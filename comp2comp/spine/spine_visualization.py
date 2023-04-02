@@ -18,7 +18,7 @@ def spine_binary_segmentation_overlay(
     spine=True,
     model_type=None,
     pixel_spacing=None,
-    levels=None
+    levels=None,
 ):
     """Save binary segmentation overlay.
     Args:
@@ -92,8 +92,8 @@ def spine_binary_segmentation_overlay(
             area_threshold=0,
         )
 
-    # draw rois 
-    for i, level in enumerate(levels):
+    # draw rois
+    for i, _ in enumerate(levels):
         color = _ROI_COLOR
         edge_color = color
         vis.draw_binary_mask(
@@ -103,15 +103,14 @@ def spine_binary_segmentation_overlay(
             alpha=alpha_val,
             area_threshold=0,
         )
-    
+
     # draw text and lines
     for i, level in enumerate(levels):
         vis.draw_text(
             text=f"{level}: {round(float(spine_hus[level]))}",
             position=(
                 mask.shape[1] - _SPINE_TEXT_OFFSET_FROM_RIGHT,
-                _SPINE_TEXT_VERTICAL_SPACING * i
-                + _SPINE_TEXT_OFFSET_FROM_TOP,
+                _SPINE_TEXT_VERTICAL_SPACING * i + _SPINE_TEXT_OFFSET_FROM_TOP,
             ),
             color=_COLORS[label_map[level]],
             font_size=9,
@@ -121,8 +120,14 @@ def spine_binary_segmentation_overlay(
         vis.draw_line(
             x_data=(0, mask.shape[1] - 1),
             y_data=(
-                int(inferior_superior_centers[num_levels - i - 1] * (pixel_spacing[2] / pixel_spacing[1])),
-                int(inferior_superior_centers[num_levels - i - 1] * (pixel_spacing[2] / pixel_spacing[1])),
+                int(
+                    inferior_superior_centers[num_levels - i - 1]
+                    * (pixel_spacing[2] / pixel_spacing[1])
+                ),
+                int(
+                    inferior_superior_centers[num_levels - i - 1]
+                    * (pixel_spacing[2] / pixel_spacing[1])
+                ),
             ),
             color=_COLORS[label_map[level]],
             linestyle="dashed",
