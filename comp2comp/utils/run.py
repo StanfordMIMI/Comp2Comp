@@ -122,20 +122,3 @@ def find_files(
         out_files.extend(_get_files(0, d))
 
     return sorted(set(out_files))
-
-
-def get_dicom_paths_and_num(path):
-    """Get all paths under a path that contain only dicom files.
-
-    Args:
-        path (str): Path to search.
-
-    Returns:
-        list: List of paths.
-    """
-    dicom_paths = []
-    for root, _, files in os.walk(path):
-        if len(files) > 0:
-            if all([file.endswith(".dcm") for file in files]):
-                dicom_paths.append((root, len(files)))
-    return dicom_paths
