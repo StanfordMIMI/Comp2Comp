@@ -178,8 +178,9 @@ def roi_from_mask(img, centroid: np.ndarray):
     length_k = 5.0 / pixel_spacing[2]
 
     print(
-        f"Computing ROI with centroid {centroid} and pixel spacing"
-        f"{pixel_spacing[0]}mm, {pixel_spacing[1]}mm, {pixel_spacing[2]}mm..."
+        f"Computing ROI with centroid {centroid[0]:.3f}, {centroid[1]:.3f}, {centroid[2]:.3f} "
+        f"and pixel spacing "
+        f"{pixel_spacing[0]:.3f}mm, {pixel_spacing[1]:.3f}mm, {pixel_spacing[2]:.3f}mm..."
     )
 
     # cubic ROI around centroid
