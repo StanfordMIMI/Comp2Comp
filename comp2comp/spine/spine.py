@@ -1,3 +1,4 @@
+import math
 import os
 import zipfile
 from pathlib import Path
@@ -6,7 +7,9 @@ from typing import Union
 
 import nibabel as nib
 import numpy as np
+import pandas as pd
 import wget
+from PIL import Image
 from totalsegmentator.libs import (
     download_pretrained_weights,
     nostdout,
@@ -154,11 +157,16 @@ class SpineSegmentation(InferenceClass):
         return seg, img
 
 
-class SpineReorient(InferenceClass):
+class SpineToCanonical(InferenceClass):
     def __init__(self):
         super().__init__()
 
     def __call__(self, inference_pipeline):
+        """
+        First dim goes from L to R.
+        Second dim goes from P to A.
+        Third dim goes from I to S.
+        """
         inference_pipeline.flip_si = False  # necessary for finding dicoms in correct order
         if "I" in nib.aff2axcodes(inference_pipeline.medical_volume.affine):
             inference_pipeline.flip_si = True
@@ -188,13 +196,37 @@ class SpineComputeROIs(InferenceClass):
             self.spine_model_type,
         )
 
-        spine_hus = spine_hus[::-1]
-
         inference_pipeline.spine_hus = spine_hus
         inference_pipeline.rois = rois
         inference_pipeline.centroids_3d = centroids_3d
 
         return {}
+
+
+class SpineMetricsSaver(InferenceClass):
+    """Save metrics to a CSV file."""
+
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, inference_pipeline):
+        """Save metrics to a CSV file."""
+        self.spine_hus = inference_pipeline.spine_hus
+        self.output_dir = inference_pipeline.output_dir
+        self.csv_output_dir = os.path.join(self.output_dir, "metrics")
+        if not os.path.exists(self.csv_output_dir):
+            os.makedirs(self.csv_output_dir, exist_ok=True)
+        self.save_results()
+        return {}
+
+    def save_results(self):
+        """Save results to a CSV file."""
+        df = pd.DataFrame(columns=["Level", "ROI HU"])
+        for i, level in enumerate(self.spine_hus):
+            hu = self.spine_hus[level]
+            row = [level, hu]
+            df.loc[i] = row
+        df.to_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"), index=False)
 
 
 class SpineFindDicoms(InferenceClass):
@@ -203,17 +235,19 @@ class SpineFindDicoms(InferenceClass):
 
     def __call__(self, inference_pipeline):
 
-        dicom_files, names, centroids = spine_utils.find_spine_dicoms(
+        dicom_files, names, inferior_superior_centers = spine_utils.find_spine_dicoms(
             inference_pipeline.segmentation.get_fdata(),
+            inference_pipeline.centroids_3d,
             inference_pipeline.dicom_series_path,
             inference_pipeline.spine_model_type,
             inference_pipeline.flip_si,
+            list(inference_pipeline.rois.keys()),
         )
 
         inference_pipeline.dicom_files = dicom_files
         inference_pipeline.names = names
         inference_pipeline.dicom_file_names = names
-        inference_pipeline.centroids = centroids
+        inference_pipeline.inferior_superior_centers = inferior_superior_centers
 
         return {}
 
@@ -229,10 +263,10 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
 
         spine_utils.visualize_coronal_sagittal_spine(
             inference_pipeline.segmentation.get_fdata(),
-            inference_pipeline.rois,
+            list(inference_pipeline.rois.values()),
             inference_pipeline.medical_volume.get_fdata(),
-            inference_pipeline.centroids,
-            inference_pipeline.centroids_3d,
+            inference_pipeline.inferior_superior_centers,
+            list(inference_pipeline.centroids_3d.values()),
             inference_pipeline.names,
             output_path,
             spine_hus=inference_pipeline.spine_hus,
@@ -245,3 +279,62 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
         dicom_files = [Path(d) for d in dicom_files]
         inference_pipeline.spine = True
         return {"dicom_file_paths": dicom_files}
+
+
+class SpineMuscleAdiposeTissueReport(InferenceClass):
+    """Spine muscle adipose tissue report class."""
+
+    def __init__(self):
+        super().__init__()
+        self.image_files = [
+            "spine_coronal.png",
+            "spine_sagittal.png",
+            "T12.png",
+            "L1.png",
+            "L2.png",
+            "L3.png",
+            "L4.png",
+            "L5.png",
+        ]
+
+    def __call__(self, inference_pipeline):
+        image_dir = Path(inference_pipeline.output_dir) / "images"
+        self.generate_panel(image_dir)
+
+    def generate_panel(self, image_dir: Union[str, Path]):
+        """Generate panel.
+        Args:
+            image_dir (Union[str, Path]): Path to the image directory.
+        """
+        image_files = [os.path.join(image_dir, path) for path in self.image_files]
+        # construct a list which includes only the images that exist
+        image_files = [path for path in image_files if os.path.exists(path)]
+
+        im_cor = Image.open(image_files[0])
+        im_sag = Image.open(image_files[1])
+        im_cor_width = int(im_cor.width / im_cor.height * 512)
+        num_muscle_fat_cols = math.ceil((len(image_files) - 2) / 2)
+        width = (8 + im_cor_width + 8) + ((512 + 8) * num_muscle_fat_cols)
+        height = 1048
+        new_im = Image.new("RGB", (width, height))
+
+        index = 2
+        for j in range(8, height, 520):
+            for i in range(8 + im_cor_width + 8, width, 520):
+                try:
+                    im = Image.open(image_files[index])
+                    im.thumbnail((512, 512))
+                    new_im.paste(im, (i, j))
+                    index += 1
+                    im.close()
+                except Exception:
+                    continue
+
+        im_cor.thumbnail((im_cor_width, 512))
+        new_im.paste(im_cor, (8, 8))
+        im_sag.thumbnail((im_cor_width, 512))
+        new_im.paste(im_sag, (8, 528))
+        new_im.save(os.path.join(image_dir, "report.png"))
+        im_cor.close()
+        im_sag.close()
+        new_im.close()

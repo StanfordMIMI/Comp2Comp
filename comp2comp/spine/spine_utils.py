@@ -1,16 +1,17 @@
 import logging
+import math
 from glob import glob
-from typing import List
+from typing import Dict, List
 
 import cv2
 import numpy as np
 from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
 
-from comp2comp.visualization import visualization_utils
+from comp2comp.spine import spine_visualization
 
 
-def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
+def find_spine_dicoms(seg: np.ndarray, centroids: Dict, path: str, model_type, flip_si, levels):
     """Find the dicom files corresponding to the spine T12 - L5 levels.
 
     Args:
@@ -21,28 +22,35 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
     Returns:
         List[str]: List of dicom files.
     """
+
+    """
     # flip the last axis of seg
     seg = np.flip(seg, 2)
     vertical_positions = []
-    label_idxs = list(model_type.categories.values())
-    for label_idx in label_idxs:
+
+    # extract label_idxs using levels
+    label_idxs = [model_type.categories[level] for level in levels]
+    for i, label_idx in enumerate(label_idxs):
+        level = levels[i]
         pos = compute_centroid(seg, "axial", label_idx)
         vertical_positions.append(pos)
+    """
 
-    # Log vertical positions
-    logging.info(f"Instance numbers: {vertical_positions}")
+    vertical_positions = []
+    for level in centroids:
+        centroid = centroids[level]
+        vertical_positions.append(centroid[2])
 
     folder_in = path
-    instance_numbers = []
-
-    # TODO Make these names configurable
-    label_text = ["T12", "L1", "L2", "L3", "L4", "L5"]
 
     # if flip_si is True, then flip the vertical positions
     if flip_si:
-        vertical_positions_dcm = [(seg.shape[2] - x) for x in vertical_positions]
-    else:
         vertical_positions_dcm = vertical_positions
+    else:
+        vertical_positions_dcm = [seg.shape[2] - x for x in vertical_positions]
+
+    # round the vertical positions
+    vertical_positions_dcm = [round(x) for x in vertical_positions_dcm]
 
     dicom_files = []
     instance_numbers = []
@@ -56,9 +64,11 @@ def find_spine_dicoms(seg: np.ndarray, path: str, model_type, flip_si):
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files), reverse=True)]
     else:
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
-    vertical_positions.sort(reverse=True)
 
-    return (dicom_files, label_text, vertical_positions)
+    vertical_positions_dcm.sort(reverse=True)
+    levels.reverse()
+
+    return (dicom_files, levels, vertical_positions_dcm)
 
 
 # Function that takes a numpy array as input, computes the
@@ -76,18 +86,21 @@ def compute_centroids(seg: np.ndarray, spine_model_type):
     """
     # take values of spine_model_type.categories dictionary
     # and convert to list
-    label_idxs = list(spine_model_type.categories.values())
-    centroids = []
-    for label_idx in label_idxs:
-        pos = compute_centroid(seg, "sagittal", label_idx)
-        centroids.append(pos)
+    centroids = {}
+    for level in spine_model_type.categories:
+        label_idx = spine_model_type.categories[level]
+        try:
+            pos = compute_centroid(seg, "sagittal", label_idx)
+            centroids[level] = pos
+        except Exception:
+            logging.warning(f"Label {level} not found in segmentation volume.")
     return centroids
 
 
 # Function that takes a numpy array as input, as well as a list of centroids,
 # takes a slice through the centroid on axis = 1 for each centroid
 # and returns a list of the slices
-def get_slices(seg: np.ndarray, centroids: List[int], spine_model_type):
+def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
     """Get the slices corresponding to the centroids.
 
     Args:
@@ -98,11 +111,13 @@ def get_slices(seg: np.ndarray, centroids: List[int], spine_model_type):
     Returns:
         List[np.ndarray]: List of slices.
     """
-    label_idxs = list(spine_model_type.categories.values())
-    slices = []
-    for i, centroid in enumerate(centroids):
-        label_idx = label_idxs[i]
-        slices.append((seg[centroid, :, :] == label_idx).astype(int))
+    seg = seg.astype(np.uint8)
+    slices = {}
+    for level in centroids:
+        label_idx = spine_model_type.categories[level]
+        binary_seg = (seg[centroids[level], :, :] == label_idx).astype(int)
+        if np.sum(binary_seg) > 200:  # heuristic to make sure enough of the body is showing
+            slices[level] = binary_seg
     return slices
 
 
@@ -158,9 +173,15 @@ def roi_from_mask(img, centroid: np.ndarray):
     img_np = img.get_fdata()
 
     pixel_spacing = img.header.get_zooms()
-    length_i = int(5.0 / pixel_spacing[0])
-    length_j = int(5.0 / pixel_spacing[1])
-    length_k = int(5.0 / pixel_spacing[2])
+    length_i = 5.0 / pixel_spacing[0]
+    length_j = 5.0 / pixel_spacing[1]
+    length_k = 5.0 / pixel_spacing[2]
+
+    print(
+        f"Computing ROI with centroid {centroid[0]:.3f}, {centroid[1]:.3f}, {centroid[2]:.3f} "
+        f"and pixel spacing "
+        f"{pixel_spacing[0]:.3f}mm, {pixel_spacing[1]:.3f}mm, {pixel_spacing[2]:.3f}mm..."
+    )
 
     # cubic ROI around centroid
     """
@@ -172,16 +193,43 @@ def roi_from_mask(img, centroid: np.ndarray):
     """
     # spherical ROI around centroid
     roi = np.zeros(img_np.shape)
-    i_lower = int(centroid[0] - length_i)
-    j_lower = int(centroid[1] - length_j)
-    k_lower = int(centroid[2] - length_k)
-    for i in range(i_lower, i_lower + 2 * length_i):
-        for j in range(j_lower, j_lower + 2 * length_j):
-            for k in range(k_lower, k_lower + 2 * length_k):
+    i_lower = math.floor(centroid[0] - length_i)
+    j_lower = math.floor(centroid[1] - length_j)
+    k_lower = math.floor(centroid[2] - length_k)
+    i_lower_idx = 1000
+    j_lower_idx = 1000
+    k_lower_idx = 1000
+    i_upper_idx = 0
+    j_upper_idx = 0
+    k_upper_idx = 0
+    found_pixels = False
+    for i in range(i_lower, i_lower + 2 * math.ceil(length_i) + 1):
+        for j in range(j_lower, j_lower + 2 * math.ceil(length_j) + 1):
+            for k in range(k_lower, k_lower + 2 * math.ceil(length_k) + 1):
                 if (i - centroid[0]) ** 2 / length_i**2 + (
                     j - centroid[1]
                 ) ** 2 / length_j**2 + (k - centroid[2]) ** 2 / length_k**2 <= 1:
                     roi[i, j, k] = 1
+                    if i < i_lower_idx:
+                        i_lower_idx = i
+                    if j < j_lower_idx:
+                        j_lower_idx = j
+                    if k < k_lower_idx:
+                        k_lower_idx = k
+                    if i > i_upper_idx:
+                        i_upper_idx = i
+                    if j > j_upper_idx:
+                        j_upper_idx = j
+                    if k > k_upper_idx:
+                        k_upper_idx = k
+                    found_pixels = True
+    if not found_pixels:
+        print("No pixels in ROI!")
+        raise ValueError
+    print(
+        f"Number of pixels included in i, j, and k directions: {i_upper_idx - i_lower_idx + 1}, "
+        f"{j_upper_idx - j_lower_idx + 1}, {k_upper_idx - k_lower_idx + 1}"
+    )
     return roi
 
 
@@ -223,34 +271,32 @@ def compute_rois(seg, img, spine_model_type):
         rois (List[np.ndarray]): List of ROIs.
         centroids_3d (List[np.ndarray]): List of centroids.
     """
-    # Compute centroids
     seg_np = seg.get_fdata()
     centroids = compute_centroids(seg_np, spine_model_type)
-    # Get slices
     slices = get_slices(seg_np, centroids, spine_model_type)
-    # Delete right most connected component
-    # if spine_model_type.model_name == "ts_spine":
-    for i, slice in enumerate(slices):
+    for level in slices:
+        slice = slices[level]
         # keep only the two largest connected components
         two_largest, two = keep_two_largest_connected_components(slice)
         if two:
-            slices[i] = delete_right_most_connected_component(two_largest)
+            slices[level] = delete_right_most_connected_component(two_largest)
 
     # Compute ROIs
-    rois = []
-    spine_hus = []
-    centroids_3d = []
-    for i, slice in enumerate(slices):
+    rois = {}
+    spine_hus = {}
+    centroids_3d = {}
+    for i, level in enumerate(slices):
+        slice = slices[level]
         center_of_mass = compute_center_of_mass(slice)
-        centroid = np.array([centroids[i], center_of_mass[1], center_of_mass[0]])
+        centroid = np.array([centroids[level], center_of_mass[1], center_of_mass[0]])
         roi = roi_from_mask(img, centroid)
-        spine_hus.append(mean_img_mask(img.get_fdata(), roi, i))
-        rois.append(roi)
-        centroids_3d.append(centroid)
+        spine_hus[level] = mean_img_mask(img.get_fdata(), roi, i)
+        rois[level] = roi
+        centroids_3d[level] = centroid
     return (spine_hus, rois, centroids_3d)
 
 
-def keep_two_largest_connected_components(mask: np.ndarray):
+def keep_two_largest_connected_components(mask: Dict):
     """Keep the two largest connected components.
 
     Args:
@@ -301,7 +347,7 @@ def compute_centroid(seg: np.ndarray, plane: str, label: int):
     return pos
 
 
-def to_one_hot(label: np.ndarray, model_type):
+def to_one_hot(label: np.ndarray, model_type, levels):
     """Convert a label to one-hot encoding.
 
     Args:
@@ -311,10 +357,11 @@ def to_one_hot(label: np.ndarray, model_type):
     Returns:
         np.ndarray: One-hot encoding volume.
     """
-    label_idxs = list(model_type.categories.values())
-    one_hot_label = np.zeros((label.shape[0], label.shape[1], len(label_idxs)))
-    for i, idx in enumerate(label_idxs):
-        one_hot_label[:, :, i] = (label == idx).astype(int)
+
+    one_hot_label = np.zeros((label.shape[0], label.shape[1], len(levels)))
+    for i, level in enumerate(levels):
+        label_idx = model_type.categories[level]
+        one_hot_label[:, :, i] = (label == label_idx).astype(int)
     return one_hot_label
 
 
@@ -322,7 +369,7 @@ def visualize_coronal_sagittal_spine(
     seg: np.ndarray,
     rois: List[np.ndarray],
     mvs: np.ndarray,
-    centroids: List[int],
+    centroids: Dict,
     centroids_3d: np.ndarray,
     label_text: List[str],
     output_dir: str,
@@ -344,16 +391,17 @@ def visualize_coronal_sagittal_spine(
     """
 
     sagittal_vals, coronal_vals = curved_planar_reformation(mvs, centroids_3d)
-    sagittal_image = mvs[:, sagittal_vals, range(len(sagittal_vals))]
-    sagittal_label = seg[:, sagittal_vals, range(len(sagittal_vals))]
     zoom_factor = pixel_spacing[2] / pixel_spacing[1]
-    sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3)
-    sagittal_label = zoom(sagittal_label, (1, zoom_factor), order=0).astype(int)
 
-    one_hot_sag_label = to_one_hot(sagittal_label, model_type)
+    sagittal_image = mvs[sagittal_vals, :, range(len(sagittal_vals))]
+    sagittal_label = seg[sagittal_vals, :, range(len(sagittal_vals))]
+    sagittal_image = zoom(sagittal_image, (zoom_factor, 1), order=3)
+    sagittal_label = zoom(sagittal_label, (zoom_factor, 1), order=1).round()
+
+    one_hot_sag_label = to_one_hot(sagittal_label, model_type, label_text)
     for roi in rois:
-        one_hot_roi_label = roi[:, sagittal_vals, range(len(sagittal_vals))]
-        one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order=0).astype(int)
+        one_hot_roi_label = roi[sagittal_vals, :, range(len(sagittal_vals))]
+        one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order=1).round()
         one_hot_sag_label = np.concatenate(
             (
                 one_hot_sag_label,
@@ -364,15 +412,18 @@ def visualize_coronal_sagittal_spine(
             axis=2,
         )
 
-    coronal_image = mvs[coronal_vals, :, range(len(coronal_vals))]
-    coronal_label = seg[coronal_vals, :, range(len(coronal_vals))]
-    coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
-    coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
+    coronal_image = mvs[:, coronal_vals, range(len(coronal_vals))]
+    coronal_label = seg[:, coronal_vals, range(len(coronal_vals))]
+    coronal_image = zoom(coronal_image, (1, zoom_factor), order=3)
+    coronal_label = zoom(coronal_label, (1, zoom_factor), order=1).round()
 
-    one_hot_cor_label = to_one_hot(coronal_label, model_type)
+    # coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
+    # coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
+
+    one_hot_cor_label = to_one_hot(coronal_label, model_type, label_text)
     for roi in rois:
-        one_hot_roi_label = roi[coronal_vals, :, range(len(coronal_vals))]
-        one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order=0).astype(int)
+        one_hot_roi_label = roi[:, coronal_vals, range(len(coronal_vals))]
+        one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order=1).round()
         one_hot_cor_label = np.concatenate(
             (
                 one_hot_cor_label,
@@ -384,51 +435,53 @@ def visualize_coronal_sagittal_spine(
         )
 
     # flip both axes of coronal image
-    coronal_image = np.flip(coronal_image, axis=0)
-    coronal_image = np.flip(coronal_image, axis=1)
-
-    # flip both axes of coronal label
-    one_hot_cor_label = np.flip(one_hot_cor_label, axis=0)
-    one_hot_cor_label = np.flip(one_hot_cor_label, axis=1)
-
-    sagittal_image = np.transpose(sagittal_image)
-    one_hot_sag_label = np.transpose(one_hot_sag_label, (1, 0, 2))
-
-    # flip both axes of sagittal image
     sagittal_image = np.flip(sagittal_image, axis=0)
     sagittal_image = np.flip(sagittal_image, axis=1)
 
-    # flip both axes of sagittal label
+    # flip both axes of coronal label
     one_hot_sag_label = np.flip(one_hot_sag_label, axis=0)
     one_hot_sag_label = np.flip(one_hot_sag_label, axis=1)
 
-    visualization_utils.save_binary_segmentation_overlay(
-        coronal_image,
-        one_hot_cor_label,
+    coronal_image = np.transpose(coronal_image)
+    one_hot_cor_label = np.transpose(one_hot_cor_label, (1, 0, 2))
+
+    # flip both axes of sagittal image
+    coronal_image = np.flip(coronal_image, axis=0)
+    coronal_image = np.flip(coronal_image, axis=1)
+
+    # flip both axes of sagittal label
+    one_hot_cor_label = np.flip(one_hot_cor_label, axis=0)
+    one_hot_cor_label = np.flip(one_hot_cor_label, axis=1)
+
+    spine_visualization.spine_binary_segmentation_overlay(
+        sagittal_image,
+        one_hot_sag_label,
         output_dir,
         "spine_sagittal.png",
         centroids,
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
+        levels=label_text,
     )
-    visualization_utils.save_binary_segmentation_overlay(
-        sagittal_image,
-        one_hot_sag_label,
+    spine_visualization.spine_binary_segmentation_overlay(
+        coronal_image,
+        one_hot_cor_label,
         output_dir,
         "spine_coronal.png",
         centroids,
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
+        levels=label_text,
     )
 
 
 def curved_planar_reformation(mvs, centroids):
     centroids = sorted(centroids, key=lambda x: x[2])
     centroids = [(int(x[0]), int(x[1]), int(x[2])) for x in centroids]
-    sagittal_centroids = [centroids[i][1] for i in range(0, len(centroids))]
-    coronal_centroids = [centroids[i][0] for i in range(0, len(centroids))]
+    sagittal_centroids = [centroids[i][0] for i in range(0, len(centroids))]
+    coronal_centroids = [centroids[i][1] for i in range(0, len(centroids))]
     axial_centroids = [centroids[i][2] for i in range(0, len(centroids))]
     sagittal_vals = [sagittal_centroids[0]] * axial_centroids[0]
     coronal_vals = [coronal_centroids[0]] * axial_centroids[0]

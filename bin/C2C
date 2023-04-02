@@ -23,13 +23,26 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder
+from comp2comp.io.io_utils import get_dicom_paths_and_num
 from comp2comp.models.models import Models
-from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import *
-from comp2comp.spine.spine import *
-from comp2comp.utils.run import get_dicom_paths_and_num
-from comp2comp.visualization.visualization import (
+from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
+    MuscleAdiposeTissueComputeMetrics,
+    MuscleAdiposeTissueH5Saver,
+    MuscleAdiposeTissueMetricsSaver,
+    MuscleAdiposeTissuePostProcessing,
+    MuscleAdiposeTissueSegmentation,
+)
+from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue_visualization import (
     MuscleAdiposeTissueVisualizer,
+)
+from comp2comp.spine.spine import (
+    SpineComputeROIs,
+    SpineCoronalSagittalVisualizer,
+    SpineFindDicoms,
+    SpineMetricsSaver,
     SpineMuscleAdiposeTissueReport,
+    SpineSegmentation,
+    SpineToCanonical,
 )
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -75,33 +88,38 @@ def spine_muscle_adipose_tissue(args):
 
     for path, num in get_dicom_paths_and_num(args.input_path):
 
-        st = time()
-
-        print("Processing: ", path, " with ", num, " slices")
-
-        if num < 300:
-            print("Number of slices is less than 300, skipping\n")
-            continue
-        
-        print("")
-
-        sys.stdout.flush()
-
-        output_dir = Path(os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 
-            "../outputs",
-            date_time,
-            Path(os.path.basename(path))
-            ))
-
-        if not os.path.exists(output_dir):
-            output_dir.mkdir(parents=True)
-
         try:
+            st = time()
+
+            print("Processing: ", path, " with ", num, " slices")
+
+            min_slices = 30
+            if num < min_slices:
+                print(f"Number of slices is less than {min_slices}, skipping\n")
+                continue
+            
+            print("")
+
+            try:
+                sys.stdout.flush()
+            except Exception:
+                pass
+
+            output_dir = Path(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), 
+                "../outputs",
+                date_time,
+                Path(os.path.basename(path))
+                ))
+
+            if not os.path.exists(output_dir):
+                output_dir.mkdir(parents=True)
+
             pipeline = InferencePipeline([
                 SpineSegmentation(path, args.spine_model),
-                SpineReorient(),
+                SpineToCanonical(),
                 SpineComputeROIs(args.spine_model),
+                SpineMetricsSaver(),
                 SpineFindDicoms(),
                 SpineCoronalSagittalVisualizer(),
                 MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
@@ -124,8 +142,9 @@ def spine_muscle_adipose_tissue(args):
 
 
         except Exception as e:
-            shutil.rmtree(output_dir)
-            print(f"ERROR PROCESSING {path}")
+            if os.path.exists(output_dir):
+                shutil.rmtree(output_dir)
+            print(f"ERROR PROCESSING {path}\n")
             traceback.print_exc()
             continue
 
