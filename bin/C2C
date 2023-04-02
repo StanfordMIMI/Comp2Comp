@@ -95,7 +95,7 @@ def spine_muscle_adipose_tissue(args):
 
             print("Processing: ", path, " with ", num, " slices")
 
-            if num < 0:
+            if num < 30:
                 print("Number of slices is less than 50, skipping\n")
                 continue
             
