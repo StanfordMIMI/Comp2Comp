@@ -197,6 +197,7 @@ def roi_from_mask(img, centroid: np.ndarray):
     i_upper_idx = 0
     j_upper_idx = 0
     k_upper_idx = 0
+    found_pixels = False
     for i in range(i_lower, i_lower + 2 * math.ceil(length_i) + 1):
         for j in range(j_lower, j_lower + 2 * math.ceil(length_j) + 1):
             for k in range(k_lower, k_lower + 2 * math.ceil(length_k) + 1):
@@ -214,9 +215,10 @@ def roi_from_mask(img, centroid: np.ndarray):
                         j_upper_idx = j
                     if k > k_upper_idx:
                         k_upper_idx = k
-    if np.sum(roi) == 0:
+                    found_pixels = True
+    if not found_pixels:
         print("No pixels in ROI!")
-        raise ValueError 
+        raise ValueError
     print(f"Number of pixels included in i, j, and k directions: {i_upper_idx - i_lower_idx + 1}, {j_upper_idx - j_lower_idx + 1}, {k_upper_idx - k_lower_idx + 1}")
     return roi
 
