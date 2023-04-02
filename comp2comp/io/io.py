@@ -5,6 +5,7 @@ import dosma as dm
 
 from comp2comp.inference_class_base import InferenceClass
 
+
 class DicomLoader(InferenceClass):
     """Load a single dicom series."""
 

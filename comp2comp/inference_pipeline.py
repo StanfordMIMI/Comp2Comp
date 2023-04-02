@@ -5,18 +5,6 @@ from typing import Dict, List
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.io.io import DicomLoader, NiftiSaver
 
-class InferenceClass:
-    """Base class for inference classes."""
-
-    def __init__(self):
-        pass
-
-    def __call__(self) -> Dict:
-        raise NotImplementedError
-
-    def __repr__(self):
-        return self.__class__.__name__
-
 
 class InferencePipeline(InferenceClass):
     """Inference pipeline."""

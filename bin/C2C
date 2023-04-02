@@ -25,7 +25,6 @@ from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder
 from comp2comp.io.io_utils import get_dicom_paths_and_num
 from comp2comp.models.models import Models
-from comp2comp.utils.process import process_2d, process_3d
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
     MuscleAdiposeTissueComputeMetrics,
     MuscleAdiposeTissueH5Saver,
@@ -45,6 +44,7 @@ from comp2comp.spine.spine import (
     SpineSegmentation,
     SpineToCanonical,
 )
+from comp2comp.utils.process import process_2d, process_3d
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 

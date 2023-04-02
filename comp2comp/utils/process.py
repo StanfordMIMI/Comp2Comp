@@ -1,17 +1,22 @@
 import os
-from datetime import datetime
-from time import time
+import sys
 import traceback
+from datetime import datetime
 from pathlib import Path
+from time import time
+import shutil
 
 from comp2comp.io.io_utils import get_dicom_paths_and_num
 
+
 def process_2d(args, pipeline_builder):
-    output_dir = Path(os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 
-        "../../outputs", 
-        datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        ))
+    output_dir = Path(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../../outputs",
+            datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+        )
+    )
     if not os.path.exists(output_dir):
         output_dir.mkdir(parents=True)
 
@@ -21,10 +26,8 @@ def process_2d(args, pipeline_builder):
 
     pipeline = pipeline_builder(args)
 
-    pipeline(
-        output_dir = output_dir,
-        model_dir = model_dir
-    )     
+    pipeline(output_dir=output_dir, model_dir=model_dir)
+
 
 def process_3d(args, pipeline_builder):
     model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
@@ -44,7 +47,7 @@ def process_3d(args, pipeline_builder):
             if num < min_slices:
                 print(f"Number of slices is less than {min_slices}, skipping\n")
                 continue
-            
+
             print("")
 
             try:
@@ -52,26 +55,25 @@ def process_3d(args, pipeline_builder):
             except Exception:
                 pass
 
-            output_dir = Path(os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), 
-                "../../outputs",
-                date_time,
-                Path(os.path.basename(path))
-                ))
+            output_dir = Path(
+                os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)),
+                    "../../outputs",
+                    date_time,
+                    Path(os.path.basename(path)),
+                )
+            )
 
             if not os.path.exists(output_dir):
                 output_dir.mkdir(parents=True)
 
             pipeline = pipeline_builder(path, args)
 
-            pipeline(
-                output_dir = output_dir,
-                model_dir = model_dir
-            )
+            pipeline(output_dir=output_dir, model_dir=model_dir)
 
             print(f"Finished processing {path} in {time() - st} seconds\n")
 
-        except Exception as e:
+        except Exception:
             print(f"ERROR PROCESSING {path}\n")
             traceback.print_exc()
             if os.path.exists(output_dir):

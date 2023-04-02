@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 from time import perf_counter
 from typing import List
 
@@ -59,7 +58,7 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
 
         print("DICOM FILE PATHS")
         print(dicom_file_paths)
-        
+
         results = self.forward_pass_2d(dicom_file_paths)
         images = []
         for result in results:
