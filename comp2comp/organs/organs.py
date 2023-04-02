@@ -20,7 +20,7 @@ from comp2comp.models.models import Models
 class OrganSegmentation(InferenceClass):
     """Organ segmentation."""
 
-    def __init__(self, input_path, model_name='ts_spine'):
+    def __init__(self, input_path, model_name="ts_spine"):
         super().__init__()
         self.input_path = input_path
         self.model_name = model_name
@@ -39,12 +39,11 @@ class OrganSegmentation(InferenceClass):
             self.output_dir_segmentations + "organs.nii.gz",
             inference_pipeline.model_dir,
         )
-                
+
         inference_pipeline.segmentation = seg
         inference_pipeline.medical_volume = mv
-        
-        return {}
 
+        return {}
 
     def setup_nnunet_c2c(self, model_dir: Union[str, Path]):
         """Adapted from TotalSegmentator."""
@@ -110,7 +109,7 @@ class OrganSegmentation(InferenceClass):
 
         setup_nnunet()
         download_pretrained_weights(task_id[0])
-   
+
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
@@ -146,4 +145,3 @@ class OrganSegmentation(InferenceClass):
             seg = np.where(seg == 0, 0, seg - 17)
 
         return seg, mvs
-

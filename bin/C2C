@@ -25,9 +25,12 @@ from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder
 from comp2comp.models.models import Models
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import *
-from comp2comp.spine.spine import *
 from comp2comp.organs.organs import OrganSegmentation
-from comp2comp.organs.visualization import LiverSpleenPancreasVisualizer, LiverSpleenPancreasMetricsPrinter
+from comp2comp.organs.visualization import (
+    LiverSpleenPancreasMetricsPrinter,
+    LiverSpleenPancreasVisualizer,
+)
+from comp2comp.spine.spine import *
 from comp2comp.utils.run import get_dicom_paths_and_num
 from comp2comp.visualization.visualization import (
     MuscleAdiposeTissueVisualizer,
