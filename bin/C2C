@@ -61,14 +61,23 @@ def muscle_adipose_tissue(args):
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
-    pipeline = InferencePipeline([
-        DicomFinder(args.input_path),
+    MuscleAdiposeTissuePipeline = InferencePipeline([
         MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
         MuscleAdiposeTissuePostProcessing(),
         MuscleAdiposeTissueComputeMetrics(),
         MuscleAdiposeTissueVisualizer(),
         MuscleAdiposeTissueH5Saver(),
-        MuscleAdiposeTissueMetricsSaver(),
+        MuscleAdiposeTissueMetricsSaver()
+        ],
+    config={
+        "output_dir": output_dir,
+        "model_dir": model_dir
+        }
+    )
+
+    pipeline = InferencePipeline([
+        DicomFinder(args.input_path),
+        MuscleAdiposeTissuePipeline
         ],
     config={
         "output_dir": output_dir,

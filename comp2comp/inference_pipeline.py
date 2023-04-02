@@ -2,10 +2,23 @@ import inspect
 import os
 from typing import Dict, List
 
+from comp2comp.inference_class_base import InferenceClass
 from comp2comp.io.io import DicomLoader, NiftiSaver
 
+class InferenceClass:
+    """Base class for inference classes."""
 
-class InferencePipeline:
+    def __init__(self):
+        pass
+
+    def __call__(self) -> Dict:
+        raise NotImplementedError
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+
+class InferencePipeline(InferenceClass):
     """Inference pipeline."""
 
     def __init__(self, inference_classes: List = None, config: Dict = None):
@@ -17,7 +30,7 @@ class InferencePipeline:
 
         self.inference_classes = inference_classes
 
-    def __call__(self, **kwargs):
+    def __call__(self, inference_pipeline=None, **kwargs):
         # print out the class names for each inference class
         print("")
         print("Inference pipeline:")
@@ -45,7 +58,10 @@ class InferencePipeline:
                 )
             )
 
-            output = inference_class(self, **output)
+            if inference_pipeline:
+                output = inference_class(inference_pipeline=inference_pipeline, **output)
+            else:
+                output = inference_class(inference_pipeline=self, **output)
 
             # if not the last inference class, check that the output keys are correct
             if inference_class != self.inference_classes[-1]:
