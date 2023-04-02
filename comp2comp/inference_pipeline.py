@@ -40,11 +40,21 @@ class InferencePipeline(InferenceClass):
 
         print("Starting inference pipeline.\n")
 
-        output = kwargs
+        if inference_pipeline:
+            for key, value in kwargs.items():
+                setattr(inference_pipeline, key, value)
+        else:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+
+        output = {}
         for inference_class in self.inference_classes:
 
             function_keys = set(inspect.signature(inference_class).parameters.keys())
             function_keys.remove("inference_pipeline")
+
+            if "kwargs" in function_keys:
+                function_keys.remove("kwargs")
 
             assert function_keys == set(
                 output.keys()

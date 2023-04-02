@@ -88,7 +88,36 @@ def muscle_adipose_tissue(args):
     pipeline()
 
 
-def spine_muscle_adipose_tissue(args):
+def MuscleAdiposeTissuePipelineBuilder(args):
+    pipeline = InferencePipeline([
+        MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
+        MuscleAdiposeTissuePostProcessing(),
+        MuscleAdiposeTissueComputeMetrics(),
+        MuscleAdiposeTissueVisualizer(),
+        MuscleAdiposeTissueH5Saver(),
+        MuscleAdiposeTissueMetricsSaver()
+        ]
+    )
+    return pipeline
+
+
+def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        SpineSegmentation(path, args.spine_model),
+        SpineToCanonical(),
+        SpineComputeROIs(args.spine_model),
+        SpineMetricsSaver(),
+        SpineFindDicoms(),
+        SpineCoronalSagittalVisualizer(),
+        MuscleAdiposeTissuePipelineBuilder(args),
+        SpineMuscleAdiposeTissueReport()
+        ]
+    )
+    return pipeline
+        
+
+
+def process_3d(args, pipeline_builder):
     model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
@@ -124,28 +153,12 @@ def spine_muscle_adipose_tissue(args):
             if not os.path.exists(output_dir):
                 output_dir.mkdir(parents=True)
 
-            pipeline = InferencePipeline([
-                SpineSegmentation(path, args.spine_model),
-                SpineToCanonical(),
-                SpineComputeROIs(args.spine_model),
-                SpineMetricsSaver(),
-                SpineFindDicoms(),
-                SpineCoronalSagittalVisualizer(),
-                MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
-                MuscleAdiposeTissuePostProcessing(),
-                MuscleAdiposeTissueComputeMetrics(),
-                MuscleAdiposeTissueVisualizer(),
-                MuscleAdiposeTissueH5Saver(),
-                MuscleAdiposeTissueMetricsSaver(),
-                SpineMuscleAdiposeTissueReport(),
-                ],
-            config={
-                "output_dir": output_dir,
-                "model_dir": model_dir
-                }
-            )
+            pipeline = pipeline_builder(path, args)
 
-            pipeline()
+            pipeline(
+                output_dir = output_dir,
+                model_dir = model_dir
+            )
 
             print(f"Finished processing {path} in {time() - st} seconds\n")
 
@@ -208,7 +221,7 @@ def main():
     if args.action == "muscle_adipose_tissue":
         muscle_adipose_tissue(args)
     elif args.action == "spine_muscle_adipose_tissue":
-        spine_muscle_adipose_tissue(args)
+        process_3d(args, SpineMuscleAdiposeTissuePipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 
