@@ -44,12 +44,15 @@ def find_spine_dicoms(seg: np.ndarray, centroids: Dict, path: str, model_type, f
 
     folder_in = path
 
+    print("vertical_positions: ", vertical_positions)
+
     # if flip_si is True, then flip the vertical positions
     if flip_si:
-        vertical_positions_dcm = [(seg.shape[2] - x) for x in vertical_positions]
-    else:
         vertical_positions_dcm = vertical_positions
+    else:
+        vertical_positions_dcm = [int((seg.shape[2] - x)) for x in vertical_positions]
         
+    print("vertical_positions_dcm: ", vertical_positions_dcm)
 
     dicom_files = []
     instance_numbers = []
@@ -67,8 +70,6 @@ def find_spine_dicoms(seg: np.ndarray, centroids: Dict, path: str, model_type, f
         dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
     
     vertical_positions_dcm.sort(reverse=True)
-
-    # reverse the order of levels
     levels.reverse()
 
     return (dicom_files, levels, vertical_positions_dcm)
@@ -366,12 +367,12 @@ def visualize_coronal_sagittal_spine(
     sagittal_image = mvs[sagittal_vals, :, range(len(sagittal_vals))]
     sagittal_label = seg[sagittal_vals, :, range(len(sagittal_vals))]
     sagittal_image = zoom(sagittal_image, (zoom_factor, 1), order=3)
-    sagittal_label = zoom(sagittal_label, (zoom_factor, 1), order=0).astype(int)
+    sagittal_label = zoom(sagittal_label, (zoom_factor, 1), order=1).round()
 
     one_hot_sag_label = to_one_hot(sagittal_label, model_type, label_text)
     for roi in rois:
         one_hot_roi_label = roi[sagittal_vals, :, range(len(sagittal_vals))]
-        one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order=0).astype(int)
+        one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order=1).round()
         one_hot_sag_label = np.concatenate(
             (
                 one_hot_sag_label,
@@ -386,7 +387,7 @@ def visualize_coronal_sagittal_spine(
     coronal_image = mvs[:, coronal_vals, range(len(coronal_vals))]
     coronal_label = seg[:, coronal_vals, range(len(coronal_vals))]
     coronal_image = zoom(coronal_image, (1, zoom_factor), order=3)
-    coronal_label = zoom(coronal_label, (1, zoom_factor), order=0).astype(int)
+    coronal_label = zoom(coronal_label, (1, zoom_factor), order=1).round()
 
     #coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
     #coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
@@ -394,7 +395,7 @@ def visualize_coronal_sagittal_spine(
     one_hot_cor_label = to_one_hot(coronal_label, model_type, label_text)
     for roi in rois:
         one_hot_roi_label = roi[:, coronal_vals, range(len(coronal_vals))]
-        one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order=0).astype(int)
+        one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order=1).round()
         one_hot_cor_label = np.concatenate(
             (
                 one_hot_cor_label,
