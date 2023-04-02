@@ -49,7 +49,10 @@ def find_spine_dicoms(seg: np.ndarray, centroids: Dict, path: str, model_type, f
     if flip_si:
         vertical_positions_dcm = vertical_positions
     else:
-        vertical_positions_dcm = [round(seg.shape[2] - x) for x in vertical_positions]
+        vertical_positions_dcm = [seg.shape[2] - x for x in vertical_positions]
+
+    # round the vertical positions
+    vertical_positions_dcm = [round(x) for x in vertical_positions_dcm]
 
     dicom_files = []
     instance_numbers = []

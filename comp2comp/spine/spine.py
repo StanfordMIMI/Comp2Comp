@@ -3,6 +3,7 @@ import zipfile
 from pathlib import Path
 from time import time
 from typing import Union
+import math
 
 import nibabel as nib
 import numpy as np
@@ -154,8 +155,8 @@ class SpineSegmentation(InferenceClass):
             seg = nib.Nifti1Image(seg_data, seg.affine, seg.header)
 
         # take middle slices
-        # seg = seg.slicer[:, :, 20:150]
-        # img = img.slicer[:, :, 20:150]
+        seg = seg.slicer[:, :, 20:150]
+        img = img.slicer[:, :, 20:150]
 
         return seg, img
 
@@ -296,10 +297,10 @@ class SpineMuscleAdiposeTissueReport(InferenceClass):
             "spine_coronal.png",
             "spine_sagittal.png",
             "T12.png",
-            "L3.png",
             "L1.png",
-            "L4.png",
             "L2.png",
+            "L3.png",
+            "L4.png",
             "L5.png",
         ]
 
@@ -319,13 +320,14 @@ class SpineMuscleAdiposeTissueReport(InferenceClass):
         im_cor = Image.open(image_files[0])
         im_sag = Image.open(image_files[1])
         im_cor_width = int(im_cor.width / im_cor.height * 512)
-        width = (8 + im_cor_width + 8) + ((512 + 8) * 3)
+        num_muscle_fat_cols = math.ceil((len(image_files) - 2) / 2)
+        width = (8 + im_cor_width + 8) + ((512 + 8) * num_muscle_fat_cols)
         height = 1048
         new_im = Image.new("RGB", (width, height))
 
         index = 2
-        for i in range(8 + im_cor_width + 8, width, 520):
-            for j in range(8, height, 520):
+        for j in range(8, height, 520):
+            for i in range(8 + im_cor_width + 8, width, 520):
                 try:
                     im = Image.open(image_files[index])
                     im.thumbnail((512, 512))
@@ -333,7 +335,7 @@ class SpineMuscleAdiposeTissueReport(InferenceClass):
                     index += 1
                     im.close()
                 except Exception:
-                    break
+                    continue
 
         im_cor.thumbnail((im_cor_width, 512))
         new_im.paste(im_cor, (8, 8))
