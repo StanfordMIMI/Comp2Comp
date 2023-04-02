@@ -44,15 +44,11 @@ def find_spine_dicoms(seg: np.ndarray, centroids: Dict, path: str, model_type, f
 
     folder_in = path
 
-    print("vertical_positions: ", vertical_positions)
-
     # if flip_si is True, then flip the vertical positions
     if flip_si:
         vertical_positions_dcm = vertical_positions
     else:
-        vertical_positions_dcm = [(seg.shape[2] - x).round() for x in vertical_positions]
-        
-    print("vertical_positions_dcm: ", vertical_positions_dcm)
+        vertical_positions_dcm = [round(seg.shape[2] - x) for x in vertical_positions]
 
     dicom_files = []
     instance_numbers = []
@@ -177,9 +173,9 @@ def roi_from_mask(img, centroid: np.ndarray):
     img_np = img.get_fdata()
 
     pixel_spacing = img.header.get_zooms()
-    length_i = int(5.0 / pixel_spacing[0])
-    length_j = int(5.0 / pixel_spacing[1])
-    length_k = int(5.0 / pixel_spacing[2])
+    length_i = ceil(5.0 / pixel_spacing[0])
+    length_j = ceil(5.0 / pixel_spacing[1])
+    length_k = ceil(5.0 / pixel_spacing[2])
 
     # cubic ROI around centroid
     """
@@ -191,9 +187,9 @@ def roi_from_mask(img, centroid: np.ndarray):
     """
     # spherical ROI around centroid
     roi = np.zeros(img_np.shape)
-    i_lower = int(centroid[0] - length_i)
-    j_lower = int(centroid[1] - length_j)
-    k_lower = int(centroid[2] - length_k)
+    i_lower = floor(centroid[0] - length_i)
+    j_lower = floor(centroid[1] - length_j)
+    k_lower = floor(centroid[2] - length_k)
     for i in range(i_lower, i_lower + 2 * length_i):
         for j in range(j_lower, j_lower + 2 * length_j):
             for k in range(k_lower, k_lower + 2 * length_k):
