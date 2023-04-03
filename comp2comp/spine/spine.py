@@ -244,7 +244,8 @@ class SpineFindDicoms(InferenceClass):
             list(inference_pipeline.rois.keys()),
         )
 
-        inference_pipeline.dicom_files = dicom_files
+        dicom_files = [Path(d) for d in dicom_files]
+        inference_pipeline.dicom_file_paths = dicom_files
         inference_pipeline.names = names
         inference_pipeline.dicom_file_names = names
         inference_pipeline.inferior_superior_centers = inferior_superior_centers
@@ -265,20 +266,13 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
             inference_pipeline.segmentation.get_fdata(),
             list(inference_pipeline.rois.values()),
             inference_pipeline.medical_volume.get_fdata(),
-            inference_pipeline.inferior_superior_centers,
             list(inference_pipeline.centroids_3d.values()),
-            inference_pipeline.names,
             output_path,
             spine_hus=inference_pipeline.spine_hus,
             model_type=spine_model_type,
             pixel_spacing=inference_pipeline.pixel_spacing_list,
         )
-
-        dicom_files = inference_pipeline.dicom_files
-        # convert to list of paths
-        dicom_files = [Path(d) for d in dicom_files]
         inference_pipeline.spine = True
-        inference_pipeline.dicom_file_paths = dicom_files
         return {}
 
 

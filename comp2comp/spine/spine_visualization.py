@@ -12,13 +12,11 @@ def spine_binary_segmentation_overlay(
     mask: Union[str, Path],
     base_path: Union[str, Path],
     file_name: str,
-    inferior_superior_centers=None,
     figure_text_key=None,
     spine_hus=None,
     spine=True,
     model_type=None,
     pixel_spacing=None,
-    levels=None,
 ):
     """Save binary segmentation overlay.
     Args:
@@ -77,6 +75,8 @@ def spine_binary_segmentation_overlay(
 
     vis = Visualizer(img_rgb)
 
+    levels = list(spine_hus.keys())
+    levels.reverse()
     num_levels = len(levels)
 
     # draw seg masks
@@ -117,6 +117,7 @@ def spine_binary_segmentation_overlay(
             horizontal_alignment="left",
         )
 
+        """
         vis.draw_line(
             x_data=(0, mask.shape[1] - 1),
             y_data=(
@@ -133,6 +134,7 @@ def spine_binary_segmentation_overlay(
             linestyle="dashed",
             linewidth=0.25,
         )
+        """
 
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(images_base_path, file_name))

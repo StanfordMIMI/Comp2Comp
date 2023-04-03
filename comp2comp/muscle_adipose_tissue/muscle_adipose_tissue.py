@@ -56,9 +56,6 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
             ]
         self.model = self.model_type.load_model(inference_pipeline.model_dir)
 
-        print("DICOM FILE PATHS")
-        print(dicom_file_paths)
-
         results = self.forward_pass_2d(dicom_file_paths)
         images = []
         for result in results:
