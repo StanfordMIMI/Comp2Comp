@@ -33,6 +33,8 @@ Currently, Comp2Comp has two pipelines, muscle_adipose_tissue and spine_muscle_a
 ## Current Pipelines
 - muscle_adipose_tissue
   - DICOM files within the input_path folder and subfolders of input_path will be processed.
+- spine
+  - input_path should contain a DICOM series or subfolders that contain DICOM series.
 - spine_muscle_adipose_tissue
   - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
