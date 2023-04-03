@@ -69,14 +69,21 @@ def MuscleAdiposeTissueFullPipelineBuilder(args):
     )
     return pipeline
 
-def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
+def SpinePipelineBuilder(path, args):
     pipeline = InferencePipeline([
         SpineSegmentation(path, args.spine_model),
         SpineToCanonical(),
         SpineComputeROIs(args.spine_model),
         SpineMetricsSaver(),
+        SpineCoronalSagittalVisualizer()
+        ]
+    )
+    return pipeline
+
+def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        SpinePipelineBuilder(path, args),
         SpineFindDicoms(),
-        SpineCoronalSagittalVisualizer(),
         MuscleAdiposeTissuePipelineBuilder(args),
         SpineMuscleAdiposeTissueReport()
         ]
@@ -88,9 +95,9 @@ def argument_parser():
     parser = argparse.ArgumentParser("Comp2Comp command line interface")
     subparsers = parser.add_subparsers(dest="action")
 
-    # Muscle + fat segmentation
+    # Muscle + fat 
     muscle_adipose_tissue_parser = subparsers.add_parser("muscle_adipose_tissue", 
-                                              help="muscle + fat segmentation")
+                                              help="muscle + fat")
     muscle_adipose_tissue_parser.add_argument(
         "--input_path",
         required=True,
@@ -104,9 +111,24 @@ def argument_parser():
         help="muscle + fat segmentation model to use for inference",
     )
 
-    # Spine segmentation + muscle + fat segmentation
+    # Spine
+    spine_parser = subparsers.add_parser("spine", help="spine")
+    spine_parser.add_argument(
+        "--input_path",
+        required=True,
+        type=str,
+        help="path to input directory or file",
+    )
+    spine_parser.add_argument(
+        "--spine_model",
+        default="ts_spine",
+        type=str,
+        help="spine model to use for inference",
+    )
+
+    # Spine + muscle + fat
     spine_muscle_adipose_tissue_parser = subparsers.add_parser("spine_muscle_adipose_tissue",
-                                              help="spine segmentation and muscle + fat segmentation")
+                                              help="spine + muscle + fat")
     spine_muscle_adipose_tissue_parser.add_argument(
         "--input_path",
         required=True,
@@ -134,6 +156,8 @@ def main():
         process_2d(args, MuscleAdiposeTissueFullPipelineBuilder)
     elif args.action == "spine_muscle_adipose_tissue":
         process_3d(args, SpineMuscleAdiposeTissuePipelineBuilder)
+    elif args.action == "spine":
+        process_3d(args, SpinePipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 

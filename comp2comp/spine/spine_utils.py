@@ -347,7 +347,7 @@ def compute_centroid(seg: np.ndarray, plane: str, label: int):
     return pos
 
 
-def to_one_hot(label: np.ndarray, model_type, levels):
+def to_one_hot(label: np.ndarray, model_type, spine_hus):
     """Convert a label to one-hot encoding.
 
     Args:
@@ -357,7 +357,8 @@ def to_one_hot(label: np.ndarray, model_type, levels):
     Returns:
         np.ndarray: One-hot encoding volume.
     """
-
+    levels = list(spine_hus.keys())
+    levels.reverse()
     one_hot_label = np.zeros((label.shape[0], label.shape[1], len(levels)))
     for i, level in enumerate(levels):
         label_idx = model_type.categories[level]
@@ -369,9 +370,7 @@ def visualize_coronal_sagittal_spine(
     seg: np.ndarray,
     rois: List[np.ndarray],
     mvs: np.ndarray,
-    centroids: Dict,
     centroids_3d: np.ndarray,
-    label_text: List[str],
     output_dir: str,
     spine_hus=None,
     model_type=None,
@@ -398,7 +397,7 @@ def visualize_coronal_sagittal_spine(
     sagittal_image = zoom(sagittal_image, (zoom_factor, 1), order=3)
     sagittal_label = zoom(sagittal_label, (zoom_factor, 1), order=1).round()
 
-    one_hot_sag_label = to_one_hot(sagittal_label, model_type, label_text)
+    one_hot_sag_label = to_one_hot(sagittal_label, model_type, spine_hus)
     for roi in rois:
         one_hot_roi_label = roi[sagittal_vals, :, range(len(sagittal_vals))]
         one_hot_roi_label = zoom(one_hot_roi_label, (zoom_factor, 1), order=1).round()
@@ -420,7 +419,7 @@ def visualize_coronal_sagittal_spine(
     # coronal_image = zoom(coronal_image, (zoom_factor, 1), order=3)
     # coronal_label = zoom(coronal_label, (zoom_factor, 1), order=0).astype(int)
 
-    one_hot_cor_label = to_one_hot(coronal_label, model_type, label_text)
+    one_hot_cor_label = to_one_hot(coronal_label, model_type, spine_hus)
     for roi in rois:
         one_hot_roi_label = roi[:, coronal_vals, range(len(coronal_vals))]
         one_hot_roi_label = zoom(one_hot_roi_label, (1, zoom_factor), order=1).round()
@@ -458,22 +457,18 @@ def visualize_coronal_sagittal_spine(
         one_hot_sag_label,
         output_dir,
         "spine_sagittal.png",
-        centroids,
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
-        levels=label_text,
     )
     spine_visualization.spine_binary_segmentation_overlay(
         coronal_image,
         one_hot_cor_label,
         output_dir,
         "spine_coronal.png",
-        centroids,
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
-        levels=label_text,
     )
 
 
