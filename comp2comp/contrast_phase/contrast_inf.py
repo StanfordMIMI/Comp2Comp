@@ -69,7 +69,7 @@ def getMaskAnteriorAtrium(mask):
             erasePreAtriumMask[:, :, sliceNum][:row, :] = 1
     return erasePreAtriumMask
 
-""" 
+"""
 Function from
 https://stackoverflow.com/questions/46310603/how-to-compute-convex-hull-image-volume-in-3d-numpy-arrays/46314485#46314485
 """
@@ -376,19 +376,6 @@ def getFeatures(TSArray, scanArray):
             aorta_IVC_mean,
         ]
     )
-
-    """
-    columns = ['aorta Max', 'aorta Min', 'aorta Mean', 'aorta Median', 'aorta Standard Deviation', 'aorta Variance', 
-    'IVC Max', 'IVC Min', 'IVC Mean', 'IVC Median', 'IVC Standard Deviation', 'IVC Variance', 
-    'portal Max', 'portal Min', 'portal Mean', 'portal Median', 'portal Standard Deviation', 'portal Variance', 
-    'kidneyL Max', 'kidneyL Min', 'kidneyL Mean', 'kidneyL Median', 'kidneyL Standard Deviation', 'kidneyL Variance', 
-    'kidneyR Max', 'kidneyR Min', 'kidneyR Mean', 'kidneyR Median', 'kidneyR Standard Deviation', 'kidneyR Variance', 
-    'pelvisL Max', 'pelvisL Min', 'pelvisL Mean', 'pelvisL Median', 'pelvisL Standard Deviation', 'pelvisL Variance', 
-    'pelvisR Max', 'pelvisR Min', 'pelvisR Mean', 'pelvisR Median', 'pelvisR Standard Deviation', 'pelvisR Variance', 
-    'aorta_porta_max', 'aorta_porta_min', 'aorta_porta_mean', 
-    'aorta_IVC_max', 'aorta_IVC_min', 'aorta_IVC_mean', 
-    'IVC_porta_max', 'IVC_porta_min', 'IVC_porta_mean']
-    """
 
     return stats, kidneyLMask, adRMask
 
