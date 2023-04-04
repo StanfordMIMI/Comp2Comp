@@ -21,6 +21,7 @@ from tqdm import tqdm
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
+from comp2comp.contrast_phase.contrast_phase import ContrastPhaseDetection
 from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder
 from comp2comp.io.io_utils import get_dicom_paths_and_num
@@ -90,6 +91,12 @@ def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
     )
     return pipeline
 
+def ContrastPhasePipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        ContrastPhaseDetection(path)
+        ]
+    )
+    return pipeline
 
 def argument_parser():
     parser = argparse.ArgumentParser("Comp2Comp command line interface")
@@ -147,6 +154,16 @@ def argument_parser():
         type=str,
         help="spine model to use for inference",
     )
+
+    # Spine + muscle + fat
+    contrast_phase_parser = subparsers.add_parser("contrast_phase",
+                                              help="contrast phase")
+    contrast_phase_parser.add_argument(
+        "--input_path",
+        required=True,
+        type=str,
+        help="path to input directory or file",
+    )
     return parser
 
 
@@ -158,6 +175,8 @@ def main():
         process_3d(args, SpineMuscleAdiposeTissuePipelineBuilder)
     elif args.action == "spine":
         process_3d(args, SpinePipelineBuilder)
+    elif args.action == "contrast_phase":
+        process_3d(args, ContrastPhasePipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 
