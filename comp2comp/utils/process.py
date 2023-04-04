@@ -77,5 +77,5 @@ def process_3d(args, pipeline_builder):
             print(f"ERROR PROCESSING {path}\n")
             traceback.print_exc()
             if os.path.exists(output_dir):
-               shutil.rmtree(output_dir)
+                shutil.rmtree(output_dir)
             continue
