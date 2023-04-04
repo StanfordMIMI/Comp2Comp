@@ -50,7 +50,7 @@ Currently, Comp2Comp has two pipelines, muscle_adipose_tissue and spine_muscle_a
 - liver_spleen_pancreas
 
 ## Example image output from spine_muscle_adipose_tissue
-![Alt text](figures/panel_example.png?raw=true "Comp2Comp Panel Example")
+![Alt text](figures/report_v1.png?raw=true "Comp2Comp Panel Example")
 
 ## Citation
 ``` 
