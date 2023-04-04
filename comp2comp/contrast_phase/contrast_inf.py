@@ -69,10 +69,13 @@ def getMaskAnteriorAtrium(mask):
             erasePreAtriumMask[:, :, sliceNum][:row, :] = 1
     return erasePreAtriumMask
 
+
 """
 Function from
 https://stackoverflow.com/questions/46310603/how-to-compute-convex-hull-image-volume-in-3d-numpy-arrays/46314485#46314485
 """
+
+
 def fill_hull(image):
     points = np.transpose(np.where(image))
     hull = scipy.spatial.ConvexHull(points)
@@ -260,7 +263,6 @@ def getFeatures(TSArray, scanArray):
         kidneyR_variance_val,
     ) = get_stats(kidneyRArray)
 
-    # Get the stats for the kidneyLHull and kidneyRHull, instead of kidneyLHull and kidneyRHull use the names to pelvisL and pelvisR
     (
         pelvisL_max_val,
         pelvisL_min_val,
@@ -289,12 +291,7 @@ def getFeatures(TSArray, scanArray):
     aorta_IVC_min = aorta_min_val - IVC_min_val
     aorta_IVC_mean = aorta_mean_val - IVC_mean_val
 
-    # IVC - porta, Max min and mean columns
-    IVC_porta_max = IVC_max_val - portal_max_val
-    IVC_porta_min = IVC_min_val - portal_min_val
-    IVC_porta_mean = IVC_mean_val - portal_mean_val
-
-    ### Save stats in CSV:
+    # Save stats in CSV:
     # Create a list to store the stats
     stats = []
     # Add the stats for the aortaArray to the list
