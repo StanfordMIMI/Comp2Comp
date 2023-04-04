@@ -396,7 +396,8 @@ def getFeatures(TSArray, scanArray):
 
 
 def loadModel():
-    filename = os.path.join(sys.path[0], "xgboost.pkl")
+    c2cPath = os.path.dirname(sys.path[0])
+    filename = os.path.join(c2cPath, "comp2comp", "contrast_phase", "xgboost.pkl")
     model = pickle.load(open(filename, "rb"))
 
     return model

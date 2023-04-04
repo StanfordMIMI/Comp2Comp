@@ -36,7 +36,7 @@ class ContrastPhaseDetection(InferenceClass):
             inference_pipeline.model_dir,
         )
 
-        # segArray, imgArray = self.convertNibToNumpy(self, seg, img)
+        # segArray, imgArray = self.convertNibToNumpy(seg, img)
 
         imgNiftiPath = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
         segNiftPath = os.path.join(self.output_dir_segmentations, "s01.nii.gz")
@@ -64,10 +64,10 @@ class ContrastPhaseDetection(InferenceClass):
         folds = [0]
         trainer = "nnUNetTrainerV2_ep4000_nomirror"
         crop_path = None
-        task_id = [251, 252, 253, 254, 255]
+        task_id = [251]
 
         setup_nnunet()
-        for task_id in [251, 252, 253, 254, 255]:
+        for task_id in [251]:
             download_pretrained_weights(task_id)
 
         from totalsegmentator.nnunet import nnUNet_predict_image
