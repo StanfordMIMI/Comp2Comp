@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 import SimpleITK as sitk
 from scipy import ndimage as ndi
-from xgboost import XGBClassifier
+
 
 def loadNiiToArray(path):
     NiImg = nib.load(path)
@@ -69,12 +69,10 @@ def getMaskAnteriorAtrium(mask):
             erasePreAtriumMask[:, :, sliceNum][:row, :] = 1
     return erasePreAtriumMask
 
-
 """ 
-Function from https://stackoverflow.com/questions/46310603/how-to-compute-convex-hull-image-volume-in-3d-numpy-arrays/46314485#46314485
+Function from
+https://stackoverflow.com/questions/46310603/how-to-compute-convex-hull-image-volume-in-3d-numpy-arrays/46314485#46314485
 """
-
-
 def fill_hull(image):
     points = np.transpose(np.where(image))
     hull = scipy.spatial.ConvexHull(points)

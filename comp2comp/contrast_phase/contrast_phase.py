@@ -1,5 +1,4 @@
 import os
-import zipfile
 from pathlib import Path
 from time import time
 from typing import Union
@@ -12,8 +11,6 @@ from totalsegmentator.libs import (
 
 from comp2comp.contrast_phase.contrast_inf import predict_phase
 from comp2comp.inference_class_base import InferenceClass
-from comp2comp.models.models import Models
-from comp2comp.spine import spine_utils
 
 
 class ContrastPhaseDetection(InferenceClass):
