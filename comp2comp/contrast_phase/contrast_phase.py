@@ -3,53 +3,56 @@ from pathlib import Path
 from time import time
 from typing import Union
 
-import numpy as np
 from totalsegmentator.libs import (
     download_pretrained_weights,
     nostdout,
     setup_nnunet,
 )
 
+from comp2comp.contrast_phase.contrast_inf import predict_phase
 from comp2comp.inference_class_base import InferenceClass
 
 
-class OrganSegmentation(InferenceClass):
-    """Organ segmentation."""
+class ContrastPhaseDetection(InferenceClass):
+    """Contrast Phase Detection."""
 
-    def __init__(self, input_path, model_name="ts_spine"):
+    def __init__(self, input_path):
         super().__init__()
         self.input_path = input_path
-        self.model_name = model_name
 
     def __call__(self, inference_pipeline):
-        inference_pipeline.dicom_series_path = self.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
         if not os.path.exists(self.output_dir_segmentations):
             os.makedirs(self.output_dir_segmentations)
-
         self.model_dir = inference_pipeline.model_dir
 
-        mv, seg = self.organ_seg(
+        seg, img = self.run_segmentation(
             self.input_path,
-            self.output_dir_segmentations + "organs.nii.gz",
+            self.output_dir_segmentations + "s01.nii.gz",
             inference_pipeline.model_dir,
         )
 
-        inference_pipeline.segmentation = seg
-        inference_pipeline.medical_volume = mv
+        # segArray, imgArray = self.convertNibToNumpy(seg, img)
+
+        imgNiftiPath = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
+        segNiftPath = os.path.join(self.output_dir_segmentations, "s01.nii.gz")
+
+        predict_phase(segNiftPath, imgNiftiPath, outputPath=self.output_dir)
 
         return {}
 
-    def organ_seg(self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir):
-        """Run spine segmentation.
+    def run_segmentation(
+        self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir
+    ):
+        """Run segmentation.
 
         Args:
             input_path (Union[str, Path]): Input path.
             output_path (Union[str, Path]): Output path.
         """
 
-        print("Segmenting organs...")
+        print("Segmenting...")
         st = time()
         os.environ["SCRATCH"] = self.model_dir
 
@@ -61,13 +64,14 @@ class OrganSegmentation(InferenceClass):
         task_id = [251]
 
         setup_nnunet()
-        download_pretrained_weights(task_id[0])
+        for task_id in [251]:
+            download_pretrained_weights(task_id)
 
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
 
-            seg, mvs = nnUNet_predict_image(
+            img, seg = nnUNet_predict_image(
                 input_path,
                 output_path,
                 task_id,
@@ -91,10 +95,21 @@ class OrganSegmentation(InferenceClass):
         end = time()
 
         # Log total time for spine segmentation
-        print(f"Total time for organ segmentation: {end-st:.2f}s.")
+        print(f"Total time for segmentation: {end-st:.2f}s.")
 
-        if self.model_name == "stanford_spine_v0.0.1":
-            # subtract 17 from seg values except for 0
-            seg = np.where(seg == 0, 0, seg - 17)
+        return seg, img
 
-        return seg, mvs
+    def convertNibToNumpy(self, TSNib, ImageNib):
+        """Convert nifti to numpy array.
+
+        Args:
+            TSNib (nibabel.nifti1.Nifti1Image): TotalSegmentator output.
+            ImageNib (nibabel.nifti1.Nifti1Image): Input image.
+
+        Returns:
+            numpy.ndarray: TotalSegmentator output.
+            numpy.ndarray: Input image.
+        """
+        TS_array = TSNib.get_fdata()
+        img_array = ImageNib.get_fdata()
+        return TS_array, img_array

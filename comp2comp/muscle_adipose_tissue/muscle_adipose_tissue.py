@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 from time import perf_counter
 from typing import List
 
@@ -46,10 +45,10 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
             results[i]["preds"] = preds[i]
         return results
 
-    def __call__(self, inference_pipeline, dicom_file_paths: List[Path]):
+    def __call__(self, inference_pipeline):
         inference_pipeline.muscle_adipose_tissue_model_type = self.model_type
         inference_pipeline.muscle_adipose_tissue_model_name = self.model_name
-        inference_pipeline.dicom_file_paths = dicom_file_paths
+        dicom_file_paths = inference_pipeline.dicom_file_paths
         # if dicom_file_names not an attribute of inference_pipeline, add it
         if not hasattr(inference_pipeline, "dicom_file_names"):
             inference_pipeline.dicom_file_names = [
@@ -328,4 +327,6 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
                 row.append(result[cat]["Hounsfield Unit"])
                 row.append(result[cat]["Cross-sectional Area (cm^2)"])
             df.loc[i] = row
-        df.to_csv(os.path.join(self.csv_output_dir, "metrics.csv"), index=False)
+        df.to_csv(
+            os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv"), index=False
+        )

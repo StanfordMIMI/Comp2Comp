@@ -2,10 +2,11 @@ import inspect
 import os
 from typing import Dict, List
 
+from comp2comp.inference_class_base import InferenceClass
 from comp2comp.io.io import DicomLoader, NiftiSaver
 
 
-class InferencePipeline:
+class InferencePipeline(InferenceClass):
     """Inference pipeline."""
 
     def __init__(self, inference_classes: List = None, config: Dict = None):
@@ -17,7 +18,7 @@ class InferencePipeline:
 
         self.inference_classes = inference_classes
 
-    def __call__(self, **kwargs):
+    def __call__(self, inference_pipeline=None, **kwargs):
         # print out the class names for each inference class
         print("")
         print("Inference pipeline:")
@@ -27,11 +28,21 @@ class InferencePipeline:
 
         print("Starting inference pipeline.\n")
 
-        output = kwargs
+        if inference_pipeline:
+            for key, value in kwargs.items():
+                setattr(inference_pipeline, key, value)
+        else:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+
+        output = {}
         for inference_class in self.inference_classes:
 
             function_keys = set(inspect.signature(inference_class).parameters.keys())
             function_keys.remove("inference_pipeline")
+
+            if "kwargs" in function_keys:
+                function_keys.remove("kwargs")
 
             assert function_keys == set(
                 output.keys()
@@ -45,7 +56,10 @@ class InferencePipeline:
                 )
             )
 
-            output = inference_class(self, **output)
+            if inference_pipeline:
+                output = inference_class(inference_pipeline=inference_pipeline, **output)
+            else:
+                output = inference_class(inference_pipeline=self, **output)
 
             # if not the last inference class, check that the output keys are correct
             if inference_class != self.inference_classes[-1]:

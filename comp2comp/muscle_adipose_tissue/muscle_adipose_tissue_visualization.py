@@ -1,9 +1,7 @@
 import os
 from pathlib import Path
-from typing import Union
 
 import numpy as np
-from PIL import Image
 
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.visualization.detectron_visualizer import Visualizer
@@ -171,55 +169,3 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
             np.ndarray: Normalized image.
         """
         return (img - img.min()) / (img.max() - img.min())
-
-
-class SpineMuscleAdiposeTissueReport(InferenceClass):
-    """Spine muscle adipose tissue report class."""
-
-    def __init__(self):
-        super().__init__()
-        self.image_files = [
-            "spine_coronal.png",
-            "spine_sagittal.png",
-            "T12.png",
-            "L3.png",
-            "L1.png",
-            "L4.png",
-            "L2.png",
-            "L5.png",
-        ]
-
-    def __call__(self, inference_pipeline):
-        image_dir = Path(inference_pipeline.output_dir) / "images"
-        self.generate_panel(image_dir)
-
-    def generate_panel(self, image_dir: Union[str, Path]):
-        """Generate panel.
-        Args:
-            image_dir (Union[str, Path]): Path to the image directory.
-        """
-        image_files = [os.path.join(image_dir, path) for path in self.image_files]
-        im_cor = Image.open(image_files[0])
-        im_sag = Image.open(image_files[1])
-        im_cor_width = int(im_cor.width / im_cor.height * 512)
-        width = (8 + im_cor_width + 8) + ((512 + 8) * 3)
-        height = 1048
-        new_im = Image.new("RGB", (width, height))
-
-        index = 2
-        for i in range(8 + im_cor_width + 8, width, 520):
-            for j in range(8, height, 520):
-                im = Image.open(image_files[index])
-                im.thumbnail((512, 512))
-                new_im.paste(im, (i, j))
-                index += 1
-                im.close()
-
-        im_cor.thumbnail((im_cor_width, 512))
-        new_im.paste(im_cor, (8, 8))
-        im_sag.thumbnail((im_cor_width, 512))
-        new_im.paste(im_sag, (8, 528))
-        new_im.save(os.path.join(image_dir, "report.png"))
-        im_cor.close()
-        im_sag.close()
-        new_im.close()

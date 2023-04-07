@@ -21,180 +21,120 @@ from tqdm import tqdm
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
+from comp2comp.contrast_phase.contrast_phase import ContrastPhaseDetection
 from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder
+from comp2comp.io.io_utils import get_dicom_paths_and_num
 from comp2comp.models.models import Models
-from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import *
+from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
+    MuscleAdiposeTissueComputeMetrics,
+    MuscleAdiposeTissueH5Saver,
+    MuscleAdiposeTissueMetricsSaver,
+    MuscleAdiposeTissuePostProcessing,
+    MuscleAdiposeTissueSegmentation,
+)
+from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue_visualization import (
+    MuscleAdiposeTissueVisualizer,
+)
 from comp2comp.organs.organs import OrganSegmentation
 from comp2comp.organs.visualization import (
     LiverSpleenPancreasMetricsPrinter,
     LiverSpleenPancreasVisualizer,
 )
-from comp2comp.spine.spine import *
-from comp2comp.utils.run import get_dicom_paths_and_num
-from comp2comp.visualization.visualization import (
-    MuscleAdiposeTissueVisualizer,
+from comp2comp.spine.spine import (
+    SpineComputeROIs,
+    SpineCoronalSagittalVisualizer,
+    SpineFindDicoms,
+    SpineMetricsSaver,
     SpineMuscleAdiposeTissueReport,
+    SpineSegmentation,
+    SpineToCanonical,
 )
+from comp2comp.utils.process import process_2d, process_3d
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
-def muscle_adipose_tissue(args):
-    output_dir = Path(os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 
-        "../outputs", 
-        datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        ))
-    if not os.path.exists(output_dir):
-        output_dir.mkdir(parents=True)
-
-    model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
-    if not os.path.exists(model_dir):
-        os.mkdir(model_dir)
-
+def MuscleAdiposeTissuePipelineBuilder(args):
     pipeline = InferencePipeline([
-        DicomFinder(args.input_path),
         MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
         MuscleAdiposeTissuePostProcessing(),
         MuscleAdiposeTissueComputeMetrics(),
         MuscleAdiposeTissueVisualizer(),
         MuscleAdiposeTissueH5Saver(),
-        MuscleAdiposeTissueMetricsSaver(),
-        ],
-    config={
-        "output_dir": output_dir,
-        "model_dir": model_dir
-        }
+        MuscleAdiposeTissueMetricsSaver()
+        ]
     )
+    return pipeline
 
-    pipeline()
+def MuscleAdiposeTissueFullPipelineBuilder(args):
+    pipeline = InferencePipeline([
+        DicomFinder(args.input_path),
+        MuscleAdiposeTissuePipelineBuilder(args)
+        ]
+    )
+    return pipeline
 
+def SpinePipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        SpineSegmentation(path, args.spine_model),
+        SpineToCanonical(),
+        SpineComputeROIs(args.spine_model),
+        SpineMetricsSaver(),
+        SpineCoronalSagittalVisualizer()
+        ]
+    )
+    return pipeline
 
-def spine_muscle_adipose_tissue(args):
-    model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
-    if not os.path.exists(model_dir):
-        os.mkdir(model_dir)
+def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        SpinePipelineBuilder(path, args),
+        SpineFindDicoms(),
+        MuscleAdiposeTissuePipelineBuilder(args),
+        SpineMuscleAdiposeTissueReport()
+        ]
+    )
+    return pipeline
 
-    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-    for path, num in get_dicom_paths_and_num(args.input_path):
-
-        st = time()
-
-        print("Processing: ", path, " with ", num, " slices")
-
-        if num < 300:
-            print("Number of slices is less than 300, skipping\n")
-            continue
-        
-        print("")
-
-        sys.stdout.flush()
-
-        output_dir = Path(os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 
-            "../outputs",
-            date_time,
-            Path(os.path.basename(path))
-            ))
-
-        if not os.path.exists(output_dir):
-            output_dir.mkdir(parents=True)
-
-        try:
-            pipeline = InferencePipeline([
-                SpineSegmentation(path, args.spine_model),
-                SpineReorient(),
-                SpineComputeROIs(args.spine_model),
-                SpineFindDicoms(),
-                SpineCoronalSagittalVisualizer(),
-                MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
-                MuscleAdiposeTissuePostProcessing(),
-                MuscleAdiposeTissueComputeMetrics(),
-                MuscleAdiposeTissueVisualizer(),
-                MuscleAdiposeTissueH5Saver(),
-                MuscleAdiposeTissueMetricsSaver(),
-                SpineMuscleAdiposeTissueReport(),
-                ],
-            config={
-                "output_dir": output_dir,
-                "model_dir": model_dir
-                }
-            )
-
-            pipeline()
-
-            print(f"Finished processing {path} in {time() - st:.1f} seconds\n")
+def LiverSpleenPancreasPipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        OrganSegmentation(path),
+        LiverSpleenPancreasVisualizer(),
+        LiverSpleenPancreasMetricsPrinter()
+        ]
+    )
+    return pipeline
 
 
-        except Exception as e:
-            shutil.rmtree(output_dir)
-            print(f"ERROR PROCESSING {path}")
-            traceback.print_exc()
-            continue
+
+# pipeline = InferencePipeline([
+#     OrganSegmentation(path),
+#     LiverSpleenPancreasVisualizer(),
+#     LiverSpleenPancreasMetricsPrinter()
+#     ],
+# config={
+#     "output_dir": output_dir,
+#     "model_dir": model_dir
+#     }
+# )
 
 
-def organ_segmentation(args):
-    model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
-    if not os.path.exists(model_dir):
-        os.mkdir(model_dir)
-
-    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-    for path, num in get_dicom_paths_and_num(args.input_path):
-
-        st = time()
-
-        print("Processing: ", path, " with ", num, " slices")
-
-        print("")
-
-        sys.stdout.flush()
-
-        output_dir = Path(os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 
-            "../outputs",
-            date_time,
-            Path(os.path.basename(path))
-            ))
-
-        if not os.path.exists(output_dir):
-            output_dir.mkdir(parents=True)
-
-        try:
-            pipeline = InferencePipeline([
-                OrganSegmentation(path),
-                LiverSpleenPancreasVisualizer(),
-                LiverSpleenPancreasMetricsPrinter()
-                ],
-            config={
-                "output_dir": output_dir,
-                "model_dir": model_dir
-                }
-            )
-            
-            pipeline()
-                 
-            print(f"Finished processing {path} in {time() - st:.1f} seconds\n")
 
 
-        except Exception as e:
-            shutil.rmtree(output_dir)
-            print(f"ERROR PROCESSING {path}")
-            traceback.print_exc()
-            sys.exit()
-            continue
-
-        
+def ContrastPhasePipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        ContrastPhaseDetection(path)
+        ]
+    )
+    return pipeline
 
 def argument_parser():
     parser = argparse.ArgumentParser("Comp2Comp command line interface")
     subparsers = parser.add_subparsers(dest="action")
 
-    # Muscle + fat segmentation
+    # Muscle + fat 
     muscle_adipose_tissue_parser = subparsers.add_parser("muscle_adipose_tissue", 
-                                              help="muscle + fat segmentation")
+                                              help="muscle + fat")
     muscle_adipose_tissue_parser.add_argument(
         "--input_path",
         required=True,
@@ -208,9 +148,24 @@ def argument_parser():
         help="muscle + fat segmentation model to use for inference",
     )
 
-    # Spine segmentation + muscle + fat segmentation
+    # Spine
+    spine_parser = subparsers.add_parser("spine", help="spine")
+    spine_parser.add_argument(
+        "--input_path",
+        required=True,
+        type=str,
+        help="path to input directory or file",
+    )
+    spine_parser.add_argument(
+        "--spine_model",
+        default="ts_spine",
+        type=str,
+        help="spine model to use for inference",
+    )
+
+    # Spine + muscle + fat
     spine_muscle_adipose_tissue_parser = subparsers.add_parser("spine_muscle_adipose_tissue",
-                                              help="spine segmentation and muscle + fat segmentation")
+                                              help="spine + muscle + fat")
     spine_muscle_adipose_tissue_parser.add_argument(
         "--input_path",
         required=True,
@@ -231,8 +186,17 @@ def argument_parser():
     )
        
     organ_segmentation = subparsers.add_parser("organ_segmentation",
-                                              help="spine segmentation and muscle + fat segmentation")
+                                              help="Segmentation of liver, spleen and pancreas")
     organ_segmentation.add_argument(
+        "--input_path",
+        required=True,
+        type=str,
+        help="path to input directory or file",
+    )
+
+    contrast_phase_parser = subparsers.add_parser("contrast_phase",
+                                              help="contrast phase")
+    contrast_phase_parser.add_argument(
         "--input_path",
         required=True,
         type=str,
@@ -244,11 +208,15 @@ def argument_parser():
 def main():
     args = argument_parser().parse_args()
     if args.action == "muscle_adipose_tissue":
-        muscle_adipose_tissue(args)
+        process_2d(args, MuscleAdiposeTissueFullPipelineBuilder)
     elif args.action == "spine_muscle_adipose_tissue":
-        spine_muscle_adipose_tissue(args)
+        process_3d(args, SpineMuscleAdiposeTissuePipelineBuilder)
+    elif args.action == "spine":
+        process_3d(args, SpinePipelineBuilder)
+    elif args.action == "contrast_phase":
+        process_3d(args, ContrastPhasePipelineBuilder)
     elif args.action == "organ_segmentation":
-        organ_segmentation(args)
+        process_3d(args, LiverSpleenPancreasPipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
@@ -100,7 +101,7 @@ def save_slice(
         bbox_props = dict(boxstyle="round", facecolor="gray", alpha=0.5)
 
         texts = []
-        for i, (k, v) in enumerate(corner_text.items()):
+        for k, v in corner_text.items():
             if isinstance(v, str):
                 texts.append("{:<9}{}".format(k + ":", v))
             else:
@@ -146,40 +147,48 @@ def save_slice(
         fig.savefig(path, bbox_inches="tight", pad_inches=0)
         plt.close(fig)
 
+
 def slicedDilationOrErosion(input_mask, num_iteration, operation):
-    '''
+    """
     Perform the dilation on the smallest slice that will fit the
     segmentation
-    '''
-    margin = 2 if num_iteration is None else num_iteration+1
-    
+    """
+    margin = 2 if num_iteration is None else num_iteration + 1
+
     # find the minimum volume enclosing the organ
-    x_idx = np.where(input_mask.sum(axis=(1,2)))[0]
-    x_start, x_end = x_idx[0]-margin, x_idx[-1]+margin
-    y_idx = np.where(input_mask.sum(axis=(0,2)))[0]
-    y_start, y_end = y_idx[0]-margin, y_idx[-1]+margin
-    z_idx = np.where(input_mask.sum(axis=(0,1)))[0]
-    z_start, z_end = z_idx[0]-margin, z_idx[-1]+margin
-    
-    struct = scipy.ndimage.generate_binary_structure(3,1)
+    x_idx = np.where(input_mask.sum(axis=(1, 2)))[0]
+    x_start, x_end = x_idx[0] - margin, x_idx[-1] + margin
+    y_idx = np.where(input_mask.sum(axis=(0, 2)))[0]
+    y_start, y_end = y_idx[0] - margin, y_idx[-1] + margin
+    z_idx = np.where(input_mask.sum(axis=(0, 1)))[0]
+    z_start, z_end = z_idx[0] - margin, z_idx[-1] + margin
+
+    struct = scipy.ndimage.generate_binary_structure(3, 1)
     struct = scipy.ndimage.iterate_structure(struct, num_iteration)
-    
-    if operation == 'dilate':
-        mask_slice = scipy.ndimage.binary_dilation(input_mask[x_start:x_end, y_start:y_end, z_start:z_end], structure=struct).astype(np.int8)
-    elif operation == 'erode':
-        mask_slice = scipy.ndimage.binary_erosion(input_mask[x_start:x_end, y_start:y_end, z_start:z_end], structure=struct).astype(np.int8)
-        
+
+    if operation == "dilate":
+        mask_slice = scipy.ndimage.binary_dilation(
+            input_mask[x_start:x_end, y_start:y_end, z_start:z_end], structure=struct
+        ).astype(np.int8)
+    elif operation == "erode":
+        mask_slice = scipy.ndimage.binary_erosion(
+            input_mask[x_start:x_end, y_start:y_end, z_start:z_end], structure=struct
+        ).astype(np.int8)
+
     output_mask = input_mask.copy()
-    
+
     output_mask[x_start:x_end, y_start:y_end, z_start:z_end] = mask_slice
-    
+
     return output_mask
 
+
 def extract_organ_metrics(ct, all_masks, class_num=None, vol_per_pixel=None, erode_mask=True):
-    
+
     if erode_mask:
-        eroded_mask = slicedDilationOrErosion(input_mask= (all_masks == class_num), num_iteration=3, operation='erode')   
-        ct_organ_vals = ct[eroded_mask == 1]         
+        eroded_mask = slicedDilationOrErosion(
+            input_mask=(all_masks == class_num), num_iteration=3, operation="erode"
+        )
+        ct_organ_vals = ct[eroded_mask == 1]
     else:
         ct_organ_vals = ct[all_masks == class_num]
 
@@ -200,9 +209,9 @@ def extract_organ_metrics(ct, all_masks, class_num=None, vol_per_pixel=None, ero
     return results
 
 
-
 def generate_slice_images(
-    ct, all_masks, class_nums, unit_dict, vol_per_pixel, pix_dims, root, fontsize=20, show=False):
+    ct, all_masks, class_nums, unit_dict, vol_per_pixel, pix_dims, root, fontsize=20, show=False
+):
 
     all_results = {}
 
