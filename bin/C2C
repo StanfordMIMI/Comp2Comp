@@ -36,6 +36,11 @@ from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue_visualization import (
     MuscleAdiposeTissueVisualizer,
 )
+from comp2comp.organs.organs import OrganSegmentation
+from comp2comp.organs.visualization import (
+    LiverSpleenPancreasMetricsPrinter,
+    LiverSpleenPancreasVisualizer,
+)
 from comp2comp.spine.spine import (
     SpineComputeROIs,
     SpineCoronalSagittalVisualizer,
@@ -90,6 +95,16 @@ def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
         ]
     )
     return pipeline
+
+def LiverSpleenPancreasPipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        OrganSegmentation(path),
+        LiverSpleenPancreasVisualizer(),
+        LiverSpleenPancreasMetricsPrinter()
+        ]
+    )
+    return pipeline
+
 
 def ContrastPhasePipelineBuilder(path, args):
     pipeline = InferencePipeline([
@@ -154,8 +169,16 @@ def argument_parser():
         type=str,
         help="spine model to use for inference",
     )
+       
+    organ_segmentation = subparsers.add_parser("organ_segmentation",
+                                              help="Segmentation of liver, spleen and pancreas")
+    organ_segmentation.add_argument(
+        "--input_path",
+        required=True,
+        type=str,
+        help="path to input directory or file",
+    )
 
-    # Spine + muscle + fat
     contrast_phase_parser = subparsers.add_parser("contrast_phase",
                                               help="contrast phase")
     contrast_phase_parser.add_argument(
@@ -177,6 +200,8 @@ def main():
         process_3d(args, SpinePipelineBuilder)
     elif args.action == "contrast_phase":
         process_3d(args, ContrastPhasePipelineBuilder)
+    elif args.action == "organ_segmentation":
+        process_3d(args, LiverSpleenPancreasPipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 
