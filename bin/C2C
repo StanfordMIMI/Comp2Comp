@@ -106,21 +106,6 @@ def LiverSpleenPancreasPipelineBuilder(path, args):
     return pipeline
 
 
-
-# pipeline = InferencePipeline([
-#     OrganSegmentation(path),
-#     LiverSpleenPancreasVisualizer(),
-#     LiverSpleenPancreasMetricsPrinter()
-#     ],
-# config={
-#     "output_dir": output_dir,
-#     "model_dir": model_dir
-#     }
-# )
-
-
-
-
 def ContrastPhasePipelineBuilder(path, args):
     pipeline = InferencePipeline([
         ContrastPhaseDetection(path)
