@@ -36,7 +36,7 @@ The [`InferencePipeline` class](comp2comp/inference_pipeline.py) is used to crea
 
 The first argument of the `__call__` function of `InferenceClass` must be the `InferencePipeline` object. This allows each `InferenceClass` object to access or set attributes of the `InferencePipeline` object that can be accessed by the subsequent `InferenceClass` objects in the pipeline. Each `InferenceClass` object should return a dictionary where the keys of the dictionary should match the keyword arguments of the subsequent `InferenceClass's` `__call__` function. If an `InferenceClass` object only sets attributes of the `InferencePipeline` object but does not return any value, an empty dictionary can be returned. 
 
-Currently, Comp2Comp has two pipelines, muscle_adipose_tissue and spine_muscle_adipose_tissue, and two more pipelines, abdominal_aortic_aneurysm and contrast_phase_detection, are in progress.
+Below are the inference pipelines currently supported by Comp2Comp.
 
 ## Spine Bone Mineral Density from 3D Trabecular Bone Regions at T12-L5
 
