@@ -184,6 +184,7 @@ class AxialCropper(InferenceClass):
     """Crop the CT image (medical_volume) and segmentation based on user-specified
     lower and upper levels of the spine.
     """
+
     def __init__(self, lower_level: str = "L5", upper_level: str = "L1", save=True):
         """
         Args:
