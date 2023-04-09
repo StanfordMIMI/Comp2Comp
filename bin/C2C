@@ -42,6 +42,7 @@ from comp2comp.organs.visualization import (
     LiverSpleenPancreasVisualizer,
 )
 from comp2comp.spine.spine import (
+    AxialCropper,
     SpineComputeROIs,
     SpineCoronalSagittalVisualizer,
     SpineFindDicoms,
@@ -82,6 +83,15 @@ def SpinePipelineBuilder(path, args):
         SpineComputeROIs(args.spine_model),
         SpineMetricsSaver(),
         SpineCoronalSagittalVisualizer()
+        ]
+    )
+    return pipeline
+
+def AxialCropperPipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        SpineSegmentation(path, args.spine_model),
+        SpineToCanonical(),
+        AxialCropper(lower_level="L5", upper_level="L1", save=True)
         ]
     )
     return pipeline

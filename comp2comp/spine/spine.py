@@ -180,11 +180,16 @@ class SpineToCanonical(InferenceClass):
         return {}
 
 
-class SpineToCanonical(InferenceClass):
-    def __init__(self, lower_level: str = "L1", upper_level: str = "L5"):
+class AxialCropper(InferenceClass):
+    def __init__(self, lower_level: str = "L5", upper_level: str = "L1", save=True):
         super().__init__()
         self.lower_level = lower_level
         self.upper_level = upper_level
+        ts_spine_full_model = Models.model_from_name("ts_spine_full")
+        categories = ts_spine_full_model.categories
+        self.lower_level_index = categories[self.lower_level]
+        self.upper_level_index = categories[self.upper_level]
+        self.save = save
 
     def __call__(self, inference_pipeline):
         """
@@ -192,16 +197,28 @@ class SpineToCanonical(InferenceClass):
         Second dim goes from P to A.
         Third dim goes from I to S.
         """
-        inference_pipeline.flip_si = False  # necessary for finding dicoms in correct order
-        if "I" in nib.aff2axcodes(inference_pipeline.medical_volume.affine):
-            inference_pipeline.flip_si = True
+        segmentation = inference_pipeline.segmentation
+        segmentation_data = segmentation.get_fdata()
+        upper_level_index = np.where(segmentation_data == self.upper_level_index)[2].max()
+        lower_level_index = np.where(segmentation_data == self.lower_level_index)[2].min()
+        segmentation = segmentation.slicer[:, :, lower_level_index:upper_level_index]
+        inference_pipeline.segmentation = segmentation
 
-        canonical_segmentation = nib.as_closest_canonical(inference_pipeline.segmentation)
-        canonical_medical_volume = nib.as_closest_canonical(inference_pipeline.medical_volume)
+        medical_volume = inference_pipeline.medical_volume
+        medical_volume = medical_volume.slicer[:, :, lower_level_index:upper_level_index]
+        inference_pipeline.medical_volume = medical_volume
 
-        inference_pipeline.segmentation = canonical_segmentation
-        inference_pipeline.medical_volume = canonical_medical_volume
-        inference_pipeline.pixel_spacing_list = canonical_medical_volume.header.get_zooms()
+        if self.save:
+            nib.save(
+                segmentation,
+                os.path.join(inference_pipeline.output_dir, "segmentations", "spine.nii.gz"),
+            )
+            nib.save(
+                medical_volume,
+                os.path.join(
+                    inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
+                ),
+            )
         return {}
 
 
