@@ -93,6 +93,7 @@ bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
 
 ## In Progess
 - Abdominal Aortic Aneurysm Detection
+- Hip Analysis
 
 ## Citation
 ``` 
