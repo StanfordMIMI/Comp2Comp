@@ -1,9 +1,10 @@
 # <img src="logo.png" width="40" height="40" /> Comp2Comp 
-Comp2Comp is a library for extracting clinical insights from computed tomography scans. 
-
 [**Paper**](https://arxiv.org/abs/2302.06568)
 | [**Installation**](#installation)
 | [**Basic Usage**](#basic_usage)
+| [**Inference Pipelines**](#basic_usage)
+
+Comp2Comp is a library for extracting clinical insights from computed tomography scans. 
 
 ## Installation
 <a name="installation"></a>
@@ -27,7 +28,8 @@ For running on slurm, modify the above commands as follow:
 bin/C2C-slurm <pipeline_name> --input_path <path/to/input/folder>
 ```
 
-## Inference Pipeline
+## Inference Pipelines
+<a name="inference_pipeline"></a>
 We have designed Comp2Comp to be highly extensible and to enable the development of complex clinically-relevant applications. We observed that many clinical applications require chaining several machine learning or other computational modules together to generate complex insights. The inference pipeline system is designed to make this easy. Furthermore, we seek to make the code readable and modular, so that the community can easily contribute to the project. 
 
 The [`InferencePipeline` class](comp2comp/inference_pipeline.py) is used to create inference pipelines, which are made up of a sequence of [`InferenceClass` objects](comp2comp/inference_class_base.py). When the `InferencePipeline` object is called, it sequentially calls the `InferenceClasses` that were provided to the constructor. 
@@ -36,21 +38,61 @@ The first argument of the `__call__` function of `InferenceClass` must be the `I
 
 Currently, Comp2Comp has two pipelines, muscle_adipose_tissue and spine_muscle_adipose_tissue, and two more pipelines, abdominal_aortic_aneurysm and contrast_phase_detection, are in progress.
 
-## Current Pipelines
-- muscle_adipose_tissue
-  - DICOM files within the input_path folder and subfolders of input_path will be processed.
-- spine
-  - input_path should contain a DICOM series or subfolders that contain DICOM series.
-- spine_muscle_adipose_tissue
-  - input_path should contain a DICOM series or subfolders that contain DICOM series.
+## Spine Bone Mineral Density from 3D Trabecular Bone Regions at T12-L5
+
+### Usage
+```bash
+bin/C2C spine --input_path <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+### Example Output Image
+![Alt text](figures/spine_example.png?raw=true "Comp2Comp Panel Example")
+
+## Slice-by-Slice 2D Analysis of Muscle and Adipose Tissue
+
+### Usage
+```bash
+bin/C2C muscle_adipose_tissue --input_path <path/to/input/folder>
+```
+- DICOM files within the input_path folder and subfolders of input_path will be processed.
+
+### Example Output Image
+![Alt text](figures/muscle_adipose_tissue_example.png?raw=true "Comp2Comp Panel Example")
+
+## End-to-End Spine, Muscle, and Adipose Tissue Analysis at T12-L5
+
+### Usage
+```bash
+bin/C2C spine_muscle_adipose_tissue --input_path <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+### Example Output Image
+![Alt text](figures/spine_muscle_adipose_tissue_example.png?raw=true "Comp2Comp Panel Example")
+
+## Contrast Phase Detection
+
+### Usage
+```bash
+bin/C2C contrast_phase --input_path <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+## 3D Analysis of Liver, Spleen, and Pancreas
+
+### Usage
+```bash
+bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+### Example Output Image
+![Alt text](figures/liver_spleen_pancreas_example.png?raw=true "Comp2Comp Panel Example")
+
 
 ## In Progess
-- abdominal_aortic_aneurysm
-- contrast_phase_detection
-- liver_spleen_pancreas
-
-## Example image output from spine_muscle_adipose_tissue
-![Alt text](figures/report_v1.png?raw=true "Comp2Comp Panel Example")
+- Abdominal Aortic Aneurysm Detection
 
 ## Citation
 ``` 
