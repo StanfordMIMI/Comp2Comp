@@ -181,16 +181,17 @@ class SpineToCanonical(InferenceClass):
 
 
 class AxialCropper(InferenceClass):
-    """Crop the CT image (medical_volume) and segmentation based on user-specified 
+    """Crop the CT image (medical_volume) and segmentation based on user-specified
     lower and upper levels of the spine.
     """
+
     def __init__(self, lower_level: str = "L5", upper_level: str = "L1", save=True):
         """
         Args:
             lower_level (str, optional): Lower level of the spine. Defaults to "L5".
             upper_level (str, optional): Upper level of the spine. Defaults to "L1".
             save (bool, optional): Save cropped image and segmentation. Defaults to True.
-        
+
         Raises:
             ValueError: If lower_level or upper_level is not a valid spine level.
         """
@@ -203,7 +204,7 @@ class AxialCropper(InferenceClass):
             self.lower_level_index = categories[self.lower_level]
             self.upper_level_index = categories[self.upper_level]
         except KeyError:
-            raise ValueError("Invalid spine level.")
+            raise ValueError("Invalid spine level.") from None
         self.save = save
 
     def __call__(self, inference_pipeline):
