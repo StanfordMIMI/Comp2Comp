@@ -180,6 +180,63 @@ class SpineToCanonical(InferenceClass):
         return {}
 
 
+class AxialCropper(InferenceClass):
+    """Crop the CT image (medical_volume) and segmentation based on user-specified 
+    lower and upper levels of the spine.
+    """
+    def __init__(self, lower_level: str = "L5", upper_level: str = "L1", save=True):
+        """
+        Args:
+            lower_level (str, optional): Lower level of the spine. Defaults to "L5".
+            upper_level (str, optional): Upper level of the spine. Defaults to "L1".
+            save (bool, optional): Save cropped image and segmentation. Defaults to True.
+        
+        Raises:
+            ValueError: If lower_level or upper_level is not a valid spine level.
+        """
+        super().__init__()
+        self.lower_level = lower_level
+        self.upper_level = upper_level
+        ts_spine_full_model = Models.model_from_name("ts_spine_full")
+        categories = ts_spine_full_model.categories
+        try:
+            self.lower_level_index = categories[self.lower_level]
+            self.upper_level_index = categories[self.upper_level]
+        except KeyError:
+            raise ValueError("Invalid spine level.")
+        self.save = save
+
+    def __call__(self, inference_pipeline):
+        """
+        First dim goes from L to R.
+        Second dim goes from P to A.
+        Third dim goes from I to S.
+        """
+        segmentation = inference_pipeline.segmentation
+        segmentation_data = segmentation.get_fdata()
+        upper_level_index = np.where(segmentation_data == self.upper_level_index)[2].max()
+        lower_level_index = np.where(segmentation_data == self.lower_level_index)[2].min()
+        segmentation = segmentation.slicer[:, :, lower_level_index:upper_level_index]
+        inference_pipeline.segmentation = segmentation
+
+        medical_volume = inference_pipeline.medical_volume
+        medical_volume = medical_volume.slicer[:, :, lower_level_index:upper_level_index]
+        inference_pipeline.medical_volume = medical_volume
+
+        if self.save:
+            nib.save(
+                segmentation,
+                os.path.join(inference_pipeline.output_dir, "segmentations", "spine.nii.gz"),
+            )
+            nib.save(
+                medical_volume,
+                os.path.join(
+                    inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
+                ),
+            )
+        return {}
+
+
 class SpineComputeROIs(InferenceClass):
     def __init__(self, spine_model):
         super().__init__()

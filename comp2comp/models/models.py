@@ -25,8 +25,41 @@ class Models(enum.Enum):
         True,
         ("soft", "bone", "custom"),
     )
-    TS_SPINE = (
+    TS_SPINE_FULL = (
         3,
+        "ts_spine_full",
+        # Category name mapped to channel index
+        {
+            "L5": 18,
+            "L4": 19,
+            "L3": 20,
+            "L2": 21,
+            "L1": 22,
+            "T12": 23,
+            "T11": 24,
+            "T10": 25,
+            "T9": 26,
+            "T8": 27,
+            "T7": 28,
+            "T6": 29,
+            "T5": 30,
+            "T4": 31,
+            "T3": 32,
+            "T2": 33,
+            "T1": 34,
+            "C7": 35,
+            "C6": 36,
+            "C5": 37,
+            "C4": 38,
+            "C3": 39,
+            "C2": 40,
+            "C1": 41,
+        },
+        False,
+        (),
+    )
+    TS_SPINE = (
+        4,
         "ts_spine",
         # Category name mapped to channel index
         {"L5": 18, "L4": 19, "L3": 20, "L2": 21, "L1": 22, "T12": 23},
@@ -34,7 +67,7 @@ class Models(enum.Enum):
         (),
     )
     STANFORD_SPINE_V_0_0_1 = (
-        4,
+        5,
         "stanford_spine_v0.0.1",
         # Category name mapped to channel index
         {"L5": 24, "L4": 23, "L3": 22, "L2": 21, "L1": 20, "T12": 19},
