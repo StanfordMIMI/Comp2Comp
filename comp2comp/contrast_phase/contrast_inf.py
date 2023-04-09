@@ -401,25 +401,23 @@ def predict_phase(TS_path, scan_path, outputPath=None, save_sample=False):
     if y_pred == 3:
         pred_phase = "delayed"
 
-    if outputPath:
-        # save a txt file with the prediction based on the output path
-        outputTxt = os.path.join(outputPath, "phase_prediction.txt")
-        with open(outputTxt, "w") as text_file:
-            text_file.write(pred_phase)
-        print(pred_phase)
+    output_path_metrics = os.path.join(outputPath, "metrics")
+    if not os.path.exists(output_path_metrics):
+        os.makedirs(output_path_metrics)
+    outputTxt = os.path.join(output_path_metrics, "phase_prediction.txt")
+    with open(outputTxt, "w") as text_file:
+        text_file.write(pred_phase)
+    print(pred_phase)
 
-        if save_sample:
-            scanImage = loadNiiImageWithSitk(scan_path)
-            sliceImageK, sliceImageA = selectSampleSlice(kidneyLMask, adRMask, scanImage)
-            outJpgK = os.path.join(outputPath, "sampleSliceKidney.png")
-            sitk.WriteImage(sliceImageK, outJpgK)
-            outJpgA = os.path.join(outputPath, "sampleSliceAdrenal.png")
-            sitk.WriteImage(sliceImageA, outJpgA)
-
-    else:
-        # print the prediction
-        print(pred_phase)
-        return pred_phase
+    output_path_images = os.path.join(outputPath, "images")
+    if not os.path.exists(output_path_images):
+        os.makedirs(output_path_images)
+    scanImage = loadNiiImageWithSitk(scan_path)
+    sliceImageK, sliceImageA = selectSampleSlice(kidneyLMask, adRMask, scanImage)
+    outJpgK = os.path.join(output_path_images, "sampleSliceKidney.png")
+    sitk.WriteImage(sliceImageK, outJpgK)
+    outJpgA = os.path.join(output_path_images, "sampleSliceAdrenal.png")
+    sitk.WriteImage(sliceImageA, outJpgA)
 
 
 if __name__ == "__main__":

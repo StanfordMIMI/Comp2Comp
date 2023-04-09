@@ -49,6 +49,8 @@ docs/_build
 *.png
 !panel_example.png
 !logo.png
+# except for pngs in the figures folder
+!figures/*.png
 
 # ignore any weights files
 weights/
