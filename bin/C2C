@@ -170,9 +170,9 @@ def argument_parser():
         help="spine model to use for inference",
     )
        
-    organ_segmentation = subparsers.add_parser("organ_segmentation",
+    liver_spleen_pancreas = subparsers.add_parser("liver_spleen_pancreas",
                                               help="Segmentation of liver, spleen and pancreas")
-    organ_segmentation.add_argument(
+    liver_spleen_pancreas.add_argument(
         "--input_path",
         required=True,
         type=str,
@@ -200,7 +200,7 @@ def main():
         process_3d(args, SpinePipelineBuilder)
     elif args.action == "contrast_phase":
         process_3d(args, ContrastPhasePipelineBuilder)
-    elif args.action == "organ_segmentation":
+    elif args.action == "liver_spleen_pancreas":
         process_3d(args, LiverSpleenPancreasPipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))

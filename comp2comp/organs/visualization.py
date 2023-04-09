@@ -28,10 +28,8 @@ class LiverSpleenPancreasVisualizer(InferenceClass):
     def __call__(self, inference_pipeline):
 
         self.output_dir = inference_pipeline.output_dir
-        self.output_dir_images_organs = os.path.join(self.output_dir, "images/organs/")
-        inference_pipeline.output_dir_images_organs_organs_organs = os.path.join(
-            self.output_dir, "images/organs/"
-        )
+        self.output_dir_images_organs = os.path.join(self.output_dir, "images/")
+        inference_pipeline.output_dir_images_organs_organs_organs = self.output_dir_images_organs
 
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
@@ -94,7 +92,7 @@ class LiverSpleenPancreasMetricsPrinter(InferenceClass):
         print("\n")
 
         output_dir = inference_pipeline.output_dir
-        self.output_dir_metrics_organs = os.path.join(output_dir, "metrics/organs/")
+        self.output_dir_metrics_organs = os.path.join(output_dir, "metrics/")
 
         if not os.path.exists(self.output_dir_metrics_organs):
             os.makedirs(self.output_dir_metrics_organs)
