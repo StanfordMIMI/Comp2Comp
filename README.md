@@ -43,11 +43,14 @@ Currently, Comp2Comp has two pipelines, muscle_adipose_tissue and spine_muscle_a
   - input_path should contain a DICOM series or subfolders that contain DICOM series.
 - spine_muscle_adipose_tissue
   - input_path should contain a DICOM series or subfolders that contain DICOM series.
+- contrast_phase
+  - input_path should contain a DICOM series or subfolders that contain DICOM series.
+- liver_spleen_pancreas
+  - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
 ## In Progess
 - abdominal_aortic_aneurysm
-- contrast_phase_detection
-- liver_spleen_pancreas
+- hip
 
 ## Example image output from spine_muscle_adipose_tissue
 ![Alt text](figures/report_v1.png?raw=true "Comp2Comp Panel Example")
