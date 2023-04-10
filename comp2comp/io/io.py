@@ -69,10 +69,14 @@ class DicomToNifti(InferenceClass):
         output_dir = inference_pipeline.output_dir
         segmentations_output_dir = os.path.join(output_dir, "segmentations")
         os.makedirs(segmentations_output_dir, exist_ok=True)
-        dicom2nifti.dicom_series_to_nifti(
-            self.input_path,
-            output_file=os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"),
-            reorient_nifti=False,
-        )
-        inference_pipeline.dicom_series_path = str(self.input_path)
+        # if self.input_path is a folder
+        if self.input_path.is_dir():
+            dicom2nifti.dicom_series_to_nifti(
+                self.input_path,
+                output_file=os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"),
+                reorient_nifti=False,
+            )
+            inference_pipeline.dicom_series_path = str(self.input_path)
+        elif self.input_path.suffix in [".nii", ".nii.gz"]:
+            os.system(f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}")
         return {}
