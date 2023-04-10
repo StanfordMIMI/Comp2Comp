@@ -33,7 +33,7 @@ def get_version():
 setup(
     name="comp2comp",
     version=get_version(),
-    author="Arjun Desai",
+    author="StanfordMIMI",
     url="https://github.com/StanfordMIMI/Comp2Comp",
     description="Computed tomography to body composition.",
     packages=find_packages(exclude=("configs", "tests")),
@@ -71,5 +71,6 @@ setup(
             "recommonmark",
             "myst-parser",
         ],
+        "contrast_phase": ["xgboost"],
     },
 )

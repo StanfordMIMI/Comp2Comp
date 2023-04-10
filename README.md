@@ -7,18 +7,27 @@
 | [**Installation**](#installation)
 | [**Basic Usage**](#basic_usage)
 | [**Inference Pipelines**](#basic_usage)
+| [**Contribute**](#contribute)
+| [**Citation**](#citation)
 
-Comp2Comp is a library for extracting clinical insights from computed tomography scans. 
+Comp2Comp is a library for extracting clinical insights from computed tomography scans.
 
 ## Installation
 <a name="installation"></a>
 ```bash
-# Install from local clone:
 git clone https://github.com/StanfordMIMI/Comp2Comp/
 
 # Install script requires Anaconda/Miniconda.
 cd Comp2Comp && bin/install.sh
 ```
+
+Alternatively, Comp2Comp can be installed with `pip`:
+```bash
+git clone https://github.com/StanfordMIMI/Comp2Comp/
+cd Comp2Comp 
+pip install -e .
+```
+
 For installing on the Apple M1 chip, see [these instructions](https://github.com/StanfordMIMI/Comp2Comp/blob/docs/docs/Local%20Implementation%20%40%20M1%20arm64%20Silicon.md).
 
 ## Basic Usage
@@ -51,7 +60,9 @@ bin/C2C spine --input_path <path/to/input/folder>
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
 ### Example Output Image
-![Alt text](figures/spine_example.png?raw=true "Comp2Comp Panel Example")
+<p align="center">
+  <img src="figures/spine_example.png" height="300">
+</p>
 
 ## Slice-by-Slice 2D Analysis of Muscle and Adipose Tissue
 
@@ -62,7 +73,9 @@ bin/C2C muscle_adipose_tissue --input_path <path/to/input/folder>
 - DICOM files within the input_path folder and subfolders of input_path will be processed.
 
 ### Example Output Image
-![Alt text](figures/muscle_adipose_tissue_example.png?raw=true "Comp2Comp Panel Example")
+<p align="center">
+  <img src="figures/muscle_adipose_tissue_example.png" height="300">
+</p>
 
 ## End-to-End Spine, Muscle, and Adipose Tissue Analysis at T12-L5
 
@@ -73,7 +86,9 @@ bin/C2C spine_muscle_adipose_tissue --input_path <path/to/input/folder>
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
 ### Example Output Image
-![Alt text](figures/spine_muscle_adipose_tissue_example.png?raw=true "Comp2Comp Panel Example")
+<p align="center">
+  <img src="figures/spine_muscle_adipose_tissue_example.png" height="300">
+</p>
 
 ## Contrast Phase Detection
 
@@ -82,6 +97,11 @@ bin/C2C spine_muscle_adipose_tissue --input_path <path/to/input/folder>
 bin/C2C contrast_phase --input_path <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
+- This package has extra dependencies. To install those, run:
+```bash
+cd Comp2Comp
+pip install -e '.[contrast_phase]'
+```
 
 ## 3D Analysis of Liver, Spleen, and Pancreas
 
@@ -92,14 +112,33 @@ bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
 ### Example Output Image
-![Alt text](figures/liver_spleen_pancreas_example.png?raw=true "Comp2Comp Panel Example")
+<p align="center">
+  <img src="figures/liver_spleen_pancreas_example.png" height="300">
+</p>
 
 
 ## In Progess
 - Abdominal Aortic Aneurysm Detection
 - Hip Analysis
 
+## Contribute
+<a name="contribute"></a>
+If you would like to contribute to Comp2Comp, we recommend you clone the repository and install Comp2Comp with `pip` in editable mode.
+
+```bash
+git clone https://github.com/StanfordMIMI/Comp2Comp
+cd Comp2Comp
+pip install -e '.[dev]'
+make dev-lint
+```
+
+To run tests, run:
+```bash
+make autoformat
+```
+
 ## Citation
+<a name="citation"></a>
 ``` 
 @article{blankemeier2023comp2comp,
   title={Comp2Comp: Open-Source Body Composition Assessment on Computed Tomography},
