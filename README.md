@@ -10,17 +10,24 @@
 | [**Contribute**](#contribute)
 | [**Citation**](#citation)
 
-Comp2Comp is a library for extracting clinical insights from computed tomography scans. 
+Comp2Comp is a library for extracting clinical insights from computed tomography scans.
 
 ## Installation
 <a name="installation"></a>
 ```bash
-# Install from local clone:
 git clone https://github.com/StanfordMIMI/Comp2Comp/
 
 # Install script requires Anaconda/Miniconda.
 cd Comp2Comp && bin/install.sh
 ```
+
+Alternatively, Comp2Comp can be installed with `pip`:
+```bash
+git clone https://github.com/StanfordMIMI/Comp2Comp/
+cd Comp2Comp 
+pip install -e .
+```
+
 For installing on the Apple M1 chip, see [these instructions](https://github.com/StanfordMIMI/Comp2Comp/blob/docs/docs/Local%20Implementation%20%40%20M1%20arm64%20Silicon.md).
 
 ## Basic Usage
