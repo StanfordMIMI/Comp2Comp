@@ -13,6 +13,8 @@ author = 'StanfordMIMI'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+# Adapted from https://github.com/pyvoxel/pyvoxel
+
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
@@ -24,17 +26,32 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx.ext.napoleon",
+    "sphinxcontrib.bibtex",
+    "sphinx_rtd_theme",
     "sphinx.ext.githubpages",
     "m2r2",
 ]
+
+autosummary_generate = True
+autosummary_imported_members = True
+
+bibtex_bibfiles = ["references.bib"]
 
 templates_path = ['_templates']
 exclude_patterns = []
 
 
+pygments_style = "sphinx"
+html_theme = "sphinx_rtd_theme"
+htmlhelp_basename = "Comp2Compdoc"
+html_static_path = ["_static"]
 
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+intersphinx_mapping = {"numpy": ("https://numpy.org/doc/stable/", None)}
+html_theme_options = {"navigation_depth": 2}
 
-html_theme = 'alabaster'
-html_static_path = ['_static']
+source_suffix = [".rst", ".md"]
+
+todo_include_todos = True
+napoleon_use_ivar = True
+napoleon_google_docstring = True
+html_show_sourcelink = False
