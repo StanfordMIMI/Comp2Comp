@@ -132,7 +132,7 @@ pip install -e '.[dev]'
 make dev
 ```
 
-To run tests, build documentation and contribute, run
+To run tests, run:
 ```bash
 make autoformat
 ```
