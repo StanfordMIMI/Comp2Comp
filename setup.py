@@ -71,5 +71,6 @@ setup(
             "recommonmark",
             "myst-parser",
         ],
+        "contrast_phase": ["xgboost"]
     },
 )

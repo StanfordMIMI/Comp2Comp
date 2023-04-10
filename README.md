@@ -7,6 +7,8 @@
 | [**Installation**](#installation)
 | [**Basic Usage**](#basic_usage)
 | [**Inference Pipelines**](#basic_usage)
+| [**Contribute**](#contribute)
+| [**Citation**](#citation)
 
 Comp2Comp is a library for extracting clinical insights from computed tomography scans. 
 
@@ -88,6 +90,11 @@ bin/C2C spine_muscle_adipose_tissue --input_path <path/to/input/folder>
 bin/C2C contrast_phase --input_path <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
+- This package has extra dependencies. To install those, run:
+```bash
+cd Comp2Comp
+pip install -e '.[contrast_phase]'
+```
 
 ## 3D Analysis of Liver, Spleen, and Pancreas
 
@@ -107,7 +114,24 @@ bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
 - Abdominal Aortic Aneurysm Detection
 - Hip Analysis
 
+## Contribute
+<a name="contribute"></a>
+If you would like to contribute to Comp2Comp, we recommend you clone the repository and install Comp2Comp with `pip` in editable mode.
+
+```bash
+git clone https://github.com/StanfordMIMI/Comp2Comp
+cd Comp2Comp
+pip install -e '.[dev]'
+make dev
+```
+
+To run tests, build documentation and contribute, run
+```bash
+make autoformat
+```
+
 ## Citation
+<a name="citation"></a>
 ``` 
 @article{blankemeier2023comp2comp,
   title={Comp2Comp: Open-Source Body Composition Assessment on Computed Tomography},
