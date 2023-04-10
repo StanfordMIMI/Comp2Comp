@@ -74,5 +74,5 @@ class DicomToNifti(InferenceClass):
             output_file=os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"),
             reorient_nifti=False,
         )
-        inference_pipeline.dicom_series_path = self.input_path
+        inference_pipeline.dicom_series_path = str(self.input_path)
         return {}
