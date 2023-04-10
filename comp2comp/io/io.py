@@ -78,5 +78,7 @@ class DicomToNifti(InferenceClass):
             )
             inference_pipeline.dicom_series_path = str(self.input_path)
         elif self.input_path.suffix in [".nii", ".nii.gz"]:
-            os.system(f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}")
+            os.system(
+                f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}"
+            )
         return {}
