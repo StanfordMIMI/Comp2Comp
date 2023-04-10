@@ -129,7 +129,7 @@ If you would like to contribute to Comp2Comp, we recommend you clone the reposit
 git clone https://github.com/StanfordMIMI/Comp2Comp
 cd Comp2Comp
 pip install -e '.[dev]'
-make dev
+make dev-lint
 ```
 
 To run tests, run:
