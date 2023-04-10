@@ -25,6 +25,7 @@ from comp2comp.contrast_phase.contrast_phase import ContrastPhaseDetection
 from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder, DicomToNifti
 from comp2comp.io.io_utils import get_dicom_paths_and_num
+from comp2comp.utils.orientation import ToCanonical
 from comp2comp.models.models import Models
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
     MuscleAdiposeTissueComputeMetrics,
@@ -92,7 +93,7 @@ def AxialCropperPipelineBuilder(path, args):
     pipeline = InferencePipeline([
         DicomToNifti(path),
         SpineSegmentation(args.spine_model),
-        SpineToCanonical(),
+        ToCanonical(),
         AxialCropper(lower_level="L5", upper_level="L1", save=True)
         ]
     )
