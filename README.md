@@ -1,6 +1,7 @@
 # <img src="logo.png" width="40" height="40" /> Comp2Comp 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/StanfordMIMI/Comp2Comp/ci.yaml?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/comp2comp/badge/?version=latest)](https://comp2comp.readthedocs.io/en/latest/?badge=latest)
 
 [**Paper**](https://arxiv.org/abs/2302.06568)
 | [**Installation**](#installation)
