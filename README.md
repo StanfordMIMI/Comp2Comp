@@ -61,7 +61,7 @@ bin/C2C spine --input_path <path/to/input/folder>
 
 ### Example Output Image
 <p align="center">
-  <img src="figures/spine_example.png" height="250">
+  <img src="figures/spine_example.png" height="300">
 </p>
 
 ## Slice-by-Slice 2D Analysis of Muscle and Adipose Tissue
@@ -74,7 +74,7 @@ bin/C2C muscle_adipose_tissue --input_path <path/to/input/folder>
 
 ### Example Output Image
 <p align="center">
-  <img src="figures/muscle_adipose_tissue_example.png" height="250">
+  <img src="figures/muscle_adipose_tissue_example.png" height="300">
 </p>
 
 ## End-to-End Spine, Muscle, and Adipose Tissue Analysis at T12-L5
@@ -87,7 +87,7 @@ bin/C2C spine_muscle_adipose_tissue --input_path <path/to/input/folder>
 
 ### Example Output Image
 <p align="center">
-  <img src="figures/spine_muscle_adipose_tissue_example.png" height="250">
+  <img src="figures/spine_muscle_adipose_tissue_example.png" height="300">
 </p>
 
 ## Contrast Phase Detection
@@ -113,7 +113,7 @@ bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
 
 ### Example Output Image
 <p align="center">
-  <img src="figures/liver_spleen_pancreas_example.png" height="250">
+  <img src="figures/liver_spleen_pancreas_example.png" height="300">
 </p>
 
 
