@@ -42,7 +42,7 @@ class OrganSegmentation(InferenceClass):
         return {}
 
     def organ_seg(self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir):
-        """Run spine segmentation.
+        """Run organ segmentation.
 
         Args:
             input_path (Union[str, Path]): Input path.
@@ -92,9 +92,5 @@ class OrganSegmentation(InferenceClass):
 
         # Log total time for spine segmentation
         print(f"Total time for organ segmentation: {end-st:.2f}s.")
-
-        if self.model_name == "stanford_spine_v0.0.1":
-            # subtract 17 from seg values except for 0
-            seg = np.where(seg == 0, 0, seg - 17)
 
         return seg, mvs
