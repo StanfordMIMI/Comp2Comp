@@ -1,6 +1,8 @@
+import os
 from pathlib import Path
 from typing import Dict, Union
 
+import dicom2nifti
 import dosma as dm
 
 from comp2comp.inference_class_base import InferenceClass
@@ -42,10 +44,8 @@ class DicomFinder(InferenceClass):
 
     def __call__(self, inference_pipeline) -> Dict[str, Path]:
         """Find dicom files in a directory.
-
         Args:
             inference_pipeline (InferencePipeline): Inference pipeline.
-
         Returns:
             Dict[str, Path]: Dictionary containing dicom files.
         """
@@ -53,4 +53,30 @@ class DicomFinder(InferenceClass):
         for file in self.input_path.glob("**/*.dcm"):
             dicom_files.append(file)
         inference_pipeline.dicom_file_paths = dicom_files
+        return {}
+
+
+class DicomToNifti(InferenceClass):
+    """Convert dicom files to NIfTI files."""
+
+    def __init__(self, input_path: Union[str, Path]):
+        super().__init__()
+        self.input_path = Path(input_path)
+
+    def __call__(self, inference_pipeline):
+        output_dir = inference_pipeline.output_dir
+        segmentations_output_dir = os.path.join(output_dir, "segmentations")
+        os.makedirs(segmentations_output_dir, exist_ok=True)
+        # if self.input_path is a folder
+        if self.input_path.is_dir():
+            dicom2nifti.dicom_series_to_nifti(
+                self.input_path,
+                output_file=os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"),
+                reorient_nifti=False,
+            )
+            inference_pipeline.dicom_series_path = str(self.input_path)
+        elif self.input_path.suffix in [".nii", ".nii.gz"]:
+            os.system(
+                f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}"
+            )
         return {}

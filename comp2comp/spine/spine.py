@@ -24,13 +24,12 @@ from comp2comp.spine import spine_utils
 class SpineSegmentation(InferenceClass):
     """Spine segmentation."""
 
-    def __init__(self, input_path, model_name):
+    def __init__(self, model_name):
         super().__init__()
-        self.input_path = input_path
         self.model_name = model_name
 
     def __call__(self, inference_pipeline):
-        inference_pipeline.dicom_series_path = self.input_path
+        # inference_pipeline.dicom_series_path = self.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
         if not os.path.exists(self.output_dir_segmentations):
@@ -39,7 +38,7 @@ class SpineSegmentation(InferenceClass):
         self.model_dir = inference_pipeline.model_dir
 
         seg, mv = self.spine_seg(
-            self.input_path,
+            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
             self.output_dir_segmentations + "spine.nii.gz",
             inference_pipeline.model_dir,
         )
@@ -92,7 +91,6 @@ class SpineSegmentation(InferenceClass):
 
     def spine_seg(self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir):
         """Run spine segmentation.
-
         Args:
             input_path (Union[str, Path]): Input path.
             output_path (Union[str, Path]): Output path.
@@ -191,7 +189,6 @@ class AxialCropper(InferenceClass):
             lower_level (str, optional): Lower level of the spine. Defaults to "L5".
             upper_level (str, optional): Upper level of the spine. Defaults to "L1".
             save (bool, optional): Save cropped image and segmentation. Defaults to True.
-
         Raises:
             ValueError: If lower_level or upper_level is not a valid spine level.
         """
