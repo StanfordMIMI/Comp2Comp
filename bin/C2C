@@ -22,10 +22,15 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 from comp2comp.contrast_phase.contrast_phase import ContrastPhaseDetection
+from comp2comp.hip.hip import (
+    HipComputeROIs,
+    HipMetricsSaver,
+    HipSegmentation,
+    HipVisualizer,
+)
 from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder, DicomToNifti
 from comp2comp.io.io_utils import get_dicom_paths_and_num
-from comp2comp.utils.orientation import ToCanonical
 from comp2comp.models.models import Models
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
     MuscleAdiposeTissueComputeMetrics,
@@ -52,6 +57,7 @@ from comp2comp.spine.spine import (
     SpineSegmentation,
     SpineToCanonical,
 )
+from comp2comp.utils.orientation import ToCanonical
 from comp2comp.utils.process import process_2d, process_3d
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -122,6 +128,18 @@ def LiverSpleenPancreasPipelineBuilder(path, args):
 def ContrastPhasePipelineBuilder(path, args):
     pipeline = InferencePipeline([
         ContrastPhaseDetection(path)
+        ]
+    )
+    return pipeline
+
+def HipPipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        DicomToNifti(path),
+        HipSegmentation(args.hip_model),
+        ToCanonical(),
+        HipComputeROIs(args.hip_model),
+        HipMetricsSaver(),
+        HipVisualizer()
         ]
     )
     return pipeline
@@ -200,6 +218,20 @@ def argument_parser():
         type=str,
         help="path to input directory or file",
     )
+
+    hip_parser = subparsers.add_parser("hip", help="hip")
+    hip_parser.add_argument(
+        "--input_path",
+        required=True,
+        type=str,
+        help="path to input directory or file",
+    )
+    hip_parser.add_argument(
+        "--hip_model",
+        default="ts_hip",
+        type=str,
+        help="hip model to use for inference",
+    )
     return parser
 
 
@@ -215,6 +247,8 @@ def main():
         process_3d(args, ContrastPhasePipelineBuilder)
     elif args.action == "liver_spleen_pancreas":
         process_3d(args, LiverSpleenPancreasPipelineBuilder)
+    elif args.action == "hip":
+        process_3d(args, HipPipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 

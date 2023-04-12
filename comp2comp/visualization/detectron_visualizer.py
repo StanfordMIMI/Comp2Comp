@@ -959,7 +959,7 @@ class Visualizer:
         """
         x, y = circle_coord
         self.output.ax.add_patch(
-            mpl.patches.Circle(circle_coord, radius=radius, fill=True, color=color)
+            mpl.patches.Circle(circle_coord, radius=radius, fill=False, color=color)
         )
         return self.output
 

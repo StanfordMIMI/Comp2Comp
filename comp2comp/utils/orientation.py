@@ -2,8 +2,10 @@ import nibabel as nib
 
 from comp2comp.inference_class_base import InferenceClass
 
+
 class ToCanonical(InferenceClass):
     """Convert spine segmentation to canonical orientation."""
+
     def __init__(self):
         super().__init__()
 
