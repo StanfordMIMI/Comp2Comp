@@ -12,8 +12,7 @@ from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
 
 from comp2comp.models.models import Models
-from comp2comp.hip.hip_visualization import method_visualizer, normalize_img, roi_visualizer
-from comp2comp.visualization.detectron_visualizer import Visualizer
+from comp2comp.hip.hip_visualization import method_visualizer
 
 
 def compute_rois(medical_volume, segmentation, model, output_dir):
@@ -21,10 +20,11 @@ def compute_rois(medical_volume, segmentation, model, output_dir):
     left_femur_mask = left_femur_mask.astype(np.uint8)
     right_femur_mask = segmentation.get_fdata() == model.categories["femur_right"]
     right_femur_mask = right_femur_mask.astype(np.uint8)
-    left_roi, left_centroid = get_femural_head_roi(left_femur_mask, medical_volume, output_dir)
-    return (left_roi, left_centroid)
+    left_roi, left_centroid = get_femural_head_roi(left_femur_mask, medical_volume, output_dir, "left")
+    right_roi, right_centroid = get_femural_head_roi(right_femur_mask, medical_volume, output_dir, "right")
+    return {"left": {"roi": left_roi, "centroid": left_centroid}, "right": {"roi": right_roi, "centroid": right_centroid}}
 
-def get_femural_head_roi(femur_mask, medical_volume, output_dir, visualize_method=False):
+def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=True):
     # find the largest index that is not zero
     top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
     top_mask = femur_mask[:, :, top]
@@ -59,6 +59,7 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, visualize_metho
             center_coronal,
             radius_coronal,
             output_dir,
+            anatomy
         )
 
     center_sagittal = list(center_sagittal)

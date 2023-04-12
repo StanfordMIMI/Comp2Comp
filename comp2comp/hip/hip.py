@@ -20,7 +20,7 @@ from totalsegmentator.libs import (
 from comp2comp.hip import hip_utils
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
-from comp2comp.hip.hip_visualization import roi_visualizer
+from comp2comp.hip.hip_visualization import hip_roi_visualizer
 
 
 class HipSegmentation(InferenceClass):
@@ -124,10 +124,9 @@ class HipComputeROIs(InferenceClass):
         images_folder = os.path.join(inference_pipeline.output_dir, "images")
         if not os.path.exists(images_folder):
             os.makedirs(images_folder)
-        left_roi, left_centroid = hip_utils.compute_rois(medical_volume, segmentation, model, images_folder)
-        inference_pipeline.left_femural_head_roi = left_roi
-        inference_pipeline.left_femural_head_centroid = left_centroid
-        return {}
+        results_dict = hip_utils.compute_rois(medical_volume, segmentation, model, images_folder)
+        inference_pipeline.femur_results_dict = results_dict
+        return {}   
 
 
 class HipMetricsSaver(InferenceClass):
@@ -143,14 +142,17 @@ class HipMetricsSaver(InferenceClass):
 class HipVisualizer(InferenceClass):
     def __init__(self):
         super().__init__()
-    
+
     def __call__(self, inference_pipeline):
         medical_volume = inference_pipeline.medical_volume
-        left_femural_head_roi = inference_pipeline.left_femural_head_roi
-        left_femural_head_centroid = left_femural_head_centroid
+        left_femural_head_roi = inference_pipeline.femur_results_dict["left"]["roi"]
+        left_femural_head_centroid = inference_pipeline.femur_results_dict["left"]["centroid"]
+        right_femural_head_roi = inference_pipeline.femur_results_dict["right"]["roi"]
+        right_femural_head_centroid = inference_pipeline.femur_results_dict["right"]["centroid"]
         output_dir = inference_pipeline.output_dir
         images_output_dir = os.path.join(output_dir, "images")
         if not os.path.exists(images_output_dir):
             os.makedirs(images_output_dir)
-        roi_visualizer(medical_volume, left_femural_head_roi, left_femural_head_centroid, images_output_dir)
+        hip_roi_visualizer(medical_volume, left_femural_head_roi, left_femural_head_centroid, images_output_dir, "left")
+        hip_roi_visualizer(medical_volume, right_femural_head_roi, right_femural_head_centroid, images_output_dir, "right")
 
