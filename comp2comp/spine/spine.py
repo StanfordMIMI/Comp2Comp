@@ -134,7 +134,7 @@ class SpineSegmentation(InferenceClass):
                 crop=None,
                 crop_path=crop_path,
                 task_name="total",
-                nora_tag=None,
+                nora_tag="None",
                 preview=False,
                 nr_threads_resampling=1,
                 nr_threads_saving=6,
@@ -352,6 +352,7 @@ class SpineMuscleAdiposeTissueReport(InferenceClass):
     def __call__(self, inference_pipeline):
         image_dir = Path(inference_pipeline.output_dir) / "images"
         self.generate_panel(image_dir)
+        return {}
 
     def generate_panel(self, image_dir: Union[str, Path]):
         """Generate panel.
