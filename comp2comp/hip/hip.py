@@ -20,6 +20,7 @@ from totalsegmentator.libs import (
 from comp2comp.hip import hip_utils
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
+from comp2comp.hip.hip_visualization import roi_visualizer
 
 
 class HipSegmentation(InferenceClass):
@@ -119,18 +120,13 @@ class HipComputeROIs(InferenceClass):
         segmentation = inference_pipeline.segmentation
         medical_volume = inference_pipeline.medical_volume
 
-        """
-        zooms = medical_volume.header.get_zooms()
-        zoom_factor = zooms[2] / zooms[1]
-        medical_volume_array = zoom(medical_volume.get_fdata(), (zoom_factor, zoom_factor, 1), order=3)
-        segmentation_array = zoom(segmentation.get_fdata(), (zoom_factor, zoom_factor, 1), order=1).round()
-        """
-
         model = inference_pipeline.model
         images_folder = os.path.join(inference_pipeline.output_dir, "images")
         if not os.path.exists(images_folder):
             os.makedirs(images_folder)
-        hip_utils.compute_rois(medical_volume, segmentation, model, images_folder)
+        left_roi, left_centroid = hip_utils.compute_rois(medical_volume, segmentation, model, images_folder)
+        inference_pipeline.left_femural_head_roi = left_roi
+        inference_pipeline.left_femural_head_centroid = left_centroid
         return {}
 
 
@@ -147,6 +143,14 @@ class HipMetricsSaver(InferenceClass):
 class HipVisualizer(InferenceClass):
     def __init__(self):
         super().__init__()
-
+    
     def __call__(self, inference_pipeline):
-        return {}
+        medical_volume = inference_pipeline.medical_volume
+        left_femural_head_roi = inference_pipeline.left_femural_head_roi
+        left_femural_head_centroid = left_femural_head_centroid
+        output_dir = inference_pipeline.output_dir
+        images_output_dir = os.path.join(output_dir, "images")
+        if not os.path.exists(images_output_dir):
+            os.makedirs(images_output_dir)
+        roi_visualizer(medical_volume, left_femural_head_roi, left_femural_head_centroid, images_output_dir)
+
