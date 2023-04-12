@@ -19,7 +19,7 @@ conda install -c apple tensorflow-deps=2.9.0 -y
 python -m pip install tensorflow-macos==2.9
 python -m pip install tensorflow-metal==0.5.0
 ```
-If you use other methods to install tensorflow, version 2.11.0 might be the best option. Tensorflow version 2.12.0 caused some problems (issue .
+If you use other methods to install tensorflow, version 2.11.0 might be the best option. Tensorflow version 2.12.0 has caused some problems.
 
 ### PyTorch
 For reference https://pytorch.org. The nightly build is (at least for -c conda-forge or -c pytorch) not needed, and the default already supports GPU acceleration on arm64.
