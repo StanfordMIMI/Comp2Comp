@@ -3,7 +3,7 @@
 Due to dependencies and differences in architecture, the direct installation of *Comp2Comp* using install.sh or setup.py did not work on an local machine with arm64 / apple silicon running MacOS. This guide is mainly based on [issue #30](https://github.com/StanfordMIMI/Comp2Comp/issues/30). Most of the problems I encountered are caused by requiring TensorFlow and PyTorch in the same environment, which (especially for TensorFlow) is tricky at some times. Thus, this guide focuses more on the setup of the environment @arm64 / AppleSilicon, than *Comp2Comp* or *TotalSegmentator* itself.
 
 ## Installation
-The body segmentation tool of Comp2Comp requires TensorFlow, TotalSegmentator PyTorch. Although (at the moment) neither *Comp2Comp* nor *TotalSegmentator* can make use of the M1 GPUs, using the arm64-specific versions is necessary.
+Comp2Comp requires TensorFlow and TotalSegmentator requires PyTorch. Although (at the moment) neither *Comp2Comp* nor *TotalSegmentator* can make use of the M1 GPU. Thus, using the arm64-specific versions is necessary.
 
 ### TensorFlow
 For reference:
