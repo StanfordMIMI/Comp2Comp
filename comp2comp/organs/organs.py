@@ -3,7 +3,6 @@ from pathlib import Path
 from time import time
 from typing import Union
 
-import numpy as np
 from totalsegmentator.libs import (
     download_pretrained_weights,
     nostdout,
