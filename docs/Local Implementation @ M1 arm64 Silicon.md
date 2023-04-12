@@ -36,7 +36,7 @@ conda install -c conda-forge numpy scikit-learn -y
 ```
 
 ### TotalSegmentator
-Take care, Louis et al. modified the original *TotalSegmentator* (https://github.com/wasserth/TotalSegmentator) for the use with *Comp2Comp*. *Comp2Comp* does not work with the original version. Using the current version of of the modified *TotalSegmentator* (https://github.com/StanfordMIMI/TotalSegmentator) should work now, no adaptions are neccessary.
+Louis et al. modified the original *TotalSegmentator* (https://github.com/wasserth/TotalSegmentator) for the use with *Comp2Comp*. *Comp2Comp* does not work with the original version. With the current version of the modified *TotalSegmentator* (https://github.com/StanfordMIMI/TotalSegmentator), no adaptions are necessary.
 
 ### Comp2Comp
 For *Comp2Comp* however, it is important **not** to use the installation bash, as some of the predefined requirements won't work. Thus:
