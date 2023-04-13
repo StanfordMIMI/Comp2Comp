@@ -386,7 +386,8 @@ class SpineMuscleAdiposeTissueReport(InferenceClass):
         new_im.paste(im_cor, (8, 8))
         im_sag.thumbnail((im_cor_width, 512))
         new_im.paste(im_sag, (8, 528))
-        new_im.save(os.path.join(image_dir, "report.png"))
+        new_im.save(os.path.join(image_dir, "spine_muscle_adipose_tissue_report.png"))
         im_cor.close()
         im_sag.close()
         new_im.close()
+        return {}

@@ -144,6 +144,16 @@ def HipPipelineBuilder(path, args):
     )
     return pipeline
 
+def AllPipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        DicomToNifti(path),
+        SpineMuscleAdiposeTissuePipelineBuilder(path, args),
+        LiverSpleenPancreasPipelineBuilder(path, args),
+        ContrastPhasePipelineBuilder(path, args),
+        HipPipelineBuilder(path, args)
+    ])
+    return pipeline
+
 def argument_parser():
     parser = argparse.ArgumentParser("Comp2Comp command line interface")
     subparsers = parser.add_subparsers(dest="action")
@@ -232,6 +242,32 @@ def argument_parser():
         type=str,
         help="hip model to use for inference",
     )
+
+    all_parser = subparsers.add_parser("all", help="master")
+    all_parser.add_argument(
+        "--input_path",
+        required=True,
+        type=str,
+        help="path to input directory or file",
+    )
+    all_parser.add_argument(
+        "--muscle_fat_model",
+        default="abCT_v0.0.1",
+        type=str,
+        help="muscle + fat segmentation model to use for inference",
+    )
+    all_parser.add_argument(
+        "--spine_model",
+        default="ts_spine",
+        type=str,
+        help="spine model to use for inference",
+    )
+    all_parser.add_argument(
+        "--hip_model",
+        default="ts_hip",
+        type=str,
+        help="hip model to use for inference",
+    )
     return parser
 
 
@@ -249,6 +285,8 @@ def main():
         process_3d(args, LiverSpleenPancreasPipelineBuilder)
     elif args.action == "hip":
         process_3d(args, HipPipelineBuilder)
+    elif args.action == "all":
+        process_3d(args, AllPipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))
 

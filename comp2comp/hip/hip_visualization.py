@@ -9,18 +9,18 @@ from comp2comp.visualization.detectron_visualizer import Visualizer
 
 def method_visualizer(
     sagittal_image,
-    coronal_image,
-    coronal_slice,
+    axial_image,
+    axial_slice,
     sagittal_slice,
     center_sagittal,
     radius_sagittal,
-    center_coronal,
-    radius_coronal,
+    center_axial,
+    radius_axial,
     output_dir,
     anatomy
 ):
-    coronal_image = np.clip(coronal_image, -300, 1800)
-    coronal_image = normalize_img(coronal_image) * 255.0
+    axial_image = np.clip(axial_image, -300, 1800)
+    axial_image = normalize_img(axial_image) * 255.0
 
     sagittal_image = np.clip(sagittal_image, -300, 1800)
     sagittal_image = normalize_img(sagittal_image) * 255.0
@@ -34,19 +34,20 @@ def method_visualizer(
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_sagittal_method.png"))
 
-    coronal_image = coronal_image.reshape((coronal_image.shape[0], coronal_image.shape[1], 1))
-    img_rgb = np.tile(coronal_image, (1, 1, 3))
+    axial_image = axial_image.reshape((axial_image.shape[0], axial_image.shape[1], 1))
+    img_rgb = np.tile(axial_image, (1, 1, 3))
     vis = Visualizer(img_rgb)
-    vis.draw_circle(circle_coord=center_coronal, color=[0, 1, 0], radius=radius_coronal)
-    vis.draw_binary_mask(coronal_slice)
+    vis.draw_circle(circle_coord=center_axial, color=[0, 1, 0], radius=radius_axial)
+    vis.draw_binary_mask(axial_slice)
 
     vis_obj = vis.get_output()
-    vis_obj.save(os.path.join(output_dir, f"{anatomy}_coronal_method.png"))
+    vis_obj.save(os.path.join(output_dir, f"{anatomy}_axial_method.png"))
 
 def hip_roi_visualizer(
     medical_volume,
     roi,
     centroid,
+    hu,
     output_dir,
     anatomy,
 ):
@@ -75,12 +76,22 @@ def hip_roi_visualizer(
     img_rgb = np.tile(sagittal_image, (1, 1, 3))
     vis = Visualizer(img_rgb)
     vis.draw_binary_mask(
-            sagittal_roi, 
-            color=_ROI_COLOR,
-            edge_color=_ROI_COLOR,
-            alpha=0.0,
-            area_threshold=0
-            )
+        sagittal_roi, 
+        color=_ROI_COLOR,
+        edge_color=_ROI_COLOR,
+        alpha=0.0,
+        area_threshold=0
+        )
+    vis.draw_text(
+        text=f"Mean HU: {round(hu)}",
+        position=(
+            412,
+            20
+        ),
+        color=_ROI_COLOR,
+        font_size=9,
+        horizontal_alignment="left",
+        )
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_hip_roi_sagittal.png"))
 
@@ -90,12 +101,22 @@ def hip_roi_visualizer(
     img_rgb = np.tile(axial_image, (1, 1, 3))
     vis = Visualizer(img_rgb)
     vis.draw_binary_mask(
-            axial_roi, 
-            color=_ROI_COLOR,
-            edge_color=_ROI_COLOR,
-            alpha=0.0,
-            area_threshold=0
-            )
+        axial_roi, 
+        color=_ROI_COLOR,
+        edge_color=_ROI_COLOR,
+        alpha=0.0,
+        area_threshold=0
+        )
+    vis.draw_text(
+        text=f"Mean HU: {round(hu)}",
+        position=(
+            412,
+            20
+        ),
+        color=_ROI_COLOR,
+        font_size=9,
+        horizontal_alignment="left",
+        )
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_hip_roi_axial.png"))
 

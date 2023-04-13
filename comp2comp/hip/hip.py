@@ -121,7 +121,7 @@ class HipComputeROIs(InferenceClass):
         medical_volume = inference_pipeline.medical_volume
 
         model = inference_pipeline.model
-        images_folder = os.path.join(inference_pipeline.output_dir, "images")
+        images_folder = os.path.join(inference_pipeline.output_dir, "dev")
         if not os.path.exists(images_folder):
             os.makedirs(images_folder)
         results_dict = hip_utils.compute_rois(medical_volume, segmentation, model, images_folder)
@@ -136,6 +136,20 @@ class HipMetricsSaver(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
+        metrics_output_dir = os.path.join(inference_pipeline.output_dir, "metrics")
+        if not os.path.exists(metrics_output_dir):
+            os.makedirs(metrics_output_dir)
+        results_dict = inference_pipeline.femur_results_dict
+        left_hu = results_dict["left"]["hu"]
+        right_hu = results_dict["right"]["hu"]
+        # save to csv
+        df = pd.DataFrame(
+            {
+                "Left Femural Head (HU)": [left_hu],
+                "Right Femural Head (HU)": [right_hu],
+            }
+        )
+        df.to_csv(os.path.join(metrics_output_dir, "hip_metrics.csv"), index=False)
         return {}
 
 
@@ -147,12 +161,15 @@ class HipVisualizer(InferenceClass):
         medical_volume = inference_pipeline.medical_volume
         left_femural_head_roi = inference_pipeline.femur_results_dict["left"]["roi"]
         left_femural_head_centroid = inference_pipeline.femur_results_dict["left"]["centroid"]
+        left_hu = inference_pipeline.femur_results_dict["left"]["hu"]
         right_femural_head_roi = inference_pipeline.femur_results_dict["right"]["roi"]
         right_femural_head_centroid = inference_pipeline.femur_results_dict["right"]["centroid"]
+        right_hu = inference_pipeline.femur_results_dict["right"]["hu"]
         output_dir = inference_pipeline.output_dir
         images_output_dir = os.path.join(output_dir, "images")
         if not os.path.exists(images_output_dir):
             os.makedirs(images_output_dir)
-        hip_roi_visualizer(medical_volume, left_femural_head_roi, left_femural_head_centroid, images_output_dir, "left")
-        hip_roi_visualizer(medical_volume, right_femural_head_roi, right_femural_head_centroid, images_output_dir, "right")
+        hip_roi_visualizer(medical_volume, left_femural_head_roi, left_femural_head_centroid, left_hu, images_output_dir, "left")
+        hip_roi_visualizer(medical_volume, right_femural_head_roi, right_femural_head_centroid, right_hu, images_output_dir, "right")
+        return {}
 
