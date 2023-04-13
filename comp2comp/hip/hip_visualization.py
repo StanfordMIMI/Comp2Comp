@@ -20,7 +20,7 @@ def method_visualizer(
 ):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-        
+
     axial_image = np.clip(axial_image, -300, 1800)
     axial_image = normalize_img(axial_image) * 255.0
 

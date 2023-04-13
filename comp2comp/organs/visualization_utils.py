@@ -285,6 +285,7 @@ def generate_liver_spleen_pancreas_report(root, organ_names):
 
     result.save(os.path.join(root, "liver_spleen_pancreas_report.png"))
 
+
 # from https://github.com/wasserth/TotalSegmentator/blob/master/totalsegmentator/map_to_binary.py
 
 class_map_part_organs = {
