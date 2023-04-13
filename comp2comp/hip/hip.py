@@ -115,8 +115,6 @@ class HipComputeROIs(InferenceClass):
 
         model = inference_pipeline.model
         images_folder = os.path.join(inference_pipeline.output_dir, "dev")
-        if not os.path.exists(images_folder):
-            os.makedirs(images_folder)
         results_dict = hip_utils.compute_rois(medical_volume, segmentation, model, images_folder)
         inference_pipeline.femur_results_dict = results_dict
         return {}
@@ -138,8 +136,8 @@ class HipMetricsSaver(InferenceClass):
         # save to csv
         df = pd.DataFrame(
             {
-                "Left Femural Head (HU)": [left_hu],
-                "Right Femural Head (HU)": [right_hu],
+                "Left Femoral Head (HU)": [left_hu],
+                "Right Femoral Head (HU)": [right_hu],
             }
         )
         df.to_csv(os.path.join(metrics_output_dir, "hip_metrics.csv"), index=False)
