@@ -149,7 +149,6 @@ def AllPipelineBuilder(path, args):
         DicomToNifti(path),
         SpineMuscleAdiposeTissuePipelineBuilder(path, args),
         LiverSpleenPancreasPipelineBuilder(path, args),
-        ContrastPhasePipelineBuilder(path, args),
         HipPipelineBuilder(path, args)
     ])
     return pipeline

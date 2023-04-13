@@ -31,7 +31,7 @@ class OrganSegmentation(InferenceClass):
         self.model_dir = inference_pipeline.model_dir
 
         mv, seg = self.organ_seg(
-            self.input_path,
+            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
             self.output_dir_segmentations + "organs.nii.gz",
             inference_pipeline.model_dir,
         )

@@ -1,11 +1,10 @@
 import os
-from pathlib import Path
-from typing import Union
 
 import numpy as np
 from scipy.ndimage import zoom
 
 from comp2comp.visualization.detectron_visualizer import Visualizer
+
 
 def method_visualizer(
     sagittal_image,
@@ -17,7 +16,7 @@ def method_visualizer(
     center_axial,
     radius_axial,
     output_dir,
-    anatomy
+    anatomy,
 ):
     axial_image = np.clip(axial_image, -300, 1800)
     axial_image = normalize_img(axial_image) * 255.0
@@ -42,6 +41,7 @@ def method_visualizer(
 
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_axial_method.png"))
+
 
 def hip_roi_visualizer(
     medical_volume,
@@ -76,22 +76,15 @@ def hip_roi_visualizer(
     img_rgb = np.tile(sagittal_image, (1, 1, 3))
     vis = Visualizer(img_rgb)
     vis.draw_binary_mask(
-        sagittal_roi, 
-        color=_ROI_COLOR,
-        edge_color=_ROI_COLOR,
-        alpha=0.0,
-        area_threshold=0
-        )
+        sagittal_roi, color=_ROI_COLOR, edge_color=_ROI_COLOR, alpha=0.0, area_threshold=0
+    )
     vis.draw_text(
         text=f"Mean HU: {round(hu)}",
-        position=(
-            412,
-            20
-        ),
+        position=(412, 20),
         color=_ROI_COLOR,
         font_size=9,
         horizontal_alignment="left",
-        )
+    )
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_hip_roi_sagittal.png"))
 
@@ -101,22 +94,15 @@ def hip_roi_visualizer(
     img_rgb = np.tile(axial_image, (1, 1, 3))
     vis = Visualizer(img_rgb)
     vis.draw_binary_mask(
-        axial_roi, 
-        color=_ROI_COLOR,
-        edge_color=_ROI_COLOR,
-        alpha=0.0,
-        area_threshold=0
-        )
+        axial_roi, color=_ROI_COLOR, edge_color=_ROI_COLOR, alpha=0.0, area_threshold=0
+    )
     vis.draw_text(
         text=f"Mean HU: {round(hu)}",
-        position=(
-            412,
-            20
-        ),
+        position=(412, 20),
         color=_ROI_COLOR,
         font_size=9,
         horizontal_alignment="left",
-        )
+    )
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_hip_roi_axial.png"))
 

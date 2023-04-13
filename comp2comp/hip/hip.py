@@ -1,16 +1,9 @@
-import math
 import os
-import sys
-import zipfile
 from pathlib import Path
 from time import time
 from typing import Union
 
-import nibabel as nib
-import numpy as np
 import pandas as pd
-from PIL import Image
-from scipy.ndimage import zoom
 from totalsegmentator.libs import (
     download_pretrained_weights,
     nostdout,
@@ -18,9 +11,9 @@ from totalsegmentator.libs import (
 )
 
 from comp2comp.hip import hip_utils
+from comp2comp.hip.hip_visualization import hip_roi_visualizer
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
-from comp2comp.hip.hip_visualization import hip_roi_visualizer
 
 
 class HipSegmentation(InferenceClass):
@@ -126,7 +119,7 @@ class HipComputeROIs(InferenceClass):
             os.makedirs(images_folder)
         results_dict = hip_utils.compute_rois(medical_volume, segmentation, model, images_folder)
         inference_pipeline.femur_results_dict = results_dict
-        return {}   
+        return {}
 
 
 class HipMetricsSaver(InferenceClass):
@@ -169,7 +162,20 @@ class HipVisualizer(InferenceClass):
         images_output_dir = os.path.join(output_dir, "images")
         if not os.path.exists(images_output_dir):
             os.makedirs(images_output_dir)
-        hip_roi_visualizer(medical_volume, left_femural_head_roi, left_femural_head_centroid, left_hu, images_output_dir, "left")
-        hip_roi_visualizer(medical_volume, right_femural_head_roi, right_femural_head_centroid, right_hu, images_output_dir, "right")
+        hip_roi_visualizer(
+            medical_volume,
+            left_femural_head_roi,
+            left_femural_head_centroid,
+            left_hu,
+            images_output_dir,
+            "left",
+        )
+        hip_roi_visualizer(
+            medical_volume,
+            right_femural_head_roi,
+            right_femural_head_centroid,
+            right_hu,
+            images_output_dir,
+            "right",
+        )
         return {}
-

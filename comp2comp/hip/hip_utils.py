@@ -1,17 +1,9 @@
-import logging
 import math
-import os
-from glob import glob
-from typing import Dict, List
 
 import cv2
-import matplotlib.pyplot as plt
-import nibabel as nib
 import numpy as np
-from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
 
-from comp2comp.models.models import Models
 from comp2comp.hip.hip_visualization import method_visualizer
 
 
@@ -20,11 +12,19 @@ def compute_rois(medical_volume, segmentation, model, output_dir):
     left_femur_mask = left_femur_mask.astype(np.uint8)
     right_femur_mask = segmentation.get_fdata() == model.categories["femur_right"]
     right_femur_mask = right_femur_mask.astype(np.uint8)
-    left_roi, left_centroid, left_hu = get_femural_head_roi(left_femur_mask, medical_volume, output_dir, "left")
-    right_roi, right_centroid, right_hu = get_femural_head_roi(right_femur_mask, medical_volume, output_dir, "right")
-    return {"left": {"roi": left_roi, "centroid": left_centroid, "hu": left_hu}, "right": {"roi": right_roi, "centroid": right_centroid, "hu": right_hu}}
+    left_roi, left_centroid, left_hu = get_femural_head_roi(
+        left_femur_mask, medical_volume, output_dir, "left"
+    )
+    right_roi, right_centroid, right_hu = get_femural_head_roi(
+        right_femur_mask, medical_volume, output_dir, "right"
+    )
+    return {
+        "left": {"roi": left_roi, "centroid": left_centroid, "hu": left_hu},
+        "right": {"roi": right_roi, "centroid": right_centroid, "hu": right_hu},
+    }
 
-def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=True):
+
+def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=False):
     # find the largest index that is not zero
     top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
     top_mask = femur_mask[:, :, top]
@@ -49,13 +49,11 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
     center_sagittal[0] = center_sagittal[0] / zoom_factor
     centroid = [round(center_of_mass[0]), center_sagittal[1], center_sagittal[0]]
 
-    # fit another circle using the current axial centroid to update the left / right center
     axial_slice = femur_mask[:, :, round(centroid[2])]
     dist_map = cv2.distanceTransform(axial_slice, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
     _, radius_axial, _, center_axial = cv2.minMaxLoc(dist_map)
     centroid[0] = round(center_axial[1])
 
-    # update the sagittal center
     sagittal_slice = femur_mask[round(centroid[0]), :, :]
     sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
     dist_map = cv2.distanceTransform(sagittal_slice, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
@@ -78,15 +76,15 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
             center_axial,
             radius_axial,
             output_dir,
-            anatomy
+            anatomy,
         )
 
     roi = compute_hip_roi(medical_volume, centroid)
 
-    #compute mean hu using medical_volume and roi
     hu = get_mean_roi_hu(medical_volume, roi)
 
     return (roi, centroid, hu)
+
 
 def compute_hip_roi(img, centroid):
     pixel_spacing = img.header.get_zooms()
@@ -106,6 +104,7 @@ def compute_hip_roi(img, centroid):
                 ) ** 2 / length_j**2 + (k - centroid[2]) ** 2 / length_k**2 <= 1:
                     roi[i, j, k] = 1
     return roi
+
 
 def get_mean_roi_hu(medical_volume, roi):
     masked_medical_volume = medical_volume.get_fdata() * roi
