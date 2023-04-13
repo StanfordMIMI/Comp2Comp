@@ -116,10 +116,24 @@ bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
   <img src="figures/liver_spleen_pancreas_example.png" height="300">
 </p>
 
+## 3D Analysis of Femoral Head
+
+### Usage
+```bash
+bin/C2C hip --input_path <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+## Pipeline that runs all currently implemented pipelines
+
+### Usage
+```bash
+bin/C2C all --input_path <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
 
 ## In Progess
 - Abdominal Aortic Aneurysm Detection
-- Hip Analysis
 
 ## Contribute
 <a name="contribute"></a>

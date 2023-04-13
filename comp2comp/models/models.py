@@ -74,6 +74,14 @@ class Models(enum.Enum):
         False,
         (),
     )
+    TS_HIP = (
+        6,
+        "ts_hip",
+        # Category name mapped to channel index
+        {"femur_left": 88, "femur_right": 89},
+        False,
+        (),
+    )
 
     def __new__(
         cls,

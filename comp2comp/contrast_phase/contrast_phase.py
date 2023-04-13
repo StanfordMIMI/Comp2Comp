@@ -28,7 +28,7 @@ class ContrastPhaseDetection(InferenceClass):
         self.model_dir = inference_pipeline.model_dir
 
         seg, img = self.run_segmentation(
-            self.input_path,
+            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
             self.output_dir_segmentations + "s01.nii.gz",
             inference_pipeline.model_dir,
         )
