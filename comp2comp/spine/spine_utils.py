@@ -375,6 +375,7 @@ def visualize_coronal_sagittal_spine(
     spine_hus=None,
     model_type=None,
     pixel_spacing=None,
+    format="png"
 ):
     """Visualize the coronal and sagittal planes of the spine.
 
@@ -452,11 +453,20 @@ def visualize_coronal_sagittal_spine(
     one_hot_cor_label = np.flip(one_hot_cor_label, axis=0)
     one_hot_cor_label = np.flip(one_hot_cor_label, axis=1)
 
+    if format == "png":
+        sagittal_name = "spine_sagittal.png"
+        coronal_name = "spine_coronal.png"
+    elif format == "dcm":
+        sagittal_name = "spine_sagittal.dcm"
+        coronal_name = "spine_coronal.dcm"
+    else:
+        raise ValueError("Format must be either png or dcm")
+
     spine_visualization.spine_binary_segmentation_overlay(
         sagittal_image,
         one_hot_sag_label,
         output_dir,
-        "spine_sagittal.png",
+        sagittal_name,
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
@@ -465,7 +475,7 @@ def visualize_coronal_sagittal_spine(
         coronal_image,
         one_hot_cor_label,
         output_dir,
-        "spine_coronal.png",
+        coronal_name,
         spine_hus=spine_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,

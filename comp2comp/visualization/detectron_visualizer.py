@@ -9,11 +9,14 @@ import matplotlib as mpl
 import matplotlib.colors as mplc
 import matplotlib.figure as mplfigure
 import numpy as np
+import os
+from pathlib import Path
 import pycocotools.mask as mask_util
 import torch
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from comp2comp.utils.colormap import random_color
+from comp2comp.visualization.dicom import to_dicom
 
 logger = logging.getLogger(__name__)
 
@@ -304,7 +307,14 @@ class VisImage:
             filepath (str): a string that contains the absolute path, including the file name, where
                 the visualized image will be saved.
         """
-        self.fig.savefig(filepath)
+        # if filepath is a png or jpg 
+        if filepath.endswith('.png') or filepath.endswith('.jpg'):
+            self.fig.savefig(filepath)
+        if filepath.endswith('.dcm'):
+            filepath_png = filepath[:-4] + '.png'
+            self.fig.savefig(filepath_png)
+            to_dicom(filepath_png, Path(filepath).parent)
+            os.remove(filepath_png)
 
     def get_image(self):
         """

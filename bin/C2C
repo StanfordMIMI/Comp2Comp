@@ -90,7 +90,7 @@ def SpinePipelineBuilder(path, args):
         SpineToCanonical(),
         SpineComputeROIs(args.spine_model),
         SpineMetricsSaver(),
-        SpineCoronalSagittalVisualizer()
+        SpineCoronalSagittalVisualizer(format="dcm")
         ]
     )
     return pipeline
