@@ -311,7 +311,7 @@ class SpineFindDicoms(InferenceClass):
 
 
 class SpineCoronalSagittalVisualizer(InferenceClass):
-    def __init__(self, format='png'):
+    def __init__(self, format="png"):
         super().__init__()
         self.format = format
 
@@ -329,7 +329,7 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
             spine_hus=inference_pipeline.spine_hus,
             model_type=spine_model_type,
             pixel_spacing=inference_pipeline.pixel_spacing_list,
-            format=self.format
+            format=self.format,
         )
         inference_pipeline.spine = True
         return {}

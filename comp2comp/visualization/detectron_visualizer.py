@@ -2,15 +2,15 @@
 import colorsys
 import logging
 import math
+import os
 from enum import Enum, unique
+from pathlib import Path
 
 import cv2
 import matplotlib as mpl
 import matplotlib.colors as mplc
 import matplotlib.figure as mplfigure
 import numpy as np
-import os
-from pathlib import Path
 import pycocotools.mask as mask_util
 import torch
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -307,11 +307,11 @@ class VisImage:
             filepath (str): a string that contains the absolute path, including the file name, where
                 the visualized image will be saved.
         """
-        # if filepath is a png or jpg 
-        if filepath.endswith('.png') or filepath.endswith('.jpg'):
+        # if filepath is a png or jpg
+        if filepath.endswith(".png") or filepath.endswith(".jpg"):
             self.fig.savefig(filepath)
-        if filepath.endswith('.dcm'):
-            filepath_png = filepath[:-4] + '.png'
+        if filepath.endswith(".dcm"):
+            filepath_png = filepath[:-4] + ".png"
             self.fig.savefig(filepath_png)
             to_dicom(filepath_png, Path(filepath).parent)
             os.remove(filepath_png)

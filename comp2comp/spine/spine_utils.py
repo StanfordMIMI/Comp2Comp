@@ -375,7 +375,7 @@ def visualize_coronal_sagittal_spine(
     spine_hus=None,
     model_type=None,
     pixel_spacing=None,
-    format="png"
+    format="png",
 ):
     """Visualize the coronal and sagittal planes of the spine.
 
