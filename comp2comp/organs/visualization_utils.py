@@ -16,7 +16,10 @@ def extract_axial_mid_slice(ct, mask, crop=True):
 
     ct_slice_z = np.transpose(ct[:, :, slice_idx], axes=(1, 0))
     mask_slice_z = np.transpose(mask[:, :, slice_idx], axes=(1, 0))
-
+    
+    ct_slice_z = np.flip(ct_slice_z, axis=(0,1))
+    mask_slice_z = np.flip(mask_slice_z, axis=(0,1))
+    
     if crop:
         ct_range_x = np.where(ct_slice_z.max(axis=0) > -200)[0][[0, -1]]
 
@@ -47,6 +50,9 @@ def extract_coronal_mid_slice(ct, mask, crop=True):
 
     ct_slice_y = np.transpose(ct[:, max_extent_idx, :], axes=(1, 0))
     mask_slice_y = np.transpose(mask[:, max_extent_idx, :], axes=(1, 0))
+    
+    ct_slice_y = np.flip(ct_slice_y, axis=1)
+    mask_slice_y = np.flip(mask_slice_y, axis=1)
 
     return ct_slice_y, mask_slice_y
 
@@ -283,8 +289,10 @@ def generate_liver_spleen_pancreas_report(root, organ_names):
 
         total_width += a_width
 
-    result.save(os.path.join(root, "report.png"))
+    result.save(os.path.join(root, "liver_spleen_pancreas_report.png"))
 
+
+# from https://github.com/wasserth/TotalSegmentator/blob/master/totalsegmentator/map_to_binary.py
 
 class_map_part_organs = {
     1: "Spleen",

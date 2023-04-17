@@ -24,13 +24,12 @@ from comp2comp.spine import spine_utils
 class SpineSegmentation(InferenceClass):
     """Spine segmentation."""
 
-    def __init__(self, input_path, model_name):
+    def __init__(self, model_name):
         super().__init__()
-        self.input_path = input_path
         self.model_name = model_name
 
     def __call__(self, inference_pipeline):
-        inference_pipeline.dicom_series_path = self.input_path
+        # inference_pipeline.dicom_series_path = self.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
         if not os.path.exists(self.output_dir_segmentations):
@@ -39,7 +38,7 @@ class SpineSegmentation(InferenceClass):
         self.model_dir = inference_pipeline.model_dir
 
         seg, mv = self.spine_seg(
-            self.input_path,
+            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
             self.output_dir_segmentations + "spine.nii.gz",
             inference_pipeline.model_dir,
         )
@@ -135,7 +134,7 @@ class SpineSegmentation(InferenceClass):
                 crop=None,
                 crop_path=crop_path,
                 task_name="total",
-                nora_tag=None,
+                nora_tag="None",
                 preview=False,
                 nr_threads_resampling=1,
                 nr_threads_saving=6,
@@ -177,6 +176,64 @@ class SpineToCanonical(InferenceClass):
         inference_pipeline.segmentation = canonical_segmentation
         inference_pipeline.medical_volume = canonical_medical_volume
         inference_pipeline.pixel_spacing_list = canonical_medical_volume.header.get_zooms()
+        return {}
+
+
+class AxialCropper(InferenceClass):
+    """Crop the CT image (medical_volume) and segmentation based on user-specified
+    lower and upper levels of the spine.
+    """
+
+    def __init__(self, lower_level: str = "L5", upper_level: str = "L1", save=True):
+        """
+        Args:
+            lower_level (str, optional): Lower level of the spine. Defaults to "L5".
+            upper_level (str, optional): Upper level of the spine. Defaults to "L1".
+            save (bool, optional): Save cropped image and segmentation. Defaults to True.
+
+        Raises:
+            ValueError: If lower_level or upper_level is not a valid spine level.
+        """
+        super().__init__()
+        self.lower_level = lower_level
+        self.upper_level = upper_level
+        ts_spine_full_model = Models.model_from_name("ts_spine_full")
+        categories = ts_spine_full_model.categories
+        try:
+            self.lower_level_index = categories[self.lower_level]
+            self.upper_level_index = categories[self.upper_level]
+        except KeyError:
+            raise ValueError("Invalid spine level.") from None
+        self.save = save
+
+    def __call__(self, inference_pipeline):
+        """
+        First dim goes from L to R.
+        Second dim goes from P to A.
+        Third dim goes from I to S.
+        """
+        segmentation = inference_pipeline.segmentation
+        segmentation_data = segmentation.get_fdata()
+        upper_level_index = np.where(segmentation_data == self.upper_level_index)[2].max()
+        lower_level_index = np.where(segmentation_data == self.lower_level_index)[2].min()
+        segmentation = segmentation.slicer[:, :, lower_level_index:upper_level_index]
+        inference_pipeline.segmentation = segmentation
+
+        medical_volume = inference_pipeline.medical_volume
+        medical_volume = medical_volume.slicer[:, :, lower_level_index:upper_level_index]
+        inference_pipeline.medical_volume = medical_volume
+
+        if self.save:
+            nib.save(
+                segmentation,
+                os.path.join(inference_pipeline.output_dir, "segmentations", "spine.nii.gz"),
+            )
+            nib.save(
+                medical_volume,
+                os.path.join(
+                    inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
+                ),
+            )
         return {}
 
 
@@ -295,6 +352,7 @@ class SpineMuscleAdiposeTissueReport(InferenceClass):
     def __call__(self, inference_pipeline):
         image_dir = Path(inference_pipeline.output_dir) / "images"
         self.generate_panel(image_dir)
+        return {}
 
     def generate_panel(self, image_dir: Union[str, Path]):
         """Generate panel.
@@ -329,7 +387,7 @@ class SpineMuscleAdiposeTissueReport(InferenceClass):
         new_im.paste(im_cor, (8, 8))
         im_sag.thumbnail((im_cor_width, 512))
         new_im.paste(im_sag, (8, 528))
-        new_im.save(os.path.join(image_dir, "report.png"))
+        new_im.save(os.path.join(image_dir, "spine_muscle_adipose_tissue_report.png"))
         im_cor.close()
         im_sag.close()
         new_im.close()

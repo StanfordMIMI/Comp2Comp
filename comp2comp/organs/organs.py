@@ -3,7 +3,6 @@ from pathlib import Path
 from time import time
 from typing import Union
 
-import numpy as np
 from totalsegmentator.libs import (
     download_pretrained_weights,
     nostdout,
@@ -16,13 +15,12 @@ from comp2comp.inference_class_base import InferenceClass
 class OrganSegmentation(InferenceClass):
     """Organ segmentation."""
 
-    def __init__(self, input_path, model_name="ts_spine"):
+    def __init__(self):
         super().__init__()
-        self.input_path = input_path
-        self.model_name = model_name
+        # self.input_path = input_path
 
     def __call__(self, inference_pipeline):
-        inference_pipeline.dicom_series_path = self.input_path
+        # inference_pipeline.dicom_series_path = self.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
         if not os.path.exists(self.output_dir_segmentations):
@@ -31,7 +29,7 @@ class OrganSegmentation(InferenceClass):
         self.model_dir = inference_pipeline.model_dir
 
         mv, seg = self.organ_seg(
-            self.input_path,
+            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
             self.output_dir_segmentations + "organs.nii.gz",
             inference_pipeline.model_dir,
         )
@@ -42,7 +40,7 @@ class OrganSegmentation(InferenceClass):
         return {}
 
     def organ_seg(self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir):
-        """Run spine segmentation.
+        """Run organ segmentation.
 
         Args:
             input_path (Union[str, Path]): Input path.
@@ -80,21 +78,17 @@ class OrganSegmentation(InferenceClass):
                 crop=None,
                 crop_path=crop_path,
                 task_name="total",
-                nora_tag=None,
+                nora_tag="None",
                 preview=False,
                 nr_threads_resampling=1,
                 nr_threads_saving=6,
                 quiet=False,
-                verbose=False,
+                verbose=True,
                 test=0,
             )
         end = time()
 
         # Log total time for spine segmentation
         print(f"Total time for organ segmentation: {end-st:.2f}s.")
-
-        if self.model_name == "stanford_spine_v0.0.1":
-            # subtract 17 from seg values except for 0
-            seg = np.where(seg == 0, 0, seg - 17)
 
         return seg, mvs

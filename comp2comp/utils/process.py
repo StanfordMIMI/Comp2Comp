@@ -71,7 +71,7 @@ def process_3d(args, pipeline_builder):
 
             pipeline(output_dir=output_dir, model_dir=model_dir)
 
-            print(f"Finished processing {path} in {time() - st} seconds\n")
+            print(f"Finished processing {path} in {time() - st:.1f} seconds\n")
 
         except Exception:
             print(f"ERROR PROCESSING {path}\n")
