@@ -34,7 +34,14 @@ def process_3d(args, pipeline_builder):
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
-    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    if args.output_path is not None:
+        output_path = Path(args.output_path)
+    else:
+        output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../outputs")
+
+    if args.overwrite_outputs is not None:
+        date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_path = os.path.join(output_path, date_time)
 
     for path, num in get_dicom_paths_and_num(args.input_path):
 
@@ -57,9 +64,7 @@ def process_3d(args, pipeline_builder):
 
             output_dir = Path(
                 os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)),
-                    "../../outputs",
-                    date_time,
+                    output_path,
                     Path(os.path.basename(path)),
                 )
             )

@@ -90,7 +90,7 @@ def SpinePipelineBuilder(path, args):
         SpineToCanonical(),
         SpineComputeROIs(args.spine_model),
         SpineMetricsSaver(),
-        SpineCoronalSagittalVisualizer(format="dcm")
+        SpineCoronalSagittalVisualizer(format="png")
         ]
     )
     return pipeline
@@ -154,137 +154,88 @@ def AllPipelineBuilder(path, args):
     return pipeline
 
 def argument_parser():
-    parser = argparse.ArgumentParser("Comp2Comp command line interface")
-    subparsers = parser.add_subparsers(dest="action")
+    base_parser = argparse.ArgumentParser(add_help=False)
+    base_parser.add_argument('--input_path', type=str, required=True)
+    base_parser.add_argument('--output_path', type=str)
+    base_parser.add_argument('--overwrite_outputs', action='store_true')
 
-    # Muscle + fat 
-    muscle_adipose_tissue_parser = subparsers.add_parser("muscle_adipose_tissue", 
-                                              help="muscle + fat")
-    muscle_adipose_tissue_parser.add_argument(
-        "--input_path",
-        required=True,
-        type=str,
-        help="path to input directory or file",
-    )
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest='pipeline', help='Pipeline to run')
+
+    # Add the help option to each subparser
+    muscle_adipose_tissue_parser = subparsers.add_parser("muscle_adipose_tissue", parents=[base_parser])
     muscle_adipose_tissue_parser.add_argument(
         "--muscle_fat_model",
         default = 'abCT_v0.0.1',
-        type=str,
-        help="muscle + fat segmentation model to use for inference",
+        type=str
     )
 
     # Spine
-    spine_parser = subparsers.add_parser("spine", help="spine")
-    spine_parser.add_argument(
-        "--input_path",
-        required=True,
-        type=str,
-        help="path to input directory or file",
-    )
+    spine_parser = subparsers.add_parser("spine", parents=[base_parser])
     spine_parser.add_argument(
         "--spine_model",
         default="ts_spine",
-        type=str,
-        help="spine model to use for inference",
+        type=str
     )
 
     # Spine + muscle + fat
-    spine_muscle_adipose_tissue_parser = subparsers.add_parser("spine_muscle_adipose_tissue",
-                                              help="spine + muscle + fat")
-    spine_muscle_adipose_tissue_parser.add_argument(
-        "--input_path",
-        required=True,
-        type=str,
-        help="path to input directory or file",
-    )
+    spine_muscle_adipose_tissue_parser = subparsers.add_parser("spine_muscle_adipose_tissue", parents=[base_parser])
     spine_muscle_adipose_tissue_parser.add_argument(
         "--muscle_fat_model",
         default="abCT_v0.0.1",
-        type=str,
-        help="muscle + fat segmentation model to use for inference",
+        type=str
     )
     spine_muscle_adipose_tissue_parser.add_argument(
         "--spine_model",
         default="ts_spine",
-        type=str,
-        help="spine model to use for inference",
+        type=str
     )
        
-    liver_spleen_pancreas = subparsers.add_parser("liver_spleen_pancreas",
-                                              help="Segmentation of liver, spleen and pancreas")
-    liver_spleen_pancreas.add_argument(
-        "--input_path",
-        required=True,
-        type=str,
-        help="path to input directory or file",
-    )
+    liver_spleen_pancreas = subparsers.add_parser("liver_spleen_pancreas", parents=[base_parser])
 
-    contrast_phase_parser = subparsers.add_parser("contrast_phase",
-                                              help="contrast phase")
-    contrast_phase_parser.add_argument(
-        "--input_path",
-        required=True,
-        type=str,
-        help="path to input directory or file",
-    )
+    contrast_phase_parser = subparsers.add_parser("contrast_phase", parents=[base_parser])
 
-    hip_parser = subparsers.add_parser("hip", help="hip")
-    hip_parser.add_argument(
-        "--input_path",
-        required=True,
-        type=str,
-        help="path to input directory or file",
-    )
+    hip_parser = subparsers.add_parser("hip", parents=[base_parser])
     hip_parser.add_argument(
         "--hip_model",
         default="ts_hip",
         type=str,
-        help="hip model to use for inference",
     )
 
-    all_parser = subparsers.add_parser("all", help="master")
-    all_parser.add_argument(
-        "--input_path",
-        required=True,
-        type=str,
-        help="path to input directory or file",
-    )
+    all_parser = subparsers.add_parser("all", parents=[base_parser])
     all_parser.add_argument(
         "--muscle_fat_model",
         default="abCT_v0.0.1",
         type=str,
-        help="muscle + fat segmentation model to use for inference",
     )
     all_parser.add_argument(
         "--spine_model",
         default="ts_spine",
         type=str,
-        help="spine model to use for inference",
     )
     all_parser.add_argument(
         "--hip_model",
         default="ts_hip",
         type=str,
-        help="hip model to use for inference",
     )
     return parser
 
 
 def main():
     args = argument_parser().parse_args()
-    if args.action == "muscle_adipose_tissue":
+    if args.pipeline == "muscle_adipose_tissue":
         process_2d(args, MuscleAdiposeTissueFullPipelineBuilder)
-    elif args.action == "spine_muscle_adipose_tissue":
+    elif args.pipeline == "spine_muscle_adipose_tissue":
         process_3d(args, SpineMuscleAdiposeTissuePipelineBuilder)
-    elif args.action == "spine":
+    elif args.pipeline == "spine":
         process_3d(args, SpinePipelineBuilder)
-    elif args.action == "contrast_phase":
+    elif args.pipeline == "contrast_phase":
         process_3d(args, ContrastPhasePipelineBuilder)
-    elif args.action == "liver_spleen_pancreas":
+    elif args.pipeline == "liver_spleen_pancreas":
         process_3d(args, LiverSpleenPancreasPipelineBuilder)
-    elif args.action == "hip":
+    elif args.pipeline == "hip":
         process_3d(args, HipPipelineBuilder)
-    elif args.action == "all":
+    elif args.pipeline == "all":
         process_3d(args, AllPipelineBuilder)
     else:
         raise AssertionError("{} command not supported".format(args.action))
