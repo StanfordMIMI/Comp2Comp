@@ -39,7 +39,7 @@ def process_3d(args, pipeline_builder):
     else:
         output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../outputs")
 
-    if args.overwrite_outputs is None:
+    if not args.overwrite_outputs:
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_path = os.path.join(output_path, date_time)
 
@@ -65,7 +65,7 @@ def process_3d(args, pipeline_builder):
             output_dir = Path(
                 os.path.join(
                     output_path,
-                    Path(os.path.basename(path)),
+                    Path(os.path.basename(os.path.normpath(path))),
                 )
             )
 
