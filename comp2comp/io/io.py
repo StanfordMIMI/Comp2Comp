@@ -66,6 +66,10 @@ class DicomToNifti(InferenceClass):
         self.input_path = Path(input_path)
 
     def __call__(self, inference_pipeline):
+        if os.path.exists(
+            os.path.join(inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz")
+        ):
+            return {}
         output_dir = inference_pipeline.output_dir
         segmentations_output_dir = os.path.join(output_dir, "segmentations")
         os.makedirs(segmentations_output_dir, exist_ok=True)

@@ -1,25 +1,6 @@
 #!/usr/bin/env python
 import argparse
-import logging
 import os
-import shutil
-import sys
-import traceback
-from datetime import datetime
-from pathlib import Path
-from time import time
-
-import dosma
-import h5py
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-# import voxel as vx
-from tqdm import tqdm
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
-os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 from comp2comp.contrast_phase.contrast_phase import ContrastPhaseDetection
 from comp2comp.hip.hip import (
@@ -30,8 +11,6 @@ from comp2comp.hip.hip import (
 )
 from comp2comp.inference_pipeline import InferencePipeline
 from comp2comp.io.io import DicomFinder, DicomToNifti
-from comp2comp.io.io_utils import get_dicom_paths_and_num
-from comp2comp.models.models import Models
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
     MuscleAdiposeTissueComputeMetrics,
     MuscleAdiposeTissueH5Saver,
@@ -60,137 +39,141 @@ from comp2comp.spine.spine import (
 from comp2comp.utils.orientation import ToCanonical
 from comp2comp.utils.process import process_2d, process_3d
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def MuscleAdiposeTissuePipelineBuilder(args):
-    pipeline = InferencePipeline([
-        MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
-        MuscleAdiposeTissuePostProcessing(),
-        MuscleAdiposeTissueComputeMetrics(),
-        MuscleAdiposeTissueVisualizer(),
-        MuscleAdiposeTissueH5Saver(),
-        MuscleAdiposeTissueMetricsSaver()
+    pipeline = InferencePipeline(
+        [
+            MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
+            MuscleAdiposeTissuePostProcessing(),
+            MuscleAdiposeTissueComputeMetrics(),
+            MuscleAdiposeTissueVisualizer(),
+            MuscleAdiposeTissueH5Saver(),
+            MuscleAdiposeTissueMetricsSaver(),
         ]
     )
     return pipeline
+
 
 def MuscleAdiposeTissueFullPipelineBuilder(args):
-    pipeline = InferencePipeline([
-        DicomFinder(args.input_path),
-        MuscleAdiposeTissuePipelineBuilder(args)
-        ]
+    pipeline = InferencePipeline(
+        [DicomFinder(args.input_path), MuscleAdiposeTissuePipelineBuilder(args)]
     )
     return pipeline
+
 
 def SpinePipelineBuilder(path, args):
-    pipeline = InferencePipeline([
-        DicomToNifti(path),
-        SpineSegmentation(args.spine_model),
-        SpineToCanonical(),
-        SpineComputeROIs(args.spine_model),
-        SpineMetricsSaver(),
-        SpineCoronalSagittalVisualizer(format="png")
+    pipeline = InferencePipeline(
+        [
+            DicomToNifti(path),
+            SpineSegmentation(args.spine_model),
+            SpineToCanonical(),
+            SpineComputeROIs(args.spine_model),
+            SpineMetricsSaver(),
+            SpineCoronalSagittalVisualizer(format="png"),
         ]
     )
     return pipeline
+
 
 def AxialCropperPipelineBuilder(path, args):
-    pipeline = InferencePipeline([
-        DicomToNifti(path),
-        SpineSegmentation(args.spine_model),
-        ToCanonical(),
-        AxialCropper(lower_level="L5", upper_level="L1", save=True)
+    pipeline = InferencePipeline(
+        [
+            DicomToNifti(path),
+            SpineSegmentation(args.spine_model),
+            ToCanonical(),
+            AxialCropper(lower_level="L5", upper_level="L1", save=True),
         ]
     )
     return pipeline
+
 
 def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
-    pipeline = InferencePipeline([
-        SpinePipelineBuilder(path, args),
-        SpineFindDicoms(),
-        MuscleAdiposeTissuePipelineBuilder(args),
-        SpineMuscleAdiposeTissueReport()
+    pipeline = InferencePipeline(
+        [
+            SpinePipelineBuilder(path, args),
+            SpineFindDicoms(),
+            MuscleAdiposeTissuePipelineBuilder(args),
+            SpineMuscleAdiposeTissueReport(),
         ]
     )
     return pipeline
 
+
 def LiverSpleenPancreasPipelineBuilder(path, args):
-    pipeline = InferencePipeline([
-        OrganSegmentation(path),
-        LiverSpleenPancreasVisualizer(),
-        LiverSpleenPancreasMetricsPrinter()
+    pipeline = InferencePipeline(
+        [
+            DicomToNifti(path),
+            OrganSegmentation(path),
+            LiverSpleenPancreasVisualizer(),
+            LiverSpleenPancreasMetricsPrinter(),
         ]
     )
     return pipeline
 
 
 def ContrastPhasePipelineBuilder(path, args):
-    pipeline = InferencePipeline([
-        ContrastPhaseDetection(path)
-        ]
-    )
+    pipeline = InferencePipeline([ContrastPhaseDetection(path)])
     return pipeline
+
 
 def HipPipelineBuilder(path, args):
-    pipeline = InferencePipeline([
-        DicomToNifti(path),
-        HipSegmentation(args.hip_model),
-        ToCanonical(),
-        HipComputeROIs(args.hip_model),
-        HipMetricsSaver(),
-        HipVisualizer()
+    pipeline = InferencePipeline(
+        [
+            DicomToNifti(path),
+            HipSegmentation(args.hip_model),
+            ToCanonical(),
+            HipComputeROIs(args.hip_model),
+            HipMetricsSaver(),
+            HipVisualizer(),
         ]
     )
     return pipeline
 
+
 def AllPipelineBuilder(path, args):
-    pipeline = InferencePipeline([
-        DicomToNifti(path),
-        SpineMuscleAdiposeTissuePipelineBuilder(path, args),
-        LiverSpleenPancreasPipelineBuilder(path, args),
-        HipPipelineBuilder(path, args)
-    ])
+    pipeline = InferencePipeline(
+        [
+            DicomToNifti(path),
+            SpineMuscleAdiposeTissuePipelineBuilder(path, args),
+            LiverSpleenPancreasPipelineBuilder(path, args),
+            HipPipelineBuilder(path, args),
+        ]
+    )
     return pipeline
+
 
 def argument_parser():
     base_parser = argparse.ArgumentParser(add_help=False)
-    base_parser.add_argument('--input_path', type=str, required=True)
-    base_parser.add_argument('--output_path', type=str)
-    base_parser.add_argument('--overwrite_outputs', action='store_true')
+    base_parser.add_argument("--input_path", type=str, required=True)
+    base_parser.add_argument("--output_path", type=str)
+    base_parser.add_argument("--overwrite_outputs", action="store_true")
 
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest='pipeline', help='Pipeline to run')
+    subparsers = parser.add_subparsers(dest="pipeline", help="Pipeline to run")
 
     # Add the help option to each subparser
-    muscle_adipose_tissue_parser = subparsers.add_parser("muscle_adipose_tissue", parents=[base_parser])
-    muscle_adipose_tissue_parser.add_argument(
-        "--muscle_fat_model",
-        default = 'abCT_v0.0.1',
-        type=str
+    muscle_adipose_tissue_parser = subparsers.add_parser(
+        "muscle_adipose_tissue", parents=[base_parser]
     )
+    muscle_adipose_tissue_parser.add_argument("--muscle_fat_model", default="abCT_v0.0.1", type=str)
 
     # Spine
     spine_parser = subparsers.add_parser("spine", parents=[base_parser])
-    spine_parser.add_argument(
-        "--spine_model",
-        default="ts_spine",
-        type=str
-    )
+    spine_parser.add_argument("--spine_model", default="ts_spine", type=str)
 
     # Spine + muscle + fat
-    spine_muscle_adipose_tissue_parser = subparsers.add_parser("spine_muscle_adipose_tissue", parents=[base_parser])
-    spine_muscle_adipose_tissue_parser.add_argument(
-        "--muscle_fat_model",
-        default="abCT_v0.0.1",
-        type=str
+    spine_muscle_adipose_tissue_parser = subparsers.add_parser(
+        "spine_muscle_adipose_tissue", parents=[base_parser]
     )
     spine_muscle_adipose_tissue_parser.add_argument(
-        "--spine_model",
-        default="ts_spine",
-        type=str
+        "--muscle_fat_model", default="abCT_v0.0.1", type=str
     )
-       
+    spine_muscle_adipose_tissue_parser.add_argument("--spine_model", default="ts_spine", type=str)
+
     liver_spleen_pancreas = subparsers.add_parser("liver_spleen_pancreas", parents=[base_parser])
 
     contrast_phase_parser = subparsers.add_parser("contrast_phase", parents=[base_parser])
@@ -243,5 +226,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
