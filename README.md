@@ -124,6 +124,11 @@ bin/C2C hip --input_path <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
+### Example Output Image
+<p align="center">
+  <img src="figures/hip_example.png" height="300">
+</p>
+
 ## Pipeline that runs all currently implemented pipelines
 
 ### Usage
