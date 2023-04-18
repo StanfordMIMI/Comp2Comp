@@ -28,7 +28,7 @@ cd Comp2Comp
 pip install -e .
 ```
 
-For installing on the Apple M1 chip, see [these instructions](https://github.com/StanfordMIMI/Comp2Comp/blob/docs/Local%20Implementation%20%40%20M1%20arm64%20Silicon.md).
+For installing on the Apple M1 chip, see [these instructions](https://github.com/StanfordMIMI/Comp2Comp/blob/master/docs/Local%20Implementation%20%40%20M1%20arm64%20Silicon.md).
 
 ## Basic Usage
 <a name="basic_usage"></a>
