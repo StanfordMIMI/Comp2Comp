@@ -2,6 +2,9 @@
 import argparse
 import os
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+
 from comp2comp.contrast_phase.contrast_phase import ContrastPhaseDetection
 from comp2comp.hip.hip import (
     HipComputeROIs,
@@ -39,8 +42,6 @@ from comp2comp.spine.spine import (
 from comp2comp.utils.orientation import ToCanonical
 from comp2comp.utils.process import process_2d, process_3d
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
