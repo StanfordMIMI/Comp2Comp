@@ -308,11 +308,12 @@ class VisImage:
                 the visualized image will be saved.
         """
         # if filepath is a png or jpg
+        img = self.get_image()
         if filepath.endswith(".png") or filepath.endswith(".jpg"):
             self.fig.savefig(filepath)
         if filepath.endswith(".dcm"):
-            img = self.get_image()
             to_dicom(img, Path(filepath))
+        return img
 
     def get_image(self):
         """

@@ -462,7 +462,7 @@ def visualize_coronal_sagittal_spine(
     else:
         raise ValueError("Format must be either png or dcm")
 
-    spine_visualization.spine_binary_segmentation_overlay(
+    img_sagittal = spine_visualization.spine_binary_segmentation_overlay(
         sagittal_image,
         one_hot_sag_label,
         output_dir,
@@ -471,7 +471,7 @@ def visualize_coronal_sagittal_spine(
         model_type=model_type,
         pixel_spacing=pixel_spacing,
     )
-    spine_visualization.spine_binary_segmentation_overlay(
+    img_coronal = spine_visualization.spine_binary_segmentation_overlay(
         coronal_image,
         one_hot_cor_label,
         output_dir,
@@ -480,6 +480,8 @@ def visualize_coronal_sagittal_spine(
         model_type=model_type,
         pixel_spacing=pixel_spacing,
     )
+
+    return img_sagittal, img_coronal
 
 
 def curved_planar_reformation(mvs, centroids):

@@ -36,6 +36,7 @@ from comp2comp.spine.spine import (
     SpineFindDicoms,
     SpineMetricsSaver,
     SpineMuscleAdiposeTissueReport,
+    SpineReport,
     SpineSegmentation,
     SpineToCanonical,
 )
@@ -70,11 +71,12 @@ def SpinePipelineBuilder(path, args):
     pipeline = InferencePipeline(
         [
             DicomToNifti(path),
-            SpineSegmentation(args.spine_model),
+            SpineSegmentation(args.spine_model, save=True),
             SpineToCanonical(),
             SpineComputeROIs(args.spine_model),
             SpineMetricsSaver(),
             SpineCoronalSagittalVisualizer(format="png"),
+            SpineReport(format="png"),
         ]
     )
     return pipeline
