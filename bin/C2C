@@ -36,9 +36,9 @@ from comp2comp.spine.spine import (
     SpineFindDicoms,
     SpineMetricsSaver,
     SpineMuscleAdiposeTissueReport,
+    SpineReport,
     SpineSegmentation,
     SpineToCanonical,
-    SpineReport
 )
 from comp2comp.utils.orientation import ToCanonical
 from comp2comp.utils.process import process_2d, process_3d

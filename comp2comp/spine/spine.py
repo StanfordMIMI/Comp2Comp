@@ -1,5 +1,6 @@
 import math
 import os
+import shutil
 import zipfile
 from pathlib import Path
 from time import time
@@ -9,7 +10,6 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 import wget
-import shutil
 from PIL import Image
 from totalsegmentator.libs import (
     download_pretrained_weights,
@@ -345,8 +345,8 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
             shutil.rmtree(os.path.join(output_path, "segmentations"))
         return {}
 
-class SpineReport(InferenceClass):
 
+class SpineReport(InferenceClass):
     def __init__(self, format="png"):
         super().__init__()
         self.format = format
@@ -363,6 +363,7 @@ class SpineReport(InferenceClass):
         elif self.format == "dcm":
             to_dicom(img, output_path + ".dcm")
         return {}
+
 
 class SpineMuscleAdiposeTissueReport(InferenceClass):
     """Spine muscle adipose tissue report class."""
