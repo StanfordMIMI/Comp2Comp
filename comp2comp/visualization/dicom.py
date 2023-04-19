@@ -18,6 +18,7 @@ def to_dicom(input, output_path, plane="axial"):
         image_array = image_array[:, :, :3]
     else:
         image_array = input
+        dicom_path = output_path
 
     meta = FileMetaDataset()
     meta.MediaStorageSOPClassUID = "1.2.840.10008.5.1.4.1.1.7"
