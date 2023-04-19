@@ -71,12 +71,12 @@ def SpinePipelineBuilder(path, args):
     pipeline = InferencePipeline(
         [
             DicomToNifti(path),
-            SpineSegmentation(args.spine_model, save=False),
+            SpineSegmentation(args.spine_model, save=True),
             SpineToCanonical(),
             SpineComputeROIs(args.spine_model),
             SpineMetricsSaver(),
-            SpineCoronalSagittalVisualizer(format="dcm"),
-            SpineReport(format="dcm"),
+            SpineCoronalSagittalVisualizer(format="png"),
+            SpineReport(format="png"),
         ]
     )
     return pipeline
