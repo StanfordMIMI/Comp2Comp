@@ -61,14 +61,17 @@ class DicomFinder(InferenceClass):
 class DicomToNifti(InferenceClass):
     """Convert dicom files to NIfTI files."""
 
-    def __init__(self, input_path: Union[str, Path]):
+    def __init__(self, input_path: Union[str, Path], save=True):
         super().__init__()
         self.input_path = Path(input_path)
+        self.save = save
 
     def __call__(self, inference_pipeline):
         if os.path.exists(
             os.path.join(inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz")
         ):
+            return {}
+        if hasattr(inference_pipeline, "medical_volume"):
             return {}
         output_dir = inference_pipeline.output_dir
         segmentations_output_dir = os.path.join(output_dir, "segmentations")
