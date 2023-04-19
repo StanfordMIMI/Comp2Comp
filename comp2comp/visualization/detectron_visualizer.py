@@ -311,10 +311,8 @@ class VisImage:
         if filepath.endswith(".png") or filepath.endswith(".jpg"):
             self.fig.savefig(filepath)
         if filepath.endswith(".dcm"):
-            filepath_png = filepath[:-4] + ".png"
-            self.fig.savefig(filepath_png)
-            to_dicom(filepath_png, Path(filepath).parent)
-            os.remove(filepath_png)
+            img = self.get_image()
+            to_dicom(img, Path(filepath))
 
     def get_image(self):
         """
