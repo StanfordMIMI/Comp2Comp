@@ -28,7 +28,7 @@ cd Comp2Comp
 pip install -e .
 ```
 
-For installing on the Apple M1 chip, see [these instructions](https://github.com/StanfordMIMI/Comp2Comp/blob/docs/docs/Local%20Implementation%20%40%20M1%20arm64%20Silicon.md).
+For installing on the Apple M1 chip, see [these instructions](https://github.com/StanfordMIMI/Comp2Comp/blob/master/docs/Local%20Implementation%20%40%20M1%20arm64%20Silicon.md).
 
 ## Basic Usage
 <a name="basic_usage"></a>
@@ -123,6 +123,11 @@ bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
 bin/C2C hip --input_path <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+### Example Output Image
+<p align="center">
+  <img src="figures/hip_example.png" height="300">
+</p>
 
 ## Pipeline that runs all currently implemented pipelines
 
