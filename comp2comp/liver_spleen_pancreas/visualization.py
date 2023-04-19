@@ -6,7 +6,7 @@ import os
 import numpy as np
 
 from comp2comp.inference_class_base import InferenceClass
-from comp2comp.organs.visualization_utils import (
+from comp2comp.liver_spleen_pancreas.visualization_utils import (
     generate_liver_spleen_pancreas_report,
     generate_slice_images,
 )

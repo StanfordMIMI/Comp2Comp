@@ -42,8 +42,8 @@ from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
 from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue_visualization import (
     MuscleAdiposeTissueVisualizer,
 )
-from comp2comp.organs.organs import OrganSegmentation
-from comp2comp.organs.visualization import (
+from comp2comp.liver_spleen_pancreas.liver_spleen_pancreas import LiverSpleenPancreasSegmentation
+from comp2comp.liver_spleen_pancreas.visualization import (
     LiverSpleenPancreasMetricsPrinter,
     LiverSpleenPancreasVisualizer,
 )
@@ -118,7 +118,7 @@ def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
 def LiverSpleenPancreasPipelineBuilder(path, args):
     pipeline = InferencePipeline([
         DicomToNifti(path),
-        OrganSegmentation(),
+        LiverSpleenPancreasSegmentation(),
         ToCanonical(),
         LiverSpleenPancreasVisualizer(),
         LiverSpleenPancreasMetricsPrinter()

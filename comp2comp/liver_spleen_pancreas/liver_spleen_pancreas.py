@@ -12,7 +12,7 @@ from totalsegmentator.libs import (
 from comp2comp.inference_class_base import InferenceClass
 
 
-class OrganSegmentation(InferenceClass):
+class LiverSpleenPancreasSegmentation(InferenceClass):
     """Organ segmentation."""
 
     def __init__(self):
