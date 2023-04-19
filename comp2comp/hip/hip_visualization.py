@@ -83,7 +83,7 @@ def hip_roi_visualizer(
     )
     vis.draw_text(
         text=f"Mean HU: {round(hu)}",
-        position=(412, 20),
+        position=(412, 10),
         color=_ROI_COLOR,
         font_size=9,
         horizontal_alignment="left",
@@ -101,7 +101,7 @@ def hip_roi_visualizer(
     )
     vis.draw_text(
         text=f"Mean HU: {round(hu)}",
-        position=(412, 20),
+        position=(412, 10),
         color=_ROI_COLOR,
         font_size=9,
         horizontal_alignment="left",
