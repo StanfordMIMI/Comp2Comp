@@ -5,6 +5,8 @@ from typing import Dict, Union
 import dicom2nifti
 import dosma as dm
 
+# import SimpleITK as sitk
+
 from comp2comp.inference_class_base import InferenceClass
 
 
@@ -76,6 +78,7 @@ class DicomToNifti(InferenceClass):
         output_dir = inference_pipeline.output_dir
         segmentations_output_dir = os.path.join(output_dir, "segmentations")
         os.makedirs(segmentations_output_dir, exist_ok=True)
+
         # if self.input_path is a folder
         if self.input_path.is_dir():
             dicom2nifti.dicom_series_to_nifti(
@@ -89,3 +92,12 @@ class DicomToNifti(InferenceClass):
                 f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}"
             )
         return {}
+
+"""
+def dicom_series_to_nifti(input_path, output_file, reorient_nifti):
+    reader = sitk.ImageSeriesReader()
+    dicom_names = reader.GetGDCMSeriesFileNames(str(input_path))
+    reader.SetFileNames(dicom_names)
+    image = reader.Execute()
+    sitk.WriteImage(image, output_file)
+"""
