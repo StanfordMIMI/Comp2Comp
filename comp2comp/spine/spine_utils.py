@@ -12,8 +12,7 @@ from comp2comp.spine import spine_visualization
 
 
 def find_spine_dicoms(centroids: Dict, path: str, levels):
-    """Find the dicom files corresponding to the spine T12 - L5 levels.
-    """
+    """Find the dicom files corresponding to the spine T12 - L5 levels."""
 
     vertical_positions = []
     for level in centroids:

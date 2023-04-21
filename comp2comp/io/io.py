@@ -5,9 +5,9 @@ from typing import Dict, Union
 import dicom2nifti
 import dosma as dm
 
-# import SimpleITK as sitk
-
 from comp2comp.inference_class_base import InferenceClass
+
+# import SimpleITK as sitk
 
 
 class DicomLoader(InferenceClass):
@@ -92,6 +92,7 @@ class DicomToNifti(InferenceClass):
                 f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}"
             )
         return {}
+
 
 """
 def dicom_series_to_nifti(input_path, output_file, reorient_nifti):
