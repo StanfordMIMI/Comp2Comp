@@ -163,29 +163,6 @@ class SpineSegmentation(InferenceClass):
         return seg, img
 
 
-class SpineToCanonical(InferenceClass):
-    def __init__(self):
-        super().__init__()
-
-    def __call__(self, inference_pipeline):
-        """
-        First dim goes from L to R.
-        Second dim goes from P to A.
-        Third dim goes from I to S.
-        """
-        inference_pipeline.flip_si = False  # necessary for finding dicoms in correct order
-        if "I" in nib.aff2axcodes(inference_pipeline.medical_volume.affine):
-            inference_pipeline.flip_si = True
-
-        canonical_segmentation = nib.as_closest_canonical(inference_pipeline.segmentation)
-        canonical_medical_volume = nib.as_closest_canonical(inference_pipeline.medical_volume)
-
-        inference_pipeline.segmentation = canonical_segmentation
-        inference_pipeline.medical_volume = canonical_medical_volume
-        inference_pipeline.pixel_spacing_list = canonical_medical_volume.header.get_zooms()
-        return {}
-
-
 class AxialCropper(InferenceClass):
     """Crop the CT image (medical_volume) and segmentation based on user-specified
     lower and upper levels of the spine.
@@ -300,11 +277,8 @@ class SpineFindDicoms(InferenceClass):
     def __call__(self, inference_pipeline):
 
         dicom_files, names, inferior_superior_centers = spine_utils.find_spine_dicoms(
-            inference_pipeline.segmentation.get_fdata(),
             inference_pipeline.centroids_3d,
             inference_pipeline.dicom_series_path,
-            inference_pipeline.spine_model_type,
-            inference_pipeline.flip_si,
             list(inference_pipeline.rois.keys()),
         )
 

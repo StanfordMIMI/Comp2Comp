@@ -38,7 +38,6 @@ from comp2comp.spine.spine import (
     SpineMuscleAdiposeTissueReport,
     SpineReport,
     SpineSegmentation,
-    SpineToCanonical,
 )
 from comp2comp.utils.orientation import ToCanonical
 from comp2comp.utils.process import process_2d, process_3d
@@ -72,7 +71,7 @@ def SpinePipelineBuilder(path, args):
         [
             DicomToNifti(path),
             SpineSegmentation(args.spine_model, save=True),
-            SpineToCanonical(),
+            ToCanonical(),
             SpineComputeROIs(args.spine_model),
             SpineMetricsSaver(),
             SpineCoronalSagittalVisualizer(format="png"),

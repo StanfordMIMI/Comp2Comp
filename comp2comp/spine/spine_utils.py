@@ -11,64 +11,25 @@ from scipy.ndimage import zoom
 from comp2comp.spine import spine_visualization
 
 
-def find_spine_dicoms(seg: np.ndarray, centroids: Dict, path: str, model_type, flip_si, levels):
-    """Find the dicom files corresponding to the spine T12 - L5 levels.
-
-    Args:
-        seg (np.ndarray): Segmentation volume.
-        path (str): Path to the dicom files.
-        model_type (str): Model type.
-
-    Returns:
-        List[str]: List of dicom files.
-    """
-
-    """
-    # flip the last axis of seg
-    seg = np.flip(seg, 2)
-    vertical_positions = []
-
-    # extract label_idxs using levels
-    label_idxs = [model_type.categories[level] for level in levels]
-    for i, label_idx in enumerate(label_idxs):
-        level = levels[i]
-        pos = compute_centroid(seg, "axial", label_idx)
-        vertical_positions.append(pos)
-    """
+def find_spine_dicoms(centroids: Dict, path: str, levels):
+    """Find the dicom files corresponding to the spine T12 - L5 levels."""
 
     vertical_positions = []
     for level in centroids:
         centroid = centroids[level]
-        vertical_positions.append(centroid[2])
-
-    folder_in = path
-
-    # if flip_si is True, then flip the vertical positions
-    if flip_si:
-        vertical_positions_dcm = vertical_positions
-    else:
-        vertical_positions_dcm = [seg.shape[2] - x for x in vertical_positions]
-
-    # round the vertical positions
-    vertical_positions_dcm = [round(x) for x in vertical_positions_dcm]
+        vertical_positions.append(round(centroid[2]))
 
     dicom_files = []
-    instance_numbers = []
-    for dicom_path in glob(folder_in + "/*.dcm"):
-        instance_number = dcmread(dicom_path).InstanceNumber
-        if instance_number in vertical_positions_dcm:
-            dicom_files.append(dicom_path)
-            instance_numbers.append(instance_number)
+    ipps = []
+    for dicom_path in glob(path + "/*.dcm"):
+        ipp = dcmread(dicom_path).ImagePositionPatient
+        ipps.append(ipp[2])
+        dicom_files.append(dicom_path)
 
-    if flip_si:
-        dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files), reverse=True)]
-    else:
-        dicom_files = [x for _, x in sorted(zip(instance_numbers, dicom_files))]
+    dicom_files = [x for _, x in sorted(zip(ipps, dicom_files))]
+    dicom_files = list(np.array(dicom_files)[vertical_positions])
 
-    vertical_positions_dcm.sort(reverse=True)
-    levels.reverse()
-
-    return (dicom_files, levels, vertical_positions_dcm)
+    return (dicom_files, levels, vertical_positions)
 
 
 # Function that takes a numpy array as input, computes the
