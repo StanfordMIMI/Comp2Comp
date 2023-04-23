@@ -2,7 +2,7 @@ import math
 
 import cv2
 import numpy as np
-from scipy.ndimage import zoom
+from scipy.ndimage import zoom, distance_transform_edt
 
 from comp2comp.hip.hip_visualization import method_visualizer
 
@@ -24,8 +24,47 @@ def compute_rois(medical_volume, segmentation, model, output_dir):
     }
 
 
-def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=False):
+def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=True, distance_transform_3d=True):
     # find the largest index that is not zero
+
+
+    if distance_transform_3d:
+        
+        zooms = medical_volume.header.get_zooms()
+        zoom_factor = zooms[2] / zooms[1]
+
+        medical_volume_ndarray = zoom(medical_volume.get_fdata(), (1, 1, zoom_factor), order=3).round()
+        femur_mask = zoom(femur_mask, (1, 1, zoom_factor), order=1).round()
+
+        top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
+        top_mask = femur_mask[:, :, top]
+        center_of_mass = np.array(np.where(top_mask == 1)).mean(axis=1)
+
+        distance_volume = distance_transform_edt(femur_mask)
+
+        # set distance volume to zero if it is greater than 2 cm to left or right of center of mass[0]
+        distance_volume[:round(center_of_mass[0] - 2 / zooms[0]), :, :] = 0
+        distance_volume[round(center_of_mass[0] + 2 / zooms[0]) :, :, :] = 0
+
+        max_distance = np.max(distance_volume)
+        radius_axial = max_distance
+        radius_sagittal = max_distance
+        center = np.unravel_index(np.argmax(distance_volume), distance_volume.shape)
+
+        center_axial = [center[1], center[0]]
+        axial_image = medical_volume_ndarray[:, :, round(center[2])]
+        axial_slice = femur_mask[:, :, round(center[2])]
+
+        center_sagittal = [center[2], center[1]] # * zoom_factor
+        sagittal_image = medical_volume_ndarray[round(center[0]), :, :]
+        sagittal_slice = femur_mask[round(center[0]), :, :]
+        
+        centroid = [round(center[0]), round(center[1]), round(center[2]) / zoom_factor]
+    
+    # sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
+    # sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3).round()
+
+    """
     top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
     top_mask = femur_mask[:, :, top]
     center_of_mass = np.array(np.where(top_mask == 1)).mean(axis=1)
@@ -64,6 +103,7 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
     axial_image = medical_volume.get_fdata()[:, :, round(centroid[2])]
     sagittal_image = medical_volume.get_fdata()[round(centroid[0]), :, :]
     sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3).round()
+    """
 
     if visualize_method:
         method_visualizer(
