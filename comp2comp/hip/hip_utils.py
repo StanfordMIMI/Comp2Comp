@@ -27,7 +27,6 @@ def compute_rois(medical_volume, segmentation, model, output_dir):
 def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=True, distance_transform_3d=True):
     # find the largest index that is not zero
 
-
     if distance_transform_3d:
         
         zooms = medical_volume.header.get_zooms()
@@ -61,49 +60,45 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
         
         centroid = [round(center[0]), round(center[1]), round(center[2]) / zoom_factor]
     
-    # sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
-    # sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3).round()
+    else:
+        top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
+        top_mask = femur_mask[:, :, top]
+        center_of_mass = np.array(np.where(top_mask == 1)).mean(axis=1)
 
-    """
-    top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
-    top_mask = femur_mask[:, :, top]
-    center_of_mass = np.array(np.where(top_mask == 1)).mean(axis=1)
+        coronal_slice = femur_mask[:, round(center_of_mass[1]), :]
+        coronal_image = medical_volume.get_fdata()[:, round(center_of_mass[1]), :]
+        sagittal_slice = femur_mask[round(center_of_mass[0]), :, :]
+        sagittal_image = medical_volume.get_fdata()[round(center_of_mass[0]), :, :]
 
-    coronal_slice = femur_mask[:, round(center_of_mass[1]), :]
-    coronal_image = medical_volume.get_fdata()[:, round(center_of_mass[1]), :]
-    sagittal_slice = femur_mask[round(center_of_mass[0]), :, :]
-    sagittal_image = medical_volume.get_fdata()[round(center_of_mass[0]), :, :]
+        zooms = medical_volume.header.get_zooms()
+        zoom_factor = zooms[2] / zooms[1]
+        coronal_slice = zoom(coronal_slice, (1, zoom_factor), order=1).round()
+        sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
+        coronal_image = zoom(coronal_image, (1, zoom_factor), order=3).round()
+        sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3).round()
 
-    zooms = medical_volume.header.get_zooms()
-    zoom_factor = zooms[2] / zooms[1]
-    coronal_slice = zoom(coronal_slice, (1, zoom_factor), order=1).round()
-    sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
-    coronal_image = zoom(coronal_image, (1, zoom_factor), order=3).round()
-    sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3).round()
+        dist_map = cv2.distanceTransform(sagittal_slice, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
+        _, radius_sagittal, _, center_sagittal = cv2.minMaxLoc(dist_map)
 
-    dist_map = cv2.distanceTransform(sagittal_slice, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
-    _, radius_sagittal, _, center_sagittal = cv2.minMaxLoc(dist_map)
+        center_sagittal = list(center_sagittal)
+        center_sagittal[0] = center_sagittal[0] / zoom_factor
+        centroid = [round(center_of_mass[0]), center_sagittal[1], center_sagittal[0]]
 
-    center_sagittal = list(center_sagittal)
-    center_sagittal[0] = center_sagittal[0] / zoom_factor
-    centroid = [round(center_of_mass[0]), center_sagittal[1], center_sagittal[0]]
+        axial_slice = femur_mask[:, :, round(centroid[2])]
+        dist_map = cv2.distanceTransform(axial_slice, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
+        _, radius_axial, _, center_axial = cv2.minMaxLoc(dist_map)
+        centroid[0] = round(center_axial[1])
 
-    axial_slice = femur_mask[:, :, round(centroid[2])]
-    dist_map = cv2.distanceTransform(axial_slice, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
-    _, radius_axial, _, center_axial = cv2.minMaxLoc(dist_map)
-    centroid[0] = round(center_axial[1])
+        sagittal_slice = femur_mask[round(centroid[0]), :, :]
+        sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
+        dist_map = cv2.distanceTransform(sagittal_slice, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
+        _, radius_sagittal, _, center_sagittal = cv2.minMaxLoc(dist_map)
+        centroid[1] = round(center_sagittal[1])
+        centroid[2] = round(center_sagittal[0] / zoom_factor)
 
-    sagittal_slice = femur_mask[round(centroid[0]), :, :]
-    sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
-    dist_map = cv2.distanceTransform(sagittal_slice, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
-    _, radius_sagittal, _, center_sagittal = cv2.minMaxLoc(dist_map)
-    centroid[1] = round(center_sagittal[1])
-    centroid[2] = round(center_sagittal[0] / zoom_factor)
-
-    axial_image = medical_volume.get_fdata()[:, :, round(centroid[2])]
-    sagittal_image = medical_volume.get_fdata()[round(centroid[0]), :, :]
-    sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3).round()
-    """
+        axial_image = medical_volume.get_fdata()[:, :, round(centroid[2])]
+        sagittal_image = medical_volume.get_fdata()[round(centroid[0]), :, :]
+        sagittal_image = zoom(sagittal_image, (1, zoom_factor), order=3).round()
 
     if visualize_method:
         method_visualizer(
