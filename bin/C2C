@@ -52,7 +52,11 @@ from comp2comp.spine.spine import (
     SpineToCanonical,
 )
 
-from comp2comp.aaa.aaa import *
+from comp2comp.aaa.aaa import (
+    AortaSegmentation,
+    AortaDiameter,
+    AortaMetricsSaver
+)
 
 from comp2comp.utils.process import process_2d, process_3d
 
@@ -133,8 +137,8 @@ def AAAPipelineBuilder(path, args):
     pipeline = InferencePipeline([
         AxialCropperPipelineBuilder(path, args),
         AortaSegmentation(path),
-        # # LoadAortaSegmentation(),
-        AortaDiameter()
+        AortaDiameter(),
+        AortaMetricsSaver()
         ]
     )
     return pipeline

@@ -18,6 +18,7 @@ import pydicom
 import operator
 import moviepy.video.io.ImageSequenceClip
 from tkinter import Tcl
+import pandas as pd
 
 from totalsegmentator.libs import (
     download_pretrained_weights,
@@ -155,35 +156,30 @@ class AortaDiameter(InferenceClass):
 
         # image output directory 
         output_dir = inference_pipeline.output_dir
+
+        # directory for individual slices
         output_dir_slices = os.path.join(output_dir, "images/slices/")
         if not os.path.exists(output_dir_slices):
             os.makedirs(output_dir_slices)
 
-        output_dir = inference_pipeline.output_dir
+        # directory for summary
         output_dir_summary = os.path.join(output_dir, "images/summary/")
         if not os.path.exists(output_dir_summary):
             os.makedirs(output_dir_summary)
 
         DICOM_PATH = inference_pipeline.dicom_series_path
         dicom = pydicom.dcmread(DICOM_PATH+"/"+os.listdir(DICOM_PATH)[0])
-        
         dicom.PhotometricInterpretation = 'YBR_FULL'
         pixel_conversion = dicom.PixelSpacing
-        print("Pixel conversion: "+str(pixel_conversion))
         RATIO_PIXEL_TO_MM = pixel_conversion[0]
-
         SLICE_COUNT = dicom["InstanceNumber"].value
-        print(SLICE_COUNT)
 
-        # SLICE_COUNT = len(ct_img)
         diameterDict = {}
         
         for i in range(len(ct_img)):
 
             mask = axial_masks[i].astype('uint8')
-
             img = ct_img[i]
-
             img = np.clip(img, -300, 1800)
             img = self.normalize_img(img) * 255.0
             img = img.reshape((img.shape[0], img.shape[1], 1))
@@ -195,7 +191,6 @@ class AortaDiameter(InferenceClass):
 
                     areas = [cv2.contourArea(c) for c in contours]
                     sorted_areas = np.sort(areas)
-
                     contours = contours[areas.index(sorted_areas[-1])]
 
                     overlay = img.copy()
@@ -277,7 +272,7 @@ class AortaDiameter(InferenceClass):
 
                     cv2.putText(img, lbls[4], (10, 160), font, fontScale, (0, 255, 0), 2)
 
-                    cv2.imwrite(output_dir_slices+"slice"+str(SLICE_COUNT-(i))+".png", img)
+                    # cv2.imwrite(output_dir_slices+"slice"+str(SLICE_COUNT-(i))+".png", img)
 
         plt.bar(list(diameterDict.keys()), diameterDict.values(), color='b')
 
@@ -293,46 +288,71 @@ class AortaDiameter(InferenceClass):
         print(max(diameterDict.items(), key=operator.itemgetter(1))[0])
         print(diameterDict[max(diameterDict.items(), key=operator.itemgetter(1))[0]])
 
-        img = ct_img[SLICE_COUNT-(max(diameterDict.items(), key=operator.itemgetter(1))[0])]
-        img = np.clip(img, -300, 1800)
-        img = self.normalize_img(img) * 255.0
-        img = img.reshape((img.shape[0], img.shape[1], 1))
-        img2 = np.tile(img, (1, 1, 3))
-        img2 = cv2.rotate(img2, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        inference_pipeline.max_diameter = diameterDict[max(diameterDict.items(), key=operator.itemgetter(1))[0]]
 
-        img1 = cv2.imread(output_dir_slices+'slice'+str(max(diameterDict.items(), key=operator.itemgetter(1))[0])+'.png')
+        # img = ct_img[SLICE_COUNT-(max(diameterDict.items(), key=operator.itemgetter(1))[0])]
+        # img = np.clip(img, -300, 1800)
+        # img = self.normalize_img(img) * 255.0
+        # img = img.reshape((img.shape[0], img.shape[1], 1))
+        # img2 = np.tile(img, (1, 1, 3))
+        # img2 = cv2.rotate(img2, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-        border_size = 3
-        img1 = cv2.copyMakeBorder(
-            img1,
-            top=border_size,
-            bottom=border_size,
-            left=border_size,
-            right=border_size,
-            borderType=cv2.BORDER_CONSTANT,
-            value=[0, 244, 0]
-        )
-        img2 = cv2.copyMakeBorder(
-            img2,
-            top=border_size,
-            bottom=border_size,
-            left=border_size,
-            right=border_size,
-            borderType=cv2.BORDER_CONSTANT,
-            value=[244, 0, 0]
-        )
+        # img1 = cv2.imread(output_dir_slices+'slice'+str(max(diameterDict.items(), key=operator.itemgetter(1))[0])+'.png')
 
-        vis = np.concatenate((img2, img1), axis=1)
-        cv2.imwrite(output_dir_summary+'out.png', vis)
+        # border_size = 3
+        # img1 = cv2.copyMakeBorder(
+        #     img1,
+        #     top=border_size,
+        #     bottom=border_size,
+        #     left=border_size,
+        #     right=border_size,
+        #     borderType=cv2.BORDER_CONSTANT,
+        #     value=[0, 244, 0]
+        # )
+        # img2 = cv2.copyMakeBorder(
+        #     img2,
+        #     top=border_size,
+        #     bottom=border_size,
+        #     left=border_size,
+        #     right=border_size,
+        #     borderType=cv2.BORDER_CONSTANT,
+        #     value=[244, 0, 0]
+        # )
 
-        image_folder=output_dir_slices
-        fps=20
-        image_files = [os.path.join(image_folder,img)
-                    for img in Tcl().call('lsort', '-dict', os.listdir(image_folder))
-                    if img.endswith(".png")]
-        clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(image_files, fps=fps)
-        clip.write_videofile(output_dir_summary+'my_video.mp4')
+        # vis = np.concatenate((img2, img1), axis=1)
+        # cv2.imwrite(output_dir_summary+'out.png', vis)
+
+        # image_folder=output_dir_slices
+        # fps=20
+        # image_files = [os.path.join(image_folder,img)
+        #             for img in Tcl().call('lsort', '-dict', os.listdir(image_folder))
+        #             if img.endswith(".png")]
+        # clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(image_files, fps=fps)
+        # clip.write_videofile(output_dir_summary+'my_video.mp4')
 
         return {}
 
 
+class AortaMetricsSaver(InferenceClass):
+    """Save metrics to a CSV file."""
+
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, inference_pipeline):
+        """Save metrics to a CSV file."""
+        self.max_diameter = inference_pipeline.max_diameter
+        self.dicom_series_path = inference_pipeline.dicom_series_path
+        self.output_dir = inference_pipeline.output_dir
+        self.csv_output_dir = os.path.join(self.output_dir, "metrics")
+        if not os.path.exists(self.csv_output_dir):
+            os.makedirs(self.csv_output_dir, exist_ok=True)
+        self.save_results()
+        return {}
+
+    def save_results(self):
+        """Save results to a CSV file."""
+        _, filename = os.path.split(self.dicom_series_path)
+        data = [[filename, str(self.max_diameter)]]
+        df = pd.DataFrame(data, columns=['Filename', 'Max Diameter'])
+        df.to_csv(os.path.join(self.csv_output_dir, "aorta_metrics.csv"), index=False)
