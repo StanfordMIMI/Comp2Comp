@@ -57,6 +57,14 @@ from comp2comp.spine.spine import (
     SpineSegmentation,
     SpineToCanonical,
 )
+
+from comp2comp.aortic_calcium.aortic_calcium import (
+    AortaSegmentation, 
+    AorticCalciumSegmentation, 
+    AorticCalciumMetrics,
+)
+from comp2comp.aortic_calcium.visualization import AorticCalciumVisualizer
+
 from comp2comp.utils.orientation import ToCanonical
 from comp2comp.utils.process import process_2d, process_3d
 
@@ -125,6 +133,27 @@ def LiverSpleenPancreasPipelineBuilder(path, args):
         ]
     )
     return pipeline
+
+
+
+
+def AorticCalciumPipelineBuilder(path, args):
+    pipeline = InferencePipeline([
+        DicomToNifti(path),
+        SpineSegmentation(model_name='ts_spine'),
+        ToCanonical(),
+        AortaSegmentation(),
+        ToCanonical(),
+        AorticCalciumSegmentation(),
+        AorticCalciumMetrics(),
+        AorticCalciumVisualizer()
+        ]
+    )
+    return pipeline
+
+
+
+
 
 
 def ContrastPhasePipelineBuilder(path, args):
@@ -221,6 +250,15 @@ def argument_parser():
         help="path to input directory or file",
     )
 
+    aortic_calcium = subparsers.add_parser("aortic_calcium",
+                                              help="Segments aortic calcifications and compute metrics for the calcifications")
+    aortic_calcium.add_argument(
+        "--input_path",
+        required=True,
+        type=str,
+        help="path to input directory or file",
+    )
+
     contrast_phase_parser = subparsers.add_parser("contrast_phase",
                                               help="contrast phase")
     contrast_phase_parser.add_argument(
@@ -284,6 +322,8 @@ def main():
         process_3d(args, ContrastPhasePipelineBuilder)
     elif args.action == "liver_spleen_pancreas":
         process_3d(args, LiverSpleenPancreasPipelineBuilder)
+    elif args.action == "aortic_calcium":
+        process_3d(args, AorticCalciumPipelineBuilder)
     elif args.action == "hip":
         process_3d(args, HipPipelineBuilder)
     elif args.action == "all":
