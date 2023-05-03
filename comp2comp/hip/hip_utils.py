@@ -44,7 +44,7 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
 
     centroid = [round(center_of_mass[0]), 0, 0]
 
-    for i in range(3):
+    for _ in range(3):
         sagittal_slice = femur_mask[centroid[0], :, :]
         sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
         centroid[1], centroid[2], radius_sagittal = inscribe_sagittal(sagittal_slice, zoom_factor)
@@ -96,20 +96,20 @@ def compute_hip_roi(img, centroid, radius_sagittal, radius_axial):
                     roi[i, j, k] = 1
     return roi
 
+
 def inscribe_axial(axial_mask):
     dist_map = cv2.distanceTransform(axial_mask, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
     _, radius_axial, _, center_axial = cv2.minMaxLoc(dist_map)
     center_axial = list(center_axial)
-    print(center_axial)
     left_right_center = round(center_axial[1])
     posterior_anterior_center = round(center_axial[0])
     return left_right_center, posterior_anterior_center, radius_axial
+
 
 def inscribe_sagittal(sagittal_mask, zoom_factor):
     dist_map = cv2.distanceTransform(sagittal_mask, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
     _, radius_sagittal, _, center_sagittal = cv2.minMaxLoc(dist_map)
     center_sagittal = list(center_sagittal)
-    print(center_sagittal)
     posterior_anterior_center = round(center_sagittal[1])
     inferior_superior_center = round(center_sagittal[0])
     inferior_superior_center = round(inferior_superior_center / zoom_factor)
