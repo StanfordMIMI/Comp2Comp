@@ -118,7 +118,12 @@ def LiverSpleenPancreasPipelineBuilder(path, args):
 
 
 def ContrastPhasePipelineBuilder(path, args):
-    pipeline = InferencePipeline([ContrastPhaseDetection(path)])
+    pipeline = InferencePipeline(
+        [
+            DicomToNifti(path),
+            ContrastPhaseDetection(path)
+        ]
+    )
     return pipeline
 
 
