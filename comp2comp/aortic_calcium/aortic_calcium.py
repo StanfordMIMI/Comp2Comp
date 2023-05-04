@@ -132,10 +132,6 @@ class AorticCalciumSegmentation(InferenceClass):
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
 
-        # np.save(os.path.join(self.output_dir_images_organs, 'ct.npy'), ct)
-        np.save(os.path.join(self.output_dir_images_organs, "aorta_mask.npy"), aorta_mask)
-        np.save(os.path.join(self.output_dir_images_organs, "spine_mask.npy"), spine_mask)
-
         return {}
 
     def detectCalcifications(
@@ -158,10 +154,11 @@ class AorticCalciumSegmentation(InferenceClass):
         aorta_erode_iteration=6,
     ):
         """
-        Function that takes in a CT image and aorta segmentation (and optionally volumes to use for exclusion of the segmentations),
-        And returns a mask of the segmented calcifications (and optionally other volumes).
-        The calcium threshold is adapative and uses the median of the CT points inside the aorta together with one
-        standard devidation to the left, as this is more stable. The num_std is multiplied with the distance between the median
+        Function that takes in a CT image and aorta segmentation (and optionally volumes to use
+        for exclusion of the segmentations), And returns a mask of the segmented calcifications
+        (and optionally other volumes). The calcium threshold is adapative and uses the median
+        of the CT points inside the aorta together with one standard devidation to the left, as
+        this is more stable. The num_std is multiplied with the distance between the median
         and the one standard deviation mark, and can be used to control the threshold.
 
         Args:

@@ -18,15 +18,6 @@ class AorticCalciumVisualizer(InferenceClass):
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
 
-        np.save(
-            os.path.join(self.output_dir_images_organs, "calcium_mask.npy"),
-            inference_pipeline.calc_mask,
-        )
-        np.save(
-            os.path.join(self.output_dir_images_organs, "ct_scan.npy"),
-            inference_pipeline.medical_volume.get_fdata(),
-        )
-
         return {}
 
 
