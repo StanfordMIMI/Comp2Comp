@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 from typing import Dict, Union
 
@@ -6,6 +7,8 @@ import dicom2nifti
 import dosma as dm
 
 from comp2comp.inference_class_base import InferenceClass
+
+# import SimpleITK as sitk
 
 
 class DicomLoader(InferenceClass):
@@ -61,14 +64,22 @@ class DicomFinder(InferenceClass):
 class DicomToNifti(InferenceClass):
     """Convert dicom files to NIfTI files."""
 
-    def __init__(self, input_path: Union[str, Path]):
+    def __init__(self, input_path: Union[str, Path], save=True):
         super().__init__()
         self.input_path = Path(input_path)
+        self.save = save
 
     def __call__(self, inference_pipeline):
+        if os.path.exists(
+            os.path.join(inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz")
+        ):
+            return {}
+        if hasattr(inference_pipeline, "medical_volume"):
+            return {}
         output_dir = inference_pipeline.output_dir
         segmentations_output_dir = os.path.join(output_dir, "segmentations")
         os.makedirs(segmentations_output_dir, exist_ok=True)
+
         # if self.input_path is a folder
         if self.input_path.is_dir():
             dicom2nifti.dicom_series_to_nifti(
@@ -77,8 +88,27 @@ class DicomToNifti(InferenceClass):
                 reorient_nifti=False,
             )
             inference_pipeline.dicom_series_path = str(self.input_path)
-        elif self.input_path.suffix in [".nii", ".nii.gz"]:
-            os.system(
-                f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}"
+        # elif str(self.input_path.suffix in [".nii", ".nii.gz"]:
+        elif str(self.input_path).endswith((".nii", ".nii.gz")):
+
+            shutil.copy2(
+                self.input_path,
+                os.path.join(
+                    segmentations_output_dir, "converted_dcm" + "".join(self.input_path.suffixes)
+                ),
             )
+
+            # os.system(
+            #     f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}"
+            # )
         return {}
+
+
+"""
+def dicom_series_to_nifti(input_path, output_file, reorient_nifti):
+    reader = sitk.ImageSeriesReader()
+    dicom_names = reader.GetGDCMSeriesFileNames(str(input_path))
+    reader.SetFileNames(dicom_names)
+    image = reader.Execute()
+    sitk.WriteImage(image, output_file)
+"""

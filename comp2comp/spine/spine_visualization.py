@@ -137,7 +137,8 @@ def spine_binary_segmentation_overlay(
         """
 
     vis_obj = vis.get_output()
-    vis_obj.save(os.path.join(images_base_path, file_name))
+    img = vis_obj.save(os.path.join(images_base_path, file_name))
+    return img
 
 
 def normalize_img(img: np.ndarray) -> np.ndarray:

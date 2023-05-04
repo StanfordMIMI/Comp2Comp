@@ -1,5 +1,6 @@
 import math
 import os
+import shutil
 import zipfile
 from pathlib import Path
 from time import time
@@ -19,14 +20,16 @@ from totalsegmentator.libs import (
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
+from comp2comp.visualization.dicom import to_dicom
 
 
 class SpineSegmentation(InferenceClass):
     """Spine segmentation."""
 
-    def __init__(self, model_name):
+    def __init__(self, model_name, save=True):
         super().__init__()
         self.model_name = model_name
+        self.save_segmentations = save
 
     def __call__(self, inference_pipeline):
         # inference_pipeline.dicom_series_path = self.input_path
@@ -44,6 +47,7 @@ class SpineSegmentation(InferenceClass):
         )
         inference_pipeline.segmentation = seg
         inference_pipeline.medical_volume = mv
+        inference_pipeline.save_segmentations = self.save_segmentations
         return {}
 
     def setup_nnunet_c2c(self, model_dir: Union[str, Path]):
@@ -117,6 +121,9 @@ class SpineSegmentation(InferenceClass):
         else:
             raise ValueError("Invalid model name.")
 
+        if not self.save_segmentations:
+            output_path = None
+
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
@@ -154,29 +161,6 @@ class SpineSegmentation(InferenceClass):
             seg = nib.Nifti1Image(seg_data, seg.affine, seg.header)
 
         return seg, img
-
-
-class SpineToCanonical(InferenceClass):
-    def __init__(self):
-        super().__init__()
-
-    def __call__(self, inference_pipeline):
-        """
-        First dim goes from L to R.
-        Second dim goes from P to A.
-        Third dim goes from I to S.
-        """
-        inference_pipeline.flip_si = False  # necessary for finding dicoms in correct order
-        if "I" in nib.aff2axcodes(inference_pipeline.medical_volume.affine):
-            inference_pipeline.flip_si = True
-
-        canonical_segmentation = nib.as_closest_canonical(inference_pipeline.segmentation)
-        canonical_medical_volume = nib.as_closest_canonical(inference_pipeline.medical_volume)
-
-        inference_pipeline.segmentation = canonical_segmentation
-        inference_pipeline.medical_volume = canonical_medical_volume
-        inference_pipeline.pixel_spacing_list = canonical_medical_volume.header.get_zooms()
-        return {}
 
 
 class AxialCropper(InferenceClass):
@@ -293,11 +277,8 @@ class SpineFindDicoms(InferenceClass):
     def __call__(self, inference_pipeline):
 
         dicom_files, names, inferior_superior_centers = spine_utils.find_spine_dicoms(
-            inference_pipeline.segmentation.get_fdata(),
             inference_pipeline.centroids_3d,
             inference_pipeline.dicom_series_path,
-            inference_pipeline.spine_model_type,
-            inference_pipeline.flip_si,
             list(inference_pipeline.rois.keys()),
         )
 
@@ -311,15 +292,16 @@ class SpineFindDicoms(InferenceClass):
 
 
 class SpineCoronalSagittalVisualizer(InferenceClass):
-    def __init__(self):
+    def __init__(self, format="png"):
         super().__init__()
+        self.format = format
 
     def __call__(self, inference_pipeline):
 
         output_path = inference_pipeline.output_dir
         spine_model_type = inference_pipeline.spine_model_type
 
-        spine_utils.visualize_coronal_sagittal_spine(
+        img_sagittal, img_coronal = spine_utils.visualize_coronal_sagittal_spine(
             inference_pipeline.segmentation.get_fdata(),
             list(inference_pipeline.rois.values()),
             inference_pipeline.medical_volume.get_fdata(),
@@ -328,8 +310,32 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
             spine_hus=inference_pipeline.spine_hus,
             model_type=spine_model_type,
             pixel_spacing=inference_pipeline.pixel_spacing_list,
+            format=self.format,
         )
+        inference_pipeline.spine_vis_sagittal = img_sagittal
+        inference_pipeline.spine_vis_coronal = img_coronal
         inference_pipeline.spine = True
+        if not inference_pipeline.save_segmentations:
+            shutil.rmtree(os.path.join(output_path, "segmentations"))
+        return {}
+
+
+class SpineReport(InferenceClass):
+    def __init__(self, format="png"):
+        super().__init__()
+        self.format = format
+
+    def __call__(self, inference_pipeline):
+        sagittal_image = inference_pipeline.spine_vis_sagittal
+        coronal_image = inference_pipeline.spine_vis_coronal
+        # concatenate these numpy arrays laterally
+        img = np.concatenate((coronal_image, sagittal_image), axis=1)
+        output_path = os.path.join(inference_pipeline.output_dir, "images", "spine_report")
+        if self.format == "png":
+            im = Image.fromarray(img)
+            im.save(output_path + ".png")
+        elif self.format == "dcm":
+            to_dicom(img, output_path + ".dcm")
         return {}
 
 

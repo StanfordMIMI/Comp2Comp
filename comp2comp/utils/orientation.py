@@ -15,10 +15,6 @@ class ToCanonical(InferenceClass):
         Second dim goes from P to A.
         Third dim goes from I to S.
         """
-        inference_pipeline.flip_si = False  # necessary for finding dicoms in correct order
-        if "I" in nib.aff2axcodes(inference_pipeline.medical_volume.affine):
-            inference_pipeline.flip_si = True
-
         canonical_segmentation = nib.as_closest_canonical(inference_pipeline.segmentation)
         canonical_medical_volume = nib.as_closest_canonical(inference_pipeline.medical_volume)
 

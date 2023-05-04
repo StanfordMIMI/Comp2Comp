@@ -1,5 +1,7 @@
 import os
+
 import nibabel as nib
+
 
 def find_dicom_files(input_path):
     dicom_series = []
@@ -24,11 +26,11 @@ def get_dicom_paths_and_num(path):
     dicom_paths = []
     for root, _, files in os.walk(path):
         if len(files) > 0:
-            if all([file.endswith(".dcm") for file in files]):
+            if all(file.endswith(".dcm") for file in files):
                 dicom_paths.append((root, len(files)))
-    
+
     if len(dicom_paths) == 0:
-        raise ValueError('No scans were found in:\n' + path)
+        raise ValueError("No scans were found in:\n" + path)
 
     return dicom_paths
 
@@ -42,19 +44,19 @@ def get_dicom_or_nifti_paths_and_num(path):
         list: List of paths.
     """
     # if path is a nifti
-    if path.endswith('.nii') or path.endswith('.nii.gz'):
+    if path.endswith(".nii") or path.endswith(".nii.gz"):
         num_slices = nib.load(path).shape[2]
         return [(path, num_slices)]
 
     dicom_nifti_paths = []
     for root, _, files in os.walk(path):
         if len(files) > 0:
-            if all([file.endswith(".dcm") for file in files]):
+            if all(file.endswith(".dcm") for file in files):
                 dicom_nifti_paths.append((root, len(files)))
             else:
                 for file in files:
                     if file.endswith(".nii") or file.endswith(".nii.gz"):
                         num_slices = nib.load(path).shape[2]
                         dicom_nifti_paths.append((os.path.join(root, file), num_slices))
-                        
+
     return dicom_nifti_paths

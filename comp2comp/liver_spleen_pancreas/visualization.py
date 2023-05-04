@@ -34,10 +34,13 @@ class LiverSpleenPancreasVisualizer(InferenceClass):
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
 
-        inference_pipeline.medical_volume_arr = np.flip(inference_pipeline.medical_volume.get_fdata(), axis=1)
-        inference_pipeline.segmentation_arr = np.flip(inference_pipeline.segmentation.get_fdata(), axis=1)
+        inference_pipeline.medical_volume_arr = np.flip(
+            inference_pipeline.medical_volume.get_fdata(), axis=1
+        )
+        inference_pipeline.segmentation_arr = np.flip(
+            inference_pipeline.segmentation.get_fdata(), axis=1
+        )
 
-    
         inference_pipeline.pix_dims = inference_pipeline.medical_volume.header["pixdim"][1:4]
         inference_pipeline.vol_per_pixel = np.prod(
             inference_pipeline.pix_dims / 10

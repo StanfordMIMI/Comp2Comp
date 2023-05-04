@@ -2,7 +2,9 @@
 import colorsys
 import logging
 import math
+import os
 from enum import Enum, unique
+from pathlib import Path
 
 import cv2
 import matplotlib as mpl
@@ -14,6 +16,7 @@ import torch
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from comp2comp.utils.colormap import random_color
+from comp2comp.visualization.dicom import to_dicom
 
 logger = logging.getLogger(__name__)
 
@@ -304,7 +307,13 @@ class VisImage:
             filepath (str): a string that contains the absolute path, including the file name, where
                 the visualized image will be saved.
         """
-        self.fig.savefig(filepath)
+        # if filepath is a png or jpg
+        img = self.get_image()
+        if filepath.endswith(".png") or filepath.endswith(".jpg"):
+            self.fig.savefig(filepath)
+        if filepath.endswith(".dcm"):
+            to_dicom(img, Path(filepath))
+        return img
 
     def get_image(self):
         """
