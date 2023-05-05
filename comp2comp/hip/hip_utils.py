@@ -10,7 +10,7 @@ from scipy.ndimage import zoom
 from comp2comp.hip.hip_visualization import method_visualizer
 
 
-def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
+def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
     left_femur_mask = segmentation.get_fdata() == model.categories["femur_left"]
     left_femur_mask = left_femur_mask.astype(np.uint8)
     right_femur_mask = segmentation.get_fdata() == model.categories["femur_right"]
@@ -52,7 +52,7 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
     }
 
 
-def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=True):
+def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=False):
     # find the largest index that is not zero
     top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
     top_mask = femur_mask[:, :, top]
