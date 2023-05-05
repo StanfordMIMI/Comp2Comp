@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 from typing import Dict, Union
 
@@ -87,9 +88,13 @@ class DicomToNifti(InferenceClass):
                 reorient_nifti=False,
             )
             inference_pipeline.dicom_series_path = str(self.input_path)
-        elif self.input_path.suffix in [".nii", ".nii.gz"]:
-            os.system(
-                f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}"
+        elif str(self.input_path).endswith(".nii"):
+            shutil.copy(
+                self.input_path, os.path.join(segmentations_output_dir, "converted_dcm.nii")
+            )
+        elif str(self.input_path).endswith(".nii.gz"):
+            shutil.copy(
+                self.input_path, os.path.join(segmentations_output_dir, "converted_dcm.nii.gz")
             )
         return {}
 

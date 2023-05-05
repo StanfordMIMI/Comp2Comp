@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from time import time
 
-from comp2comp.io.io_utils import get_dicom_paths_and_num
+from comp2comp.io.io_utils import get_dicom_nifti_paths_and_num
 
 
 def process_2d(args, pipeline_builder):
@@ -43,17 +43,20 @@ def process_3d(args, pipeline_builder):
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_path = os.path.join(output_path, date_time)
 
-    for path, num in get_dicom_paths_and_num(args.input_path):
+    for path, num in get_dicom_nifti_paths_and_num(args.input_path):
 
         try:
             st = time()
 
-            print("Processing: ", path, " with ", num, " slices")
+            if path.endswith(".nii") or path.endswith(".nii.gz"):
+                print("Processing: ", path)
 
-            min_slices = 30
-            if num < min_slices:
-                print(f"Number of slices is less than {min_slices}, skipping\n")
-                continue
+            else:
+                print("Processing: ", path, " with ", num, " slices")
+                min_slices = 30
+                if num < min_slices:
+                    print(f"Number of slices is less than {min_slices}, skipping\n")
+                    continue
 
             print("")
 
@@ -62,12 +65,26 @@ def process_3d(args, pipeline_builder):
             except Exception:
                 pass
 
-            output_dir = Path(
-                os.path.join(
-                    output_path,
-                    Path(os.path.basename(os.path.normpath(path))),
+            if path.endswith(".nii") or path.endswith(".nii.gz"):
+                folder_name = Path(os.path.basename(os.path.normpath(path)))
+                # remove .nii or .nii.gz
+                folder_name = os.path.normpath(
+                    Path(str(folder_name).replace(".gz", "").replace(".nii", ""))
                 )
-            )
+                output_dir = Path(
+                    os.path.join(
+                        output_path,
+                        folder_name,
+                    )
+                )
+
+            else:
+                output_dir = Path(
+                    os.path.join(
+                        output_path,
+                        Path(os.path.basename(os.path.normpath(path))),
+                    )
+                )
 
             if not os.path.exists(output_dir):
                 output_dir.mkdir(parents=True)

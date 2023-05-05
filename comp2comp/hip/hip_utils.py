@@ -1,13 +1,16 @@
 import math
+import os
+import shutil
 
 import cv2
+import nibabel as nib
 import numpy as np
 from scipy.ndimage import zoom
 
 from comp2comp.hip.hip_visualization import method_visualizer
 
 
-def compute_rois(medical_volume, segmentation, model, output_dir):
+def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
     left_femur_mask = segmentation.get_fdata() == model.categories["femur_left"]
     left_femur_mask = left_femur_mask.astype(np.uint8)
     right_femur_mask = segmentation.get_fdata() == model.categories["femur_right"]
@@ -18,6 +21,31 @@ def compute_rois(medical_volume, segmentation, model, output_dir):
     right_roi, right_centroid, right_hu = get_femural_head_roi(
         right_femur_mask, medical_volume, output_dir, "right"
     )
+    if save:
+        # make roi directory if it doesn't exist
+        parent_output_dir = os.path.dirname(output_dir)
+        roi_output_dir = os.path.join(parent_output_dir, "rois")
+        if not os.path.exists(roi_output_dir):
+            os.makedirs(roi_output_dir)
+
+        # combine the left and right rois
+        combined_roi = left_roi + (right_roi * 2)
+
+        # Convert left ROI to NIfTI
+        left_roi_nifti = nib.Nifti1Image(combined_roi, medical_volume.affine)
+        left_roi_path = os.path.join(roi_output_dir, "roi.nii.gz")
+        nib.save(left_roi_nifti, left_roi_path)
+        # copy ../visualization/tunnelvision.ipynb to parent_output_dir
+        shutil.copy(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..",
+                "visualization",
+                "tunnelvision.ipynb",
+            ),
+            parent_output_dir,
+        )
+
     return {
         "left": {"roi": left_roi, "centroid": left_centroid, "hu": left_hu},
         "right": {"roi": right_roi, "centroid": right_centroid, "hu": right_hu},
