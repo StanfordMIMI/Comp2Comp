@@ -129,6 +129,28 @@ bin/C2C hip --input_path <path/to/input/folder>
   <img src="figures/hip_example.png" height="300">
 </p>
 
+## Abdominal Aortic Calcification Segmentation
+
+### Usage
+```bash
+bin/C2C aortic_calcification --input_path <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+### Example Output
+```
+Statistics on aortic calcificaitons:
+Total number:            7
+Total volume (cm³):      0.348
+Mean HU:                 570.3+/-85.8
+Median HU:               544.2+/-85.3
+Max HU:                  981.7+/-266.4
+Mean volume (cm³):       0.0+/-0.059
+Median volume (cm³):     0.022
+Max volume (cm³):        0.184
+Min volume (cm³):        0.005
+```
+
 ## Pipeline that runs all currently implemented pipelines
 
 ### Usage
