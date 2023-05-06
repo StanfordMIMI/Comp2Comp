@@ -12,16 +12,15 @@ from totalsegmentator.libs import (
 from comp2comp.inference_class_base import InferenceClass
 
 
-class OrganSegmentation(InferenceClass):
+class LiverSpleenPancreasSegmentation(InferenceClass):
     """Organ segmentation."""
 
-    def __init__(self, input_path, model_name="ts_spine"):
+    def __init__(self):
         super().__init__()
-        self.input_path = input_path
-        self.model_name = model_name
+        # self.input_path = input_path
 
     def __call__(self, inference_pipeline):
-        inference_pipeline.dicom_series_path = self.input_path
+        # inference_pipeline.dicom_series_path = self.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
         if not os.path.exists(self.output_dir_segmentations):
@@ -84,7 +83,7 @@ class OrganSegmentation(InferenceClass):
                 nr_threads_resampling=1,
                 nr_threads_saving=6,
                 quiet=False,
-                verbose=False,
+                verbose=True,
                 test=0,
             )
         end = time()

@@ -88,14 +88,16 @@ class DicomToNifti(InferenceClass):
                 reorient_nifti=False,
             )
             inference_pipeline.dicom_series_path = str(self.input_path)
-        elif str(self.input_path).endswith(".nii"):
-            shutil.copy(
-                self.input_path, os.path.join(segmentations_output_dir, "converted_dcm.nii")
+        # elif str(self.input_path.suffix in [".nii", ".nii.gz"]:
+        elif str(self.input_path).endswith((".nii", ".nii.gz")):
+
+            shutil.copy2(
+                self.input_path,
+                os.path.join(
+                    segmentations_output_dir, "converted_dcm" + "".join(self.input_path.suffixes)
+                ),
             )
-        elif str(self.input_path).endswith(".nii.gz"):
-            shutil.copy(
-                self.input_path, os.path.join(segmentations_output_dir, "converted_dcm.nii.gz")
-            )
+
         return {}
 
 
