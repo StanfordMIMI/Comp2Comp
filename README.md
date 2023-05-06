@@ -133,7 +133,7 @@ bin/C2C hip --input_path <path/to/input/folder>
 
 ### Usage
 ```bash
-bin/C2C aortic_calcification --input_path <path/to/input/folder>
+bin/C2C aortic_calcium --input_path <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
