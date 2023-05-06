@@ -10,7 +10,7 @@ def find_dicom_files(input_path):
     else:
         for root, _, files in os.walk(input_path):
             for file in files:
-                if file.endswith(".dcm"):
+                if file.endswith(".dcm") or file.endswith(".dicom"):
                     dicom_series.append(os.path.join(root, file))
     return dicom_series
 
@@ -26,7 +26,7 @@ def get_dicom_paths_and_num(path):
     dicom_paths = []
     for root, _, files in os.walk(path):
         if len(files) > 0:
-            if all(file.endswith(".dcm") for file in files):
+            if all(file.endswith(".dcm") or file.endswith(".dicom") for file in files):
                 dicom_paths.append((root, len(files)))
 
     if len(dicom_paths) == 0:
@@ -51,7 +51,7 @@ def get_dicom_or_nifti_paths_and_num(path):
     dicom_nifti_paths = []
     for root, _, files in os.walk(path):
         if len(files) > 0:
-            if all(file.endswith(".dcm") for file in files):
+            if all(file.endswith(".dcm") or file.endswith(".dicom") for file in files):
                 dicom_nifti_paths.append((root, len(files)))
             else:
                 for file in files:

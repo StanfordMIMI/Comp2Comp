@@ -98,9 +98,6 @@ class DicomToNifti(InferenceClass):
                 ),
             )
 
-            # os.system(
-            #     f"cp {self.input_path} {segmentations_output_dir}/converted_dcm{self.input_path.suffix}"
-            # )
         return {}
 
 
