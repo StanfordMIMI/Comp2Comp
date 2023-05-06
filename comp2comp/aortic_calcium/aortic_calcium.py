@@ -50,7 +50,6 @@ class AortaSegmentation(InferenceClass):
         # the toCanonical methods looks for "segmentation", so it's overridden
         inference_pipeline.spine_segmentation = inference_pipeline.segmentation
         inference_pipeline.segmentation = seg
-        # inference_pipeline.medical_volume = mv
 
         return {}
 
@@ -132,6 +131,19 @@ class AorticCalciumSegmentation(InferenceClass):
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
 
+        # np.save(os.path.join(self.output_dir_images_organs, 'ct.npy'), ct)
+        # np.save(os.path.join(self.output_dir_images_organs, "aorta_mask.npy"), aorta_mask)
+        # np.save(os.path.join(self.output_dir_images_organs, "spine_mask.npy"), spine_mask)
+
+        # np.save(
+        #     os.path.join(self.output_dir_images_organs, "calcium_mask.npy"),
+        #     inference_pipeline.calc_mask,
+        # )
+        # np.save(
+        #     os.path.join(self.output_dir_images_organs, "ct_scan.npy"),
+        #     inference_pipeline.medical_volume.get_fdata(),
+        # )
+
         return {}
 
     def detectCalcifications(
@@ -164,20 +176,34 @@ class AorticCalciumSegmentation(InferenceClass):
         Args:
             ct (array): CT image.
             aorta_mask (array): Mask of the aorta.
-            exclude_mask (array, optional): Mask for structures to exclude e.g. spine. Defaults to None.
-            return_dilated_mask (bool, optional): Return the dilated aorta mask. Defaults to False.
-            dilation (list, optional): Structuring element for aorta dilation. Defaults to (3,1).
-            dilation_iteration (int, optional): Number of iterations for the strcturing element. Defaults to 4.
-            return_dilated_exclude (bool, optional): Return the dilated exclusio mask. Defaults to False.
-            dilation_exclude_mask (list, optional): Structering element for the exclusio mask. Defaults to (3,1).
-            dilation_iteration_exclude (int, optional): Number of iterations for the strcturing element. Defaults to 3.
-            show_time (bool, optional): Show time for each operation. Defaults to False.
-            num_std (float, optional): How many standard deviations out the threshold will be set at. Defaults to 3.
-            remove_size (int, optional): Remove foci under a certain size. Warning: quite slow. Defaults to None.
-            verbose (bool, optional): Give verbose feedback on operations. Defaults to False.
-            exclude_center_aorta (bool, optional): Use eroded aorta to exclude center of the aorta. Defaults to True.
-            return_eroded_aorta (bool, optional): Return the eroded center aorta. Defaults to False.
-            aorta_erode_iteration (int, optional): Number of iterations for the strcturing element. Defaults to 6.
+            exclude_mask (array, optional):
+                Mask for structures to exclude e.g. spine. Defaults to None.
+            return_dilated_mask (bool, optional):
+                Return the dilated aorta mask. Defaults to False.
+            dilation (list, optional):
+                Structuring element for aorta dilation. Defaults to (3,1).
+            dilation_iteration (int, optional):
+                Number of iterations for the strcturing element. Defaults to 4.
+            return_dilated_exclude (bool, optional):
+                Return the dilated exclusio mask. Defaults to False.
+            dilation_exclude_mask (list, optional):
+                Structering element for the exclusio mask. Defaults to (3,1).
+            dilation_iteration_exclude (int, optional):
+                Number of iterations for the strcturing element. Defaults to 3.
+            show_time (bool, optional):
+                Show time for each operation. Defaults to False.
+            num_std (float, optional):
+                How many standard deviations out the threshold will be set at. Defaults to 3.
+            remove_size (int, optional):
+                Remove foci under a certain size. Warning: quite slow. Defaults to None.
+            verbose (bool, optional):
+                Give verbose feedback on operations. Defaults to False.
+            exclude_center_aorta (bool, optional):
+                Use eroded aorta to exclude center of the aorta. Defaults to True.
+            return_eroded_aorta (bool, optional):
+                Return the eroded center aorta. Defaults to False.
+            aorta_erode_iteration (int, optional):
+                Number of iterations for the strcturing element. Defaults to 6.
 
         Returns:
             results: array of only the mask is returned, or dict if other volumes are also returned.
