@@ -5,7 +5,10 @@ import shutil
 import cv2
 import nibabel as nib
 import numpy as np
+import scipy.ndimage as ndi
 from scipy.ndimage import zoom
+import matplotlib.pyplot as plt
+import sys
 
 from comp2comp.hip.hip_visualization import method_visualizer
 
@@ -15,11 +18,17 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
     left_femur_mask = left_femur_mask.astype(np.uint8)
     right_femur_mask = segmentation.get_fdata() == model.categories["femur_right"]
     right_femur_mask = right_femur_mask.astype(np.uint8)
-    left_roi, left_centroid, left_hu = get_femural_head_roi(
-        left_femur_mask, medical_volume, output_dir, "left"
+    left_head_roi, left_head_centroid, left_head_hu = get_femural_head_roi(
+        left_femur_mask, medical_volume, output_dir, "left_head"
     )
-    right_roi, right_centroid, right_hu = get_femural_head_roi(
-        right_femur_mask, medical_volume, output_dir, "right"
+    right_head_roi, right_head_centroid, right_head_hu = get_femural_head_roi(
+        right_femur_mask, medical_volume, output_dir, "right_head"
+    )
+    left_intertrochanter_roi, left_intertrochanter_centroid, left_intertrochanter_hu = get_femural_head_roi(
+        left_femur_mask, medical_volume, output_dir, "left_intertrochanter"
+    )
+    right_intertrochanter_roi, right_intertrochanter_centroid, right_intertrochanter_hu = get_femural_head_roi(
+        right_femur_mask, medical_volume, output_dir, "right_intertrochanter"
     )
     if save:
         # make roi directory if it doesn't exist
@@ -29,7 +38,7 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
             os.makedirs(roi_output_dir)
 
         # combine the left and right rois
-        combined_roi = left_roi + (right_roi * 2)
+        combined_roi = left_head_roi + (right_head_roi * 2)
 
         # Convert left ROI to NIfTI
         left_roi_nifti = nib.Nifti1Image(combined_roi, medical_volume.affine)
@@ -47,16 +56,56 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
         )
 
     return {
-        "left": {"roi": left_roi, "centroid": left_centroid, "hu": left_hu},
-        "right": {"roi": right_roi, "centroid": right_centroid, "hu": right_hu},
+        "left_head": {"roi": left_head_roi, "centroid": left_head_centroid, "hu": left_head_hu},
+        "right_head": {"roi": right_head_roi, "centroid": right_head_centroid, "hu": right_head_hu},
+        "left_intertrochanter": {"roi": left_intertrochanter_roi, "centroid": left_intertrochanter_centroid, "hu": left_intertrochanter_hu},
+        "right_intertrochanter": {"roi": right_intertrochanter_roi, "centroid": right_intertrochanter_centroid, "hu": right_intertrochanter_hu},
     }
 
-
-def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=False):
+def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=False, min_pixel_count=20):
     # find the largest index that is not zero
     top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
     top_mask = femur_mask[:, :, top]
-    center_of_mass = np.array(np.where(top_mask == 1)).mean(axis=1)
+
+    print(f"======== Computing {anatomy} femur ROIs ========")
+
+    while True:
+        # Label connected components in the top_mask
+        labeled, num_features = ndi.label(top_mask)
+
+        # Check if there are two connected components with at least min_pixel_count pixels
+        component_sizes = np.bincount(labeled.ravel())
+        valid_components = np.where(component_sizes >= min_pixel_count)[0][1:]  # exclude background (label 0)
+
+        if len(valid_components) == 2:
+            break
+
+        # Move top_mask down one slice
+        top -= 1
+        if top < 0:
+            print("Two connected components not found in the femur mask.")
+            break
+        top_mask = femur_mask[:, :, top]
+
+    if len(valid_components) == 2:
+        # Find the center of mass for each connected component
+        center_of_mass_1 = list(ndi.center_of_mass(top_mask, labeled, valid_components[0]))
+        center_of_mass_2 = list(ndi.center_of_mass(top_mask, labeled, valid_components[1]))
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        plt.imshow(top_mask)
+        plt.savefig(os.path.join(output_dir, f"{anatomy}_top_mask.png"))
+
+        print(f"Center of mass for first connected component: {center_of_mass_1}")
+        print(f"Center of mass for second connected component: {center_of_mass_2}")
+
+    if anatomy == 'left_intertrochanter' or anatomy == 'right_head':
+        center_of_mass = center_of_mass_1
+        femur_mask[round(center_of_mass_2[0]):, :, :] = 0
+    elif anatomy == 'right_intertrochanter' or anatomy == 'left_head':
+        center_of_mass = center_of_mass_2
+        femur_mask[:round(center_of_mass_1[0]), :, :] = 0
 
     coronal_slice = femur_mask[:, round(center_of_mass[1]), :]
     coronal_image = medical_volume.get_fdata()[:, round(center_of_mass[1]), :]
@@ -72,13 +121,19 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
 
     centroid = [round(center_of_mass[0]), 0, 0]
 
+    print(f"Starting centroid: {centroid}")
+
     for _ in range(3):
         sagittal_slice = femur_mask[centroid[0], :, :]
         sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
         centroid[1], centroid[2], radius_sagittal = inscribe_sagittal(sagittal_slice, zoom_factor)
 
+        print(f"Centroid after inscribe sagittal: {centroid}")
+
         axial_slice = femur_mask[:, :, centroid[2]]
         centroid[0], centroid[1], radius_axial = inscribe_axial(axial_slice)
+
+        print(f"Centroid after inscribe axial: {centroid}")
 
     axial_image = medical_volume.get_fdata()[:, :, round(centroid[2])]
     sagittal_image = medical_volume.get_fdata()[round(centroid[0]), :, :]

@@ -131,13 +131,17 @@ class HipMetricsSaver(InferenceClass):
         if not os.path.exists(metrics_output_dir):
             os.makedirs(metrics_output_dir)
         results_dict = inference_pipeline.femur_results_dict
-        left_hu = results_dict["left"]["hu"]
-        right_hu = results_dict["right"]["hu"]
+        left_head_hu = results_dict["left_head"]["hu"]
+        right_head_hu = results_dict["right_head"]["hu"]
+        left_intertrochanter_hu = results_dict["left_intertrochanter"]["hu"]
+        right_intertrochanter_hu = results_dict["right_intertrochanter"]["hu"]
         # save to csv
         df = pd.DataFrame(
             {
-                "Left Femoral Head (HU)": [left_hu],
-                "Right Femoral Head (HU)": [right_hu],
+                "Left Head (HU)": [left_head_hu],
+                "Right Head (HU)": [right_head_hu],
+                "Left Intertrochanter (HU)": [left_intertrochanter_hu],
+                "Right Intertrochanter (HU)": [right_intertrochanter_hu],
             }
         )
         df.to_csv(os.path.join(metrics_output_dir, "hip_metrics.csv"), index=False)
@@ -150,30 +154,57 @@ class HipVisualizer(InferenceClass):
 
     def __call__(self, inference_pipeline):
         medical_volume = inference_pipeline.medical_volume
-        left_femural_head_roi = inference_pipeline.femur_results_dict["left"]["roi"]
-        left_femural_head_centroid = inference_pipeline.femur_results_dict["left"]["centroid"]
-        left_hu = inference_pipeline.femur_results_dict["left"]["hu"]
-        right_femural_head_roi = inference_pipeline.femur_results_dict["right"]["roi"]
-        right_femural_head_centroid = inference_pipeline.femur_results_dict["right"]["centroid"]
-        right_hu = inference_pipeline.femur_results_dict["right"]["hu"]
+
+        left_head_roi = inference_pipeline.femur_results_dict["left_head"]["roi"]
+        left_head_centroid = inference_pipeline.femur_results_dict["left_head"]["centroid"]
+        left_head_hu = inference_pipeline.femur_results_dict["left_head"]["hu"]
+
+        left_intertrochanter_roi = inference_pipeline.femur_results_dict["left_intertrochanter"]["roi"]
+        left_intertrochanter_centroid = inference_pipeline.femur_results_dict["left_intertrochanter"]["centroid"]
+        left_intertrochanter_hu = inference_pipeline.femur_results_dict["left_intertrochanter"]["hu"]
+
+        right_head_roi = inference_pipeline.femur_results_dict["right_head"]["roi"]
+        right_head_centroid = inference_pipeline.femur_results_dict["right_head"]["centroid"]
+        right_head_hu = inference_pipeline.femur_results_dict["right_head"]["hu"]
+
+        right_intertrochanter_roi = inference_pipeline.femur_results_dict["right_intertrochanter"]["roi"]
+        right_intertrochanter_centroid = inference_pipeline.femur_results_dict["right_intertrochanter"]["centroid"]
+        right_intertrochanter_hu = inference_pipeline.femur_results_dict["right_intertrochanter"]["hu"]
+
         output_dir = inference_pipeline.output_dir
         images_output_dir = os.path.join(output_dir, "images")
         if not os.path.exists(images_output_dir):
             os.makedirs(images_output_dir)
         hip_roi_visualizer(
             medical_volume,
-            left_femural_head_roi,
-            left_femural_head_centroid,
-            left_hu,
+            left_head_roi,
+            left_head_centroid,
+            left_head_hu,
             images_output_dir,
-            "left",
+            "left_head",
         )
         hip_roi_visualizer(
             medical_volume,
-            right_femural_head_roi,
-            right_femural_head_centroid,
-            right_hu,
+            left_intertrochanter_roi,
+            left_intertrochanter_centroid,
+            left_intertrochanter_hu,
             images_output_dir,
-            "right",
+            "left_intertrochanter",
+        )
+        hip_roi_visualizer(
+            medical_volume,
+            right_head_roi,
+            right_head_centroid,
+            right_head_hu,
+            images_output_dir,
+            "right_head",
+        )
+        hip_roi_visualizer(
+            medical_volume,
+            right_intertrochanter_roi,
+            right_intertrochanter_centroid,
+            right_intertrochanter_hu,
+            images_output_dir,
+            "right_intertrochanter",
         )
         return {}
