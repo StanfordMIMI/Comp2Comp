@@ -129,10 +129,10 @@ def get_femural_head_roi(
 
     if anatomy == "left_intertrochanter" or anatomy == "right_head":
         center_of_mass = left_center_of_mass
-        #femur_mask[round(right_center_of_mass[0]) :, :, :] = 0
+        # femur_mask[round(right_center_of_mass[0]) :, :, :] = 0
     elif anatomy == "right_intertrochanter" or anatomy == "left_head":
         center_of_mass = right_center_of_mass
-        #femur_mask[: round(left_center_of_mass[0]), :, :] = 0
+        # femur_mask[: round(left_center_of_mass[0]), :, :] = 0
 
     coronal_slice = femur_mask[:, round(center_of_mass[1]), :]
     coronal_image = medical_volume.get_fdata()[:, round(center_of_mass[1]), :]
@@ -190,9 +190,17 @@ def get_femural_head_roi(
 
     roi = compute_hip_roi(medical_volume, centroid, radius_sagittal, radius_axial)
 
-    hu = get_mean_roi_hu(medical_volume, roi)
+    # make sure that the ROI doesn't extend beyond the femur mask and
+    roi = roi * femur_mask
+    # roi_eroded = ndi.binary_erosion(roi, iterations=2)
+    # femur_mask_border = femur_mask - ndi.binary_erosion(femur_mask, iterations=2)
+    # roi_eroded[femur_mask_border == 1] = roi[femur_mask_border == 1]
+    # roi_eroded = roi_eroded.astype(np.uint8)
+    roi_eroded = roi.astype(np.uint8)
 
-    return (roi, centroid, hu)
+    hu = get_mean_roi_hu(medical_volume, roi_eroded)
+
+    return (roi_eroded, centroid, hu)
 
 
 def compute_hip_roi(img, centroid, radius_sagittal, radius_axial):
