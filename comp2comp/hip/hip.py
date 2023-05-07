@@ -159,17 +159,29 @@ class HipVisualizer(InferenceClass):
         left_head_centroid = inference_pipeline.femur_results_dict["left_head"]["centroid"]
         left_head_hu = inference_pipeline.femur_results_dict["left_head"]["hu"]
 
-        left_intertrochanter_roi = inference_pipeline.femur_results_dict["left_intertrochanter"]["roi"]
-        left_intertrochanter_centroid = inference_pipeline.femur_results_dict["left_intertrochanter"]["centroid"]
-        left_intertrochanter_hu = inference_pipeline.femur_results_dict["left_intertrochanter"]["hu"]
+        left_intertrochanter_roi = inference_pipeline.femur_results_dict["left_intertrochanter"][
+            "roi"
+        ]
+        left_intertrochanter_centroid = inference_pipeline.femur_results_dict[
+            "left_intertrochanter"
+        ]["centroid"]
+        left_intertrochanter_hu = inference_pipeline.femur_results_dict["left_intertrochanter"][
+            "hu"
+        ]
 
         right_head_roi = inference_pipeline.femur_results_dict["right_head"]["roi"]
         right_head_centroid = inference_pipeline.femur_results_dict["right_head"]["centroid"]
         right_head_hu = inference_pipeline.femur_results_dict["right_head"]["hu"]
 
-        right_intertrochanter_roi = inference_pipeline.femur_results_dict["right_intertrochanter"]["roi"]
-        right_intertrochanter_centroid = inference_pipeline.femur_results_dict["right_intertrochanter"]["centroid"]
-        right_intertrochanter_hu = inference_pipeline.femur_results_dict["right_intertrochanter"]["hu"]
+        right_intertrochanter_roi = inference_pipeline.femur_results_dict["right_intertrochanter"][
+            "roi"
+        ]
+        right_intertrochanter_centroid = inference_pipeline.femur_results_dict[
+            "right_intertrochanter"
+        ]["centroid"]
+        right_intertrochanter_hu = inference_pipeline.femur_results_dict["right_intertrochanter"][
+            "hu"
+        ]
 
         output_dir = inference_pipeline.output_dir
         images_output_dir = os.path.join(output_dir, "images")

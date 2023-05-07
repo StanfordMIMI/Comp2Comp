@@ -3,17 +3,16 @@ import os
 import shutil
 
 import cv2
+import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
 import scipy.ndimage as ndi
 from scipy.ndimage import zoom
-import matplotlib.pyplot as plt
-import sys
 
 from comp2comp.hip.hip_visualization import method_visualizer
 
 
-def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
+def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
     left_femur_mask = segmentation.get_fdata() == model.categories["femur_left"]
     left_femur_mask = left_femur_mask.astype(np.uint8)
     right_femur_mask = segmentation.get_fdata() == model.categories["femur_right"]
@@ -24,12 +23,16 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
     right_head_roi, right_head_centroid, right_head_hu = get_femural_head_roi(
         right_femur_mask, medical_volume, output_dir, "right_head"
     )
-    left_intertrochanter_roi, left_intertrochanter_centroid, left_intertrochanter_hu = get_femural_head_roi(
-        left_femur_mask, medical_volume, output_dir, "left_intertrochanter"
-    )
-    right_intertrochanter_roi, right_intertrochanter_centroid, right_intertrochanter_hu = get_femural_head_roi(
-        right_femur_mask, medical_volume, output_dir, "right_intertrochanter"
-    )
+    (
+        left_intertrochanter_roi,
+        left_intertrochanter_centroid,
+        left_intertrochanter_hu,
+    ) = get_femural_head_roi(left_femur_mask, medical_volume, output_dir, "left_intertrochanter")
+    (
+        right_intertrochanter_roi,
+        right_intertrochanter_centroid,
+        right_intertrochanter_hu,
+    ) = get_femural_head_roi(right_femur_mask, medical_volume, output_dir, "right_intertrochanter")
     if save:
         # make roi directory if it doesn't exist
         parent_output_dir = os.path.dirname(output_dir)
@@ -38,7 +41,12 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
             os.makedirs(roi_output_dir)
 
         # combine the left and right rois
-        combined_roi = left_head_roi + (right_head_roi * 2) + (left_intertrochanter_roi * 3) + (right_intertrochanter_roi * 4)
+        combined_roi = (
+            left_head_roi
+            + (right_head_roi * 2)
+            + (left_intertrochanter_roi * 3)
+            + (right_intertrochanter_roi * 4)
+        )
 
         # Convert left ROI to NIfTI
         left_roi_nifti = nib.Nifti1Image(combined_roi, medical_volume.affine)
@@ -48,8 +56,6 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
         shutil.copy(
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "..",
-                "visualization",
                 "tunnelvision.ipynb",
             ),
             parent_output_dir,
@@ -58,11 +64,22 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
     return {
         "left_head": {"roi": left_head_roi, "centroid": left_head_centroid, "hu": left_head_hu},
         "right_head": {"roi": right_head_roi, "centroid": right_head_centroid, "hu": right_head_hu},
-        "left_intertrochanter": {"roi": left_intertrochanter_roi, "centroid": left_intertrochanter_centroid, "hu": left_intertrochanter_hu},
-        "right_intertrochanter": {"roi": right_intertrochanter_roi, "centroid": right_intertrochanter_centroid, "hu": right_intertrochanter_hu},
+        "left_intertrochanter": {
+            "roi": left_intertrochanter_roi,
+            "centroid": left_intertrochanter_centroid,
+            "hu": left_intertrochanter_hu,
+        },
+        "right_intertrochanter": {
+            "roi": right_intertrochanter_roi,
+            "centroid": right_intertrochanter_centroid,
+            "hu": right_intertrochanter_hu,
+        },
     }
 
-def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visualize_method=False, min_pixel_count=20):
+
+def get_femural_head_roi(
+    femur_mask, medical_volume, output_dir, anatomy, visualize_method=False, min_pixel_count=20
+):
     # find the largest index that is not zero
     top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
     top_mask = femur_mask[:, :, top]
@@ -75,7 +92,9 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
 
         # Check if there are two connected components with at least min_pixel_count pixels
         component_sizes = np.bincount(labeled.ravel())
-        valid_components = np.where(component_sizes >= min_pixel_count)[0][1:]  # exclude background (label 0)
+        valid_components = np.where(component_sizes >= min_pixel_count)[0][
+            1:
+        ]  # exclude background (label 0)
 
         if len(valid_components) == 2:
             break
@@ -108,12 +127,12 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
         print(f"Left center of mass: {left_center_of_mass}")
         print(f"Right center of mass: {right_center_of_mass}")
 
-    if anatomy == 'left_intertrochanter' or anatomy == 'right_head':
+    if anatomy == "left_intertrochanter" or anatomy == "right_head":
         center_of_mass = left_center_of_mass
-        femur_mask[round(right_center_of_mass[0]):, :, :] = 0
-    elif anatomy == 'right_intertrochanter' or anatomy == 'left_head':
+        #femur_mask[round(right_center_of_mass[0]) :, :, :] = 0
+    elif anatomy == "right_intertrochanter" or anatomy == "left_head":
         center_of_mass = right_center_of_mass
-        femur_mask[:round(left_center_of_mass[0]), :, :] = 0
+        #femur_mask[: round(left_center_of_mass[0]), :, :] = 0
 
     coronal_slice = femur_mask[:, round(center_of_mass[1]), :]
     coronal_image = medical_volume.get_fdata()[:, round(center_of_mass[1]), :]
@@ -139,6 +158,14 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
         print(f"Centroid after inscribe sagittal: {centroid}")
 
         axial_slice = femur_mask[:, :, centroid[2]]
+        if anatomy == "left_intertrochanter" or anatomy == "right_head":
+            axial_slice[round(right_center_of_mass[0]) :, :] = 0
+        elif anatomy == "right_intertrochanter" or anatomy == "left_head":
+            axial_slice[: round(left_center_of_mass[0]), :] = 0
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        plt.imshow(axial_slice)
+        plt.savefig(os.path.join(output_dir, f"{anatomy}_axial_slice.png"))
         centroid[0], centroid[1], radius_axial = inscribe_axial(axial_slice)
 
         print(f"Centroid after inscribe axial: {centroid}")
