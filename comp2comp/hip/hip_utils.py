@@ -13,7 +13,7 @@ import sys
 from comp2comp.hip.hip_visualization import method_visualizer
 
 
-def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
+def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
     left_femur_mask = segmentation.get_fdata() == model.categories["femur_left"]
     left_femur_mask = left_femur_mask.astype(np.uint8)
     right_femur_mask = segmentation.get_fdata() == model.categories["femur_right"]
@@ -38,7 +38,7 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
             os.makedirs(roi_output_dir)
 
         # combine the left and right rois
-        combined_roi = left_head_roi + (right_head_roi * 2)
+        combined_roi = left_head_roi + (right_head_roi * 2) + (left_intertrochanter_roi * 3) + (right_intertrochanter_roi * 4)
 
         # Convert left ROI to NIfTI
         left_roi_nifti = nib.Nifti1Image(combined_roi, medical_volume.affine)
@@ -92,20 +92,28 @@ def get_femural_head_roi(femur_mask, medical_volume, output_dir, anatomy, visual
         center_of_mass_1 = list(ndi.center_of_mass(top_mask, labeled, valid_components[0]))
         center_of_mass_2 = list(ndi.center_of_mass(top_mask, labeled, valid_components[1]))
 
+        # Assign left_center_of_mass to be the center of mass with lowest value in the first dimension
+        if center_of_mass_1[0] < center_of_mass_2[0]:
+            left_center_of_mass = center_of_mass_1
+            right_center_of_mass = center_of_mass_2
+        else:
+            left_center_of_mass = center_of_mass_2
+            right_center_of_mass = center_of_mass_1
+
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         plt.imshow(top_mask)
         plt.savefig(os.path.join(output_dir, f"{anatomy}_top_mask.png"))
 
-        print(f"Center of mass for first connected component: {center_of_mass_1}")
-        print(f"Center of mass for second connected component: {center_of_mass_2}")
+        print(f"Left center of mass: {left_center_of_mass}")
+        print(f"Right center of mass: {right_center_of_mass}")
 
     if anatomy == 'left_intertrochanter' or anatomy == 'right_head':
-        center_of_mass = center_of_mass_1
-        femur_mask[round(center_of_mass_2[0]):, :, :] = 0
+        center_of_mass = left_center_of_mass
+        femur_mask[round(right_center_of_mass[0]):, :, :] = 0
     elif anatomy == 'right_intertrochanter' or anatomy == 'left_head':
-        center_of_mass = center_of_mass_2
-        femur_mask[:round(center_of_mass_1[0]), :, :] = 0
+        center_of_mass = right_center_of_mass
+        femur_mask[:round(left_center_of_mass[0]), :, :] = 0
 
     coronal_slice = femur_mask[:, round(center_of_mass[1]), :]
     coronal_image = medical_volume.get_fdata()[:, round(center_of_mass[1]), :]
