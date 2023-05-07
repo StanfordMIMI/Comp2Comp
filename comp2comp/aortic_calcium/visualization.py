@@ -52,7 +52,7 @@ class AorticCalciumPrinter(InferenceClass):
         if metrics["num_calc"] == 0:
             print("No aortic calcifications were found.")
         else:
-            print("Statistics on aortic calcificaitons:")
+            print("Statistics on aortic calcifications:")
             print("{:<{}}{}".format("Total number:", distance, metrics["num_calc"]))
             print("{:<{}}{:.3f}".format("Total volume (cm³):", distance, metrics["volume_total"]))
             print(
@@ -74,7 +74,7 @@ class AorticCalciumPrinter(InferenceClass):
                 )
             )
             print(
-                "{:<{}}{:.3f}+/-{:.1f}".format(
+                "{:<{}}{:.3f}+/-{:.3f}".format(
                     "Mean volume (cm³):",
                     distance,
                     np.mean(metrics["volume"]),
