@@ -13,7 +13,7 @@ import sys
 from comp2comp.hip.hip_visualization import method_visualizer
 
 
-def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
+def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
     left_femur_mask = segmentation.get_fdata() == model.categories["femur_left"]
     left_femur_mask = left_femur_mask.astype(np.uint8)
     right_femur_mask = segmentation.get_fdata() == model.categories["femur_right"]
