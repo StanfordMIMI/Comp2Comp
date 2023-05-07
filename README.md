@@ -139,13 +139,13 @@ bin/C2C aortic_calcium --input_path <path/to/input/folder>
 
 ### Example Output
 ```
-Statistics on aortic calcificaitons:
+Statistics on aortic calcifications:
 Total number:            7
 Total volume (cm³):      0.348
 Mean HU:                 570.3+/-85.8
 Median HU:               544.2+/-85.3
 Max HU:                  981.7+/-266.4
-Mean volume (cm³):       0.0+/-0.059
+Mean volume (cm³):       0.005+/-0.059
 Median volume (cm³):     0.022
 Max volume (cm³):        0.184
 Min volume (cm³):        0.005
