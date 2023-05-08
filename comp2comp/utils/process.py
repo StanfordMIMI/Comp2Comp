@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from time import time
 
-from comp2comp.io.io_utils import get_dicom_nifti_paths_and_num
+from comp2comp.io.io_utils import get_dicom_or_nifti_paths_and_num
 
 
 def process_2d(args, pipeline_builder):
@@ -43,7 +43,7 @@ def process_3d(args, pipeline_builder):
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_path = os.path.join(output_path, date_time)
 
-    for path, num in get_dicom_nifti_paths_and_num(args.input_path):
+    for path, num in get_dicom_or_nifti_paths_and_num(args.input_path):
 
         try:
             st = time()
