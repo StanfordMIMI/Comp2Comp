@@ -43,11 +43,8 @@ def get_dicom_or_nifti_paths_and_num(path):
     Returns:
         list: List of paths.
     """
-    # if path is a nifti
     if path.endswith(".nii") or path.endswith(".nii.gz"):
-        num_slices = nib.load(path).shape[2]
-        return [(path, num_slices)]
-
+        return [(path, 1)]
     dicom_nifti_paths = []
     for root, _, files in os.walk(path):
         if len(files) > 0:
