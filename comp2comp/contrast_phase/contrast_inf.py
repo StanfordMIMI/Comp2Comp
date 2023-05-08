@@ -40,15 +40,20 @@ def keep_masked_values(arr, mask):
     mask_indices = np.nonzero(mask)
     # Use the indices to select the corresponding elements from the array
     masked_values = arr[mask_indices]
+    print(mask.shape)
+    print(masked_values.shape)
     # Return the selected elements as a new array
     return masked_values
 
 
 def get_stats(arr):
-    # Get the indices of the non-zero elements in the array
-    nonzero_indices = np.nonzero(arr)
-    # Use the indices to get the non-zero elements of the array
-    nonzero_elements = arr[nonzero_indices]
+    # # Get the indices of the non-zero elements in the array
+    # nonzero_indices = np.nonzero(arr)
+    # # Use the indices to get the non-zero elements of the array
+    # nonzero_elements = arr[nonzero_indices]
+
+    nonzero_elements = arr
+
     # Calculate the stats for the non-zero elements
     max_val = np.max(nonzero_elements)
     min_val = np.min(nonzero_elements)
@@ -169,6 +174,7 @@ def getFeatures(TSArray, scanArray):
     aortaMask = getClassBinaryMask(TSArray, 7)
     IVCMask = getClassBinaryMask(TSArray, 8)
     portalMask = getClassBinaryMask(TSArray, 9)
+    print(np.unique(portalMask))
     atriumMask = getClassBinaryMask(TSArray, 45)
     kidneyLMask = getClassBinaryMask(TSArray, 3)
     kidneyRMask = getClassBinaryMask(TSArray, 2)
@@ -180,11 +186,16 @@ def getFeatures(TSArray, scanArray):
     IVCMask = IVCMask * (anteriorAtriumMask == 0)
 
     # Erode vessels to get only the center of the vessels
-    struct2 = np.ones((3, 8, 8))
+    struct2 = np.ones((3, 3, 3))
     aortaMaskEroded = ndi.binary_erosion(aortaMask, structure=struct2).astype(aortaMask.dtype)
     IVCMaskEroded = ndi.binary_erosion(IVCMask, structure=struct2).astype(IVCMask.dtype)
-    portalMaskEroded = ndi.binary_erosion(portalMask, structure=struct2).astype(portalMask.dtype)
 
+    struct3 = np.ones((1, 1, 1))
+    portalMaskEroded = ndi.binary_erosion(portalMask, structure=struct3).astype(portalMask.dtype)
+    # If portalMaskEroded has less then 500 values, use the original portalMask
+    if np.count_nonzero(portalMaskEroded) < 500:
+        portalMaskEroded = portalMask
+        
     # Get masked values from scan
     aortaArray = keep_masked_values(scanArray, aortaMaskEroded)
     IVCArray = keep_masked_values(scanArray, IVCMaskEroded)
@@ -209,7 +220,7 @@ def getFeatures(TSArray, scanArray):
     # exclude the Right Kidney mask from the Right Convex Hull
     kidneyRHull = kidneyRHull * (kidneyRMask == 0)
     # erode the kidneyHull to remove the edges
-    struct = np.ones((3, 5, 5))
+    struct = np.ones((3, 3, 3))
     kidneyRHull = ndi.binary_erosion(kidneyRHull, structure=struct).astype(kidneyRHull.dtype)
     # keep the values of the scanArray that are in the Right Convex Hull
     pelvisRArray = keep_masked_values(scanArray, kidneyRHull)
