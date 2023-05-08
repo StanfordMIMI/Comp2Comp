@@ -40,8 +40,6 @@ def keep_masked_values(arr, mask):
     mask_indices = np.nonzero(mask)
     # Use the indices to select the corresponding elements from the array
     masked_values = arr[mask_indices]
-    print(mask.shape)
-    print(masked_values.shape)
     # Return the selected elements as a new array
     return masked_values
 
@@ -144,7 +142,7 @@ def selectSampleSlice(kidneyLMask, adRMask, scanImage):
         )
         / 2
     )
-    print("Middle slice: ", middleSlice)
+    # print("Middle slice: ", middleSlice)
     # make middleSlice int
     middleSlice = int(middleSlice)
     # select one slice using simple itk
@@ -158,7 +156,7 @@ def selectSampleSlice(kidneyLMask, adRMask, scanImage):
         )
         / 2
     )
-    print("Middle slice: ", middleSlice)
+    # print("Middle slice: ", middleSlice)
     # make middleSlice int
     middleSlice = int(middleSlice)
     # select one slice using simple itk
@@ -174,7 +172,6 @@ def getFeatures(TSArray, scanArray):
     aortaMask = getClassBinaryMask(TSArray, 7)
     IVCMask = getClassBinaryMask(TSArray, 8)
     portalMask = getClassBinaryMask(TSArray, 9)
-    print(np.unique(portalMask))
     atriumMask = getClassBinaryMask(TSArray, 45)
     kidneyLMask = getClassBinaryMask(TSArray, 3)
     kidneyRMask = getClassBinaryMask(TSArray, 2)
