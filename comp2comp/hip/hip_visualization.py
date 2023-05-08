@@ -1,3 +1,7 @@
+"""
+@author: louisblankemeier
+"""
+
 import os
 
 import numpy as np

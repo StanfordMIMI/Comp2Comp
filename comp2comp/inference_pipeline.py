@@ -1,3 +1,7 @@
+"""
+@author: louisblankemeier
+"""
+
 import inspect
 import os
 from typing import Dict, List

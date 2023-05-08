@@ -1,3 +1,7 @@
+"""
+@author: louisblankemeier
+"""
+
 import math
 import os
 import shutil
