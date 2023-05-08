@@ -6,7 +6,7 @@ import os
 import numpy as np
 
 from comp2comp.inference_class_base import InferenceClass
-from comp2comp.organs.visualization_utils import (
+from comp2comp.liver_spleen_pancreas.visualization_utils import (
     generate_liver_spleen_pancreas_report,
     generate_slice_images,
 )
@@ -34,8 +34,12 @@ class LiverSpleenPancreasVisualizer(InferenceClass):
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
 
-        inference_pipeline.medical_volume_arr = inference_pipeline.medical_volume.get_fdata()
-        inference_pipeline.segmentation_arr = inference_pipeline.segmentation.get_fdata()
+        inference_pipeline.medical_volume_arr = np.flip(
+            inference_pipeline.medical_volume.get_fdata(), axis=1
+        )
+        inference_pipeline.segmentation_arr = np.flip(
+            inference_pipeline.segmentation.get_fdata(), axis=1
+        )
 
         inference_pipeline.pix_dims = inference_pipeline.medical_volume.header["pixdim"][1:4]
         inference_pipeline.vol_per_pixel = np.prod(

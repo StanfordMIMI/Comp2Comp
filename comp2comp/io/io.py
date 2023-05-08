@@ -96,6 +96,7 @@ class DicomToNifti(InferenceClass):
             shutil.copy(
                 self.input_path, os.path.join(segmentations_output_dir, "converted_dcm.nii.gz")
             )
+
         return {}
 
 
