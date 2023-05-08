@@ -1,3 +1,6 @@
+"""
+@author: louisblankemeier
+"""
 import os
 import shutil
 from pathlib import Path

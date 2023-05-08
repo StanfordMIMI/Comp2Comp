@@ -1,3 +1,7 @@
+"""
+@author: louisblankemeier
+"""
+
 import logging
 import math
 from glob import glob

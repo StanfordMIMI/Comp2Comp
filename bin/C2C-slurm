@@ -1,3 +1,6 @@
+"""
+@author: louisblankemeier
+"""
 #!/usr/bin/env python
 import os
 import pipes  # or shlex if python3
