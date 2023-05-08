@@ -8,6 +8,7 @@ import nibabel as nib
 import numpy as np
 import scipy.ndimage as ndi
 from scipy.ndimage import zoom
+from skimage.morphology import ball, binary_erosion
 
 from comp2comp.hip.hip_visualization import method_visualizer
 
@@ -33,6 +34,24 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
         right_intertrochanter_centroid,
         right_intertrochanter_hu,
     ) = get_femural_head_roi(right_femur_mask, medical_volume, output_dir, "right_intertrochanter")
+    (left_neck_roi, left_neck_centroid, left_neck_hu,) = get_femural_neck_roi(
+        left_femur_mask,
+        medical_volume,
+        left_intertrochanter_roi,
+        left_intertrochanter_centroid,
+        left_head_roi,
+        left_head_centroid,
+        output_dir,
+    )
+    (right_neck_roi, right_neck_centroid, right_neck_hu,) = get_femural_neck_roi(
+        right_femur_mask,
+        medical_volume,
+        right_intertrochanter_roi,
+        right_intertrochanter_centroid,
+        right_head_roi,
+        right_head_centroid,
+        output_dir,
+    )
     if save:
         # make roi directory if it doesn't exist
         parent_output_dir = os.path.dirname(output_dir)
@@ -46,6 +65,8 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
             + (right_head_roi * 2)
             + (left_intertrochanter_roi * 3)
             + (right_intertrochanter_roi * 4)
+            + (left_neck_roi * 5)
+            + (right_neck_roi * 6)
         )
 
         # Convert left ROI to NIfTI
@@ -74,32 +95,36 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
             "centroid": right_intertrochanter_centroid,
             "hu": right_intertrochanter_hu,
         },
+        "left_neck": {
+            "roi": left_neck_roi,
+            "centroid": left_neck_centroid,
+            "hu": left_neck_hu,
+        },
+        "right_neck": {
+            "roi": right_neck_roi,
+            "centroid": right_neck_centroid,
+            "hu": right_neck_hu,
+        },
     }
 
 
 def get_femural_head_roi(
     femur_mask, medical_volume, output_dir, anatomy, visualize_method=False, min_pixel_count=20
 ):
-    # find the largest index that is not zero
     top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
     top_mask = femur_mask[:, :, top]
 
     print(f"======== Computing {anatomy} femur ROIs ========")
 
     while True:
-        # Label connected components in the top_mask
         labeled, num_features = ndi.label(top_mask)
 
-        # Check if there are two connected components with at least min_pixel_count pixels
         component_sizes = np.bincount(labeled.ravel())
-        valid_components = np.where(component_sizes >= min_pixel_count)[0][
-            1:
-        ]  # exclude background (label 0)
+        valid_components = np.where(component_sizes >= min_pixel_count)[0][1:]
 
         if len(valid_components) == 2:
             break
 
-        # Move top_mask down one slice
         top -= 1
         if top < 0:
             print("Two connected components not found in the femur mask.")
@@ -190,17 +215,72 @@ def get_femural_head_roi(
 
     roi = compute_hip_roi(medical_volume, centroid, radius_sagittal, radius_axial)
 
-    # make sure that the ROI doesn't extend beyond the femur mask and
-    roi = roi * femur_mask
-    # roi_eroded = ndi.binary_erosion(roi, iterations=2)
-    # femur_mask_border = femur_mask - ndi.binary_erosion(femur_mask, iterations=2)
-    # roi_eroded[femur_mask_border == 1] = roi[femur_mask_border == 1]
-    # roi_eroded = roi_eroded.astype(np.uint8)
+    selem = ball(1)
+    femur_mask_eroded = binary_erosion(femur_mask, selem)
+    roi = roi * femur_mask_eroded
     roi_eroded = roi.astype(np.uint8)
 
     hu = get_mean_roi_hu(medical_volume, roi_eroded)
 
     return (roi_eroded, centroid, hu)
+
+
+def get_femural_neck_roi(
+    femur_mask,
+    medical_volume,
+    intertrochanter_roi,
+    intertrochanter_centroid,
+    head_roi,
+    head_centroid,
+    output_dir,
+):
+    direction_vector = np.array(head_centroid) - np.array(intertrochanter_centroid)
+    unit_direction_vector = direction_vector / np.linalg.norm(direction_vector)
+
+    z, y, x = np.where(intertrochanter_roi)
+    intertrochanter_points = np.column_stack((z, y, x))
+    t_start = np.dot(intertrochanter_points - intertrochanter_centroid, unit_direction_vector).max()
+
+    z, y, x = np.where(head_roi)
+    head_points = np.column_stack((z, y, x))
+    t_end = (
+        np.linalg.norm(direction_vector)
+        + np.dot(head_points - head_centroid, unit_direction_vector).min()
+    )
+
+    z, y, x = np.indices(femur_mask.shape)
+    coordinates = np.stack((z, y, x), axis=-1)
+
+    distance_to_line_origin = np.dot(coordinates - intertrochanter_centroid, unit_direction_vector)
+
+    distance_to_line = np.linalg.norm(
+        np.cross(
+            coordinates - intertrochanter_centroid,
+            coordinates - (intertrochanter_centroid + unit_direction_vector),
+        ),
+        axis=-1,
+    ) / np.linalg.norm(unit_direction_vector)
+
+    cylinder_radius = 10
+
+    cylinder_mask = (
+        (distance_to_line <= cylinder_radius)
+        & (distance_to_line_origin >= t_start)
+        & (distance_to_line_origin <= t_end)
+    )
+
+    selem = ball(1)
+    femur_mask_eroded = binary_erosion(femur_mask, selem)
+    roi = cylinder_mask * femur_mask_eroded
+    neck_roi = roi.astype(np.uint8)
+
+    hu = get_mean_roi_hu(medical_volume, neck_roi)
+
+    centroid = list(intertrochanter_centroid + unit_direction_vector * (t_start + t_end) / 2)
+    # round the centroid to the nearest integer
+    centroid = [round(x) for x in centroid]
+
+    return neck_roi, centroid, hu
 
 
 def compute_hip_roi(img, centroid, radius_sagittal, radius_axial):

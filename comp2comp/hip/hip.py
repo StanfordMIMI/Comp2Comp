@@ -135,6 +135,8 @@ class HipMetricsSaver(InferenceClass):
         right_head_hu = results_dict["right_head"]["hu"]
         left_intertrochanter_hu = results_dict["left_intertrochanter"]["hu"]
         right_intertrochanter_hu = results_dict["right_intertrochanter"]["hu"]
+        left_neck_hu = results_dict["left_neck"]["hu"]
+        right_neck_hu = results_dict["right_neck"]["hu"]
         # save to csv
         df = pd.DataFrame(
             {
@@ -142,6 +144,8 @@ class HipMetricsSaver(InferenceClass):
                 "Right Head (HU)": [right_head_hu],
                 "Left Intertrochanter (HU)": [left_intertrochanter_hu],
                 "Right Intertrochanter (HU)": [right_intertrochanter_hu],
+                "Left Neck (HU)": [left_neck_hu],
+                "Right Neck (HU)": [right_neck_hu],
             }
         )
         df.to_csv(os.path.join(metrics_output_dir, "hip_metrics.csv"), index=False)
@@ -169,6 +173,10 @@ class HipVisualizer(InferenceClass):
             "hu"
         ]
 
+        left_neck_roi = inference_pipeline.femur_results_dict["left_neck"]["roi"]
+        left_neck_centroid = inference_pipeline.femur_results_dict["left_neck"]["centroid"]
+        left_neck_hu = inference_pipeline.femur_results_dict["left_neck"]["hu"]
+
         right_head_roi = inference_pipeline.femur_results_dict["right_head"]["roi"]
         right_head_centroid = inference_pipeline.femur_results_dict["right_head"]["centroid"]
         right_head_hu = inference_pipeline.femur_results_dict["right_head"]["hu"]
@@ -182,6 +190,10 @@ class HipVisualizer(InferenceClass):
         right_intertrochanter_hu = inference_pipeline.femur_results_dict["right_intertrochanter"][
             "hu"
         ]
+
+        right_neck_roi = inference_pipeline.femur_results_dict["right_neck"]["roi"]
+        right_neck_centroid = inference_pipeline.femur_results_dict["right_neck"]["centroid"]
+        right_neck_hu = inference_pipeline.femur_results_dict["right_neck"]["hu"]
 
         output_dir = inference_pipeline.output_dir
         images_output_dir = os.path.join(output_dir, "images")
@@ -205,6 +217,14 @@ class HipVisualizer(InferenceClass):
         )
         hip_roi_visualizer(
             medical_volume,
+            left_neck_roi,
+            left_neck_centroid,
+            left_neck_hu,
+            images_output_dir,
+            "left_neck",
+        )
+        hip_roi_visualizer(
+            medical_volume,
             right_head_roi,
             right_head_centroid,
             right_head_hu,
@@ -218,5 +238,13 @@ class HipVisualizer(InferenceClass):
             right_intertrochanter_hu,
             images_output_dir,
             "right_intertrochanter",
+        )
+        hip_roi_visualizer(
+            medical_volume,
+            right_neck_roi,
+            right_neck_centroid,
+            right_neck_hu,
+            images_output_dir,
+            "right_neck",
         )
         return {}
