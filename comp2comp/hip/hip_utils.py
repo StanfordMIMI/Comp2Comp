@@ -13,7 +13,7 @@ from skimage.morphology import ball, binary_erosion
 from comp2comp.hip.hip_visualization import method_visualizer
 
 
-def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
+def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
     left_femur_mask = segmentation.get_fdata() == model.categories["femur_left"]
     left_femur_mask = left_femur_mask.astype(np.uint8)
     right_femur_mask = segmentation.get_fdata() == model.categories["femur_right"]
@@ -107,7 +107,6 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=True):
         },
     }
 
-
 def get_femural_head_roi(
     femur_mask, medical_volume, output_dir, anatomy, visualize_method=False, min_pixel_count=20
 ):
@@ -144,20 +143,13 @@ def get_femural_head_roi(
             left_center_of_mass = center_of_mass_2
             right_center_of_mass = center_of_mass_1
 
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        plt.imshow(top_mask)
-        plt.savefig(os.path.join(output_dir, f"{anatomy}_top_mask.png"))
-
         print(f"Left center of mass: {left_center_of_mass}")
         print(f"Right center of mass: {right_center_of_mass}")
 
     if anatomy == "left_intertrochanter" or anatomy == "right_head":
         center_of_mass = left_center_of_mass
-        # femur_mask[round(right_center_of_mass[0]) :, :, :] = 0
     elif anatomy == "right_intertrochanter" or anatomy == "left_head":
         center_of_mass = right_center_of_mass
-        # femur_mask[: round(left_center_of_mass[0]), :, :] = 0
 
     coronal_slice = femur_mask[:, round(center_of_mass[1]), :]
     coronal_image = medical_volume.get_fdata()[:, round(center_of_mass[1]), :]
@@ -187,11 +179,6 @@ def get_femural_head_roi(
             axial_slice[round(right_center_of_mass[0]) :, :] = 0
         elif anatomy == "right_intertrochanter" or anatomy == "left_head":
             axial_slice[: round(left_center_of_mass[0]), :] = 0
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        plt.imshow(axial_slice)
-        plt.savefig(os.path.join(output_dir, f"{anatomy}_axial_slice.png"))
-        centroid[0], centroid[1], radius_axial = inscribe_axial(axial_slice)
 
         print(f"Centroid after inscribe axial: {centroid}")
 
@@ -224,7 +211,6 @@ def get_femural_head_roi(
 
     return (roi_eroded, centroid, hu)
 
-
 def get_femural_neck_roi(
     femur_mask,
     medical_volume,
@@ -234,6 +220,8 @@ def get_femural_neck_roi(
     head_centroid,
     output_dir,
 ):
+    zooms = medical_volume.header.get_zooms()
+
     direction_vector = np.array(head_centroid) - np.array(intertrochanter_centroid)
     unit_direction_vector = direction_vector / np.linalg.norm(direction_vector)
 
@@ -253,13 +241,17 @@ def get_femural_neck_roi(
 
     distance_to_line_origin = np.dot(coordinates - intertrochanter_centroid, unit_direction_vector)
 
+    coordinates_zoomed = coordinates * zooms
+    intertrochanter_centroid_zoomed = np.array(intertrochanter_centroid) * zooms
+    unit_direction_vector_zoomed = unit_direction_vector * zooms
+
     distance_to_line = np.linalg.norm(
         np.cross(
-            coordinates - intertrochanter_centroid,
-            coordinates - (intertrochanter_centroid + unit_direction_vector),
+            coordinates_zoomed - intertrochanter_centroid_zoomed,
+            coordinates_zoomed - (intertrochanter_centroid_zoomed + unit_direction_vector_zoomed),
         ),
         axis=-1,
-    ) / np.linalg.norm(unit_direction_vector)
+    ) / np.linalg.norm(unit_direction_vector_zoomed)
 
     cylinder_radius = 10
 
@@ -277,7 +269,6 @@ def get_femural_neck_roi(
     hu = get_mean_roi_hu(medical_volume, neck_roi)
 
     centroid = list(intertrochanter_centroid + unit_direction_vector * (t_start + t_end) / 2)
-    # round the centroid to the nearest integer
     centroid = [round(x) for x in centroid]
 
     return neck_roi, centroid, hu
