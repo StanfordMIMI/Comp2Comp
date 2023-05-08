@@ -3,7 +3,6 @@ import os
 import shutil
 
 import cv2
-import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
 import scipy.ndimage as ndi
@@ -73,7 +72,6 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
         left_roi_nifti = nib.Nifti1Image(combined_roi, medical_volume.affine)
         left_roi_path = os.path.join(roi_output_dir, "roi.nii.gz")
         nib.save(left_roi_nifti, left_roi_path)
-        # copy ../visualization/tunnelvision.ipynb to parent_output_dir
         shutil.copy(
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -106,6 +104,7 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
             "hu": right_neck_hu,
         },
     }
+
 
 def get_femural_head_roi(
     femur_mask, medical_volume, output_dir, anatomy, visualize_method=False, min_pixel_count=20
@@ -179,6 +178,7 @@ def get_femural_head_roi(
             axial_slice[round(right_center_of_mass[0]) :, :] = 0
         elif anatomy == "right_intertrochanter" or anatomy == "left_head":
             axial_slice[: round(left_center_of_mass[0]), :] = 0
+        centroid[0], centroid[1], radius_axial = inscribe_axial(axial_slice)
 
         print(f"Centroid after inscribe axial: {centroid}")
 
@@ -210,6 +210,7 @@ def get_femural_head_roi(
     hu = get_mean_roi_hu(medical_volume, roi_eroded)
 
     return (roi_eroded, centroid, hu)
+
 
 def get_femural_neck_roi(
     femur_mask,
