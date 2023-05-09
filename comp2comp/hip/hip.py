@@ -15,7 +15,7 @@ from totalsegmentator.libs import (
 )
 
 from comp2comp.hip import hip_utils
-from comp2comp.hip.hip_visualization import hip_roi_visualizer
+from comp2comp.hip.hip_visualization import hip_roi_visualizer, hip_report_visualizer
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
 
@@ -163,6 +163,8 @@ class HipVisualizer(InferenceClass):
     def __call__(self, inference_pipeline):
         medical_volume = inference_pipeline.medical_volume
 
+        rois = inference_pipeline.femur_results_dict['rois']
+
         left_head_roi = inference_pipeline.femur_results_dict["left_head"]["roi"]
         left_head_centroid = inference_pipeline.femur_results_dict["left_head"]["centroid"]
         left_head_hu = inference_pipeline.femur_results_dict["left_head"]["hu"]
@@ -250,5 +252,10 @@ class HipVisualizer(InferenceClass):
             right_neck_hu,
             images_output_dir,
             "right_neck",
+        )
+        hip_report_visualizer(
+            medical_volume.get_fdata(),
+            rois,
+            [left_head_centroid, right_head_centroid]
         )
         return {}

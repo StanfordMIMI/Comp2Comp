@@ -8,6 +8,7 @@ import numpy as np
 from scipy.ndimage import zoom
 
 from comp2comp.visualization.detectron_visualizer import Visualizer
+from comp2comp.visualization.linear_planar_reformation import linear_planar_reformation
 
 
 def method_visualizer(
@@ -112,6 +113,29 @@ def hip_roi_visualizer(
     )
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_hip_roi_axial.png"))
+
+def hip_report_visualizer(
+    medical_volume,
+    roi,
+    centroids
+):
+    _ROI_COLOR = np.array([1.000, 0.340, 0.200])
+    print("Before reformation")
+    print(medical_volume.shape)
+    print(roi.shape)
+    image, mask = linear_planar_reformation(medical_volume, roi, centroids, dimension="axial")
+    print("After reformation")
+    print(image.shape)
+    print(mask.shape)
+    image = np.clip(image, -300, 1800)
+    image = normalize_img(image) * 255.0
+    img_rgb = np.tile(image, (1, 1, 3))
+    vis = Visualizer(img_rgb)
+    vis.draw_binary_mask(
+        mask, color=_ROI_COLOR, edge_color=_ROI_COLOR, alpha=0.0, area_threshold=0
+    )
+    vis_obj = vis.get_output()
+    vis_obj.save(os.path.join(output_dir, f"head_report_axial.png"))
 
 
 def normalize_img(img: np.ndarray) -> np.ndarray:
