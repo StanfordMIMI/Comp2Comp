@@ -206,7 +206,7 @@ def get_femural_head_roi(
 
     roi = compute_hip_roi(medical_volume, centroid, radius_sagittal, radius_axial)
 
-    selem = ball(1)
+    selem = ndi.generate_binary_structure(3, 1)
     femur_mask_eroded = binary_erosion(femur_mask, selem)
     roi = roi * femur_mask_eroded
     roi_eroded = roi.astype(np.uint8)
@@ -266,7 +266,7 @@ def get_femural_neck_roi(
         & (distance_to_line_origin <= t_end)
     )
 
-    selem = ball(1)
+    selem = ndi.generate_binary_structure(3, 1)
     femur_mask_eroded = binary_erosion(femur_mask, selem)
     roi = cylinder_mask * femur_mask_eroded
     neck_roi = roi.astype(np.uint8)
