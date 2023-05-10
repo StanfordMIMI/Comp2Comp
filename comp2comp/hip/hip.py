@@ -268,7 +268,10 @@ class HipVisualizer(InferenceClass):
             [left_intertrochanter_centroid, right_intertrochanter_centroid],
             images_output_dir,
             "intertrochanter",
-            {"Left Intertrochanter HU": round(left_intertrochanter_hu), "Right Intertrochanter HU": round(right_intertrochanter_hu)},
+            {
+                "Left Intertrochanter HU": round(left_intertrochanter_hu),
+                "Right Intertrochanter HU": round(right_intertrochanter_hu),
+            },
         )
         hip_report_visualizer(
             medical_volume.get_fdata(),
