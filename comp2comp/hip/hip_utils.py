@@ -55,22 +55,21 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
         right_head_centroid,
         output_dir,
     )
+    combined_roi = (
+        left_head_roi
+        + (right_head_roi)  # * 2)
+        + (left_intertrochanter_roi)  # * 3)
+        + (right_intertrochanter_roi)  # * 4)
+        + (left_neck_roi)  # * 5)
+        + (right_neck_roi)  # * 6)
+    )
+
     if save:
         # make roi directory if it doesn't exist
         parent_output_dir = os.path.dirname(output_dir)
         roi_output_dir = os.path.join(parent_output_dir, "rois")
         if not os.path.exists(roi_output_dir):
             os.makedirs(roi_output_dir)
-
-        # combine the left and right rois
-        combined_roi = (
-            left_head_roi
-            + (right_head_roi * 2)
-            + (left_intertrochanter_roi * 3)
-            + (right_intertrochanter_roi * 4)
-            + (left_neck_roi * 5)
-            + (right_neck_roi * 6)
-        )
 
         # Convert left ROI to NIfTI
         left_roi_nifti = nib.Nifti1Image(combined_roi, medical_volume.affine)
@@ -206,7 +205,8 @@ def get_femural_head_roi(
 
     roi = compute_hip_roi(medical_volume, centroid, radius_sagittal, radius_axial)
 
-    selem = ball(1)
+    # selem = ndi.generate_binary_structure(3, 1)
+    selem = ball(3)
     femur_mask_eroded = binary_erosion(femur_mask, selem)
     roi = roi * femur_mask_eroded
     roi_eroded = roi.astype(np.uint8)
@@ -266,7 +266,8 @@ def get_femural_neck_roi(
         & (distance_to_line_origin <= t_end)
     )
 
-    selem = ball(1)
+    # selem = ndi.generate_binary_structure(3, 1)
+    selem = ball(3)
     femur_mask_eroded = binary_erosion(femur_mask, selem)
     roi = cylinder_mask * femur_mask_eroded
     neck_roi = roi.astype(np.uint8)

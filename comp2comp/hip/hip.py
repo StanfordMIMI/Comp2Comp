@@ -15,7 +15,10 @@ from totalsegmentator.libs import (
 )
 
 from comp2comp.hip import hip_utils
-from comp2comp.hip.hip_visualization import hip_roi_visualizer
+from comp2comp.hip.hip_visualization import (
+    hip_report_visualizer,
+    hip_roi_visualizer,
+)
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
 
@@ -250,5 +253,32 @@ class HipVisualizer(InferenceClass):
             right_neck_hu,
             images_output_dir,
             "right_neck",
+        )
+        hip_report_visualizer(
+            medical_volume.get_fdata(),
+            left_head_roi + right_head_roi,
+            [left_head_centroid, right_head_centroid],
+            images_output_dir,
+            "head",
+            {"Left Head HU": round(left_head_hu), "Right Head HU": round(right_head_hu)},
+        )
+        hip_report_visualizer(
+            medical_volume.get_fdata(),
+            left_intertrochanter_roi + right_intertrochanter_roi,
+            [left_intertrochanter_centroid, right_intertrochanter_centroid],
+            images_output_dir,
+            "intertrochanter",
+            {
+                "Left Intertrochanter HU": round(left_intertrochanter_hu),
+                "Right Intertrochanter HU": round(right_intertrochanter_hu),
+            },
+        )
+        hip_report_visualizer(
+            medical_volume.get_fdata(),
+            left_neck_roi + right_neck_roi,
+            [left_neck_centroid, right_neck_centroid],
+            images_output_dir,
+            "neck",
+            {"Left Neck HU": round(left_neck_hu), "Right Neck HU": round(right_neck_hu)},
         )
         return {}
