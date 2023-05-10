@@ -116,7 +116,7 @@ bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
   <img src="figures/liver_spleen_pancreas_example.png" height="300">
 </p>
 
-## 3D Analysis of Femoral Head
+## 3D Analysis of the Femur
 
 ### Usage
 ```bash
