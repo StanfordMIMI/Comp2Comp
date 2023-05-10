@@ -15,7 +15,10 @@ from totalsegmentator.libs import (
 )
 
 from comp2comp.hip import hip_utils
-from comp2comp.hip.hip_visualization import hip_roi_visualizer, hip_report_visualizer
+from comp2comp.hip.hip_visualization import (
+    hip_report_visualizer,
+    hip_roi_visualizer,
+)
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
 
@@ -163,8 +166,6 @@ class HipVisualizer(InferenceClass):
     def __call__(self, inference_pipeline):
         medical_volume = inference_pipeline.medical_volume
 
-        rois = inference_pipeline.femur_results_dict['rois']
-
         left_head_roi = inference_pipeline.femur_results_dict["left_head"]["roi"]
         left_head_centroid = inference_pipeline.femur_results_dict["left_head"]["centroid"]
         left_head_hu = inference_pipeline.femur_results_dict["left_head"]["hu"]
@@ -259,6 +260,7 @@ class HipVisualizer(InferenceClass):
             [left_head_centroid, right_head_centroid],
             images_output_dir,
             "head",
+            {"Left Head HU": round(left_head_hu), "Right Head HU": round(right_head_hu)},
         )
         hip_report_visualizer(
             medical_volume.get_fdata(),
@@ -266,6 +268,7 @@ class HipVisualizer(InferenceClass):
             [left_intertrochanter_centroid, right_intertrochanter_centroid],
             images_output_dir,
             "intertrochanter",
+            {"Left Intertrochanter HU": round(left_intertrochanter_hu), "Right Intertrochanter HU": round(right_intertrochanter_hu)},
         )
         hip_report_visualizer(
             medical_volume.get_fdata(),
@@ -273,5 +276,6 @@ class HipVisualizer(InferenceClass):
             [left_neck_centroid, right_neck_centroid],
             images_output_dir,
             "neck",
+            {"Left Neck HU": round(left_neck_hu), "Right Neck HU": round(right_neck_hu)},
         )
         return {}

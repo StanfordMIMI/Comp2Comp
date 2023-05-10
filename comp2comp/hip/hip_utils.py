@@ -11,7 +11,7 @@ import nibabel as nib
 import numpy as np
 import scipy.ndimage as ndi
 from scipy.ndimage import zoom
-from skimage.morphology import binary_erosion
+from skimage.morphology import ball, binary_erosion
 
 from comp2comp.hip.hip_visualization import method_visualizer
 
@@ -57,11 +57,11 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
     )
     combined_roi = (
         left_head_roi
-        + (right_head_roi) #* 2)
-        + (left_intertrochanter_roi) # * 3)
-        + (right_intertrochanter_roi) # * 4)
-        + (left_neck_roi) # * 5)
-        + (right_neck_roi) # * 6)
+        + (right_head_roi)  # * 2)
+        + (left_intertrochanter_roi)  # * 3)
+        + (right_intertrochanter_roi)  # * 4)
+        + (left_neck_roi)  # * 5)
+        + (right_neck_roi)  # * 6)
     )
 
     if save:
@@ -84,7 +84,6 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
         )
 
     return {
-        "rois": combined_roi,
         "left_head": {"roi": left_head_roi, "centroid": left_head_centroid, "hu": left_head_hu},
         "right_head": {"roi": right_head_roi, "centroid": right_head_centroid, "hu": right_head_hu},
         "left_intertrochanter": {
@@ -206,7 +205,8 @@ def get_femural_head_roi(
 
     roi = compute_hip_roi(medical_volume, centroid, radius_sagittal, radius_axial)
 
-    selem = ndi.generate_binary_structure(3, 1)
+    # selem = ndi.generate_binary_structure(3, 1)
+    selem = ball(3)
     femur_mask_eroded = binary_erosion(femur_mask, selem)
     roi = roi * femur_mask_eroded
     roi_eroded = roi.astype(np.uint8)
@@ -266,7 +266,8 @@ def get_femural_neck_roi(
         & (distance_to_line_origin <= t_end)
     )
 
-    selem = ndi.generate_binary_structure(3, 1)
+    # selem = ndi.generate_binary_structure(3, 1)
+    selem = ball(3)
     femur_mask_eroded = binary_erosion(femur_mask, selem)
     roi = cylinder_mask * femur_mask_eroded
     neck_roi = roi.astype(np.uint8)

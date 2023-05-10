@@ -8,7 +8,9 @@ import numpy as np
 from scipy.ndimage import zoom
 
 from comp2comp.visualization.detectron_visualizer import Visualizer
-from comp2comp.visualization.linear_planar_reformation import linear_planar_reformation
+from comp2comp.visualization.linear_planar_reformation import (
+    linear_planar_reformation,
+)
 
 
 def method_visualizer(
@@ -116,28 +118,31 @@ def hip_roi_visualizer(
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_hip_roi_axial.png"))
     """
 
-def hip_report_visualizer(
-    medical_volume,
-    roi,
-    centroids,
-    output_dir,
-    anatomy
-):
+
+def hip_report_visualizer(medical_volume, roi, centroids, output_dir, anatomy, labels):
     _ROI_COLOR = np.array([1.000, 0.340, 0.200])
     image, mask = linear_planar_reformation(medical_volume, roi, centroids, dimension="axial")
     # add 3rd dim to image
     image = np.flip(image.T)
     mask = np.flip(mask.T)
     mask[mask > 1] = 1
-    #mask = np.expand_dims(mask, axis=2)
+    # mask = np.expand_dims(mask, axis=2)
     image = np.expand_dims(image, axis=2)
     image = np.clip(image, -300, 1800)
     image = normalize_img(image) * 255.0
     img_rgb = np.tile(image, (1, 1, 3))
     vis = Visualizer(img_rgb)
-    vis.draw_binary_mask(
-        mask, color=_ROI_COLOR, edge_color=_ROI_COLOR, alpha=0.0, area_threshold=0
-    )
+    vis.draw_binary_mask(mask, color=_ROI_COLOR, edge_color=_ROI_COLOR, alpha=0.0, area_threshold=0)
+    pos_idx = 0
+    for key, value in labels.items():
+        vis.draw_text(
+            text=f"{key}: {value}",
+            position=(310, 10 + pos_idx * 17),
+            color=_ROI_COLOR,
+            font_size=9,
+            horizontal_alignment="left",
+        )
+        pos_idx += 1
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_report_axial.png"))
 
