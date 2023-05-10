@@ -255,7 +255,23 @@ class HipVisualizer(InferenceClass):
         )
         hip_report_visualizer(
             medical_volume.get_fdata(),
-            rois,
-            [left_head_centroid, right_head_centroid]
+            left_head_roi + right_head_roi,
+            [left_head_centroid, right_head_centroid],
+            images_output_dir,
+            "head",
+        )
+        hip_report_visualizer(
+            medical_volume.get_fdata(),
+            left_intertrochanter_roi + right_intertrochanter_roi,
+            [left_intertrochanter_centroid, right_intertrochanter_centroid],
+            images_output_dir,
+            "intertrochanter",
+        )
+        hip_report_visualizer(
+            medical_volume.get_fdata(),
+            left_neck_roi + right_neck_roi,
+            [left_neck_centroid, right_neck_centroid],
+            images_output_dir,
+            "neck",
         )
         return {}

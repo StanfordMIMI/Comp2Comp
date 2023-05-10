@@ -96,6 +96,7 @@ def hip_roi_visualizer(
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_hip_roi_sagittal.png"))
 
+    """
     axial_image = np.clip(axial_image, -300, 1800)
     axial_image = normalize_img(axial_image) * 255.0
     axial_image = axial_image.reshape((axial_image.shape[0], axial_image.shape[1], 1))
@@ -113,20 +114,23 @@ def hip_roi_visualizer(
     )
     vis_obj = vis.get_output()
     vis_obj.save(os.path.join(output_dir, f"{anatomy}_hip_roi_axial.png"))
+    """
 
 def hip_report_visualizer(
     medical_volume,
     roi,
-    centroids
+    centroids,
+    output_dir,
+    anatomy
 ):
     _ROI_COLOR = np.array([1.000, 0.340, 0.200])
-    print("Before reformation")
-    print(medical_volume.shape)
-    print(roi.shape)
     image, mask = linear_planar_reformation(medical_volume, roi, centroids, dimension="axial")
-    print("After reformation")
-    print(image.shape)
-    print(mask.shape)
+    # add 3rd dim to image
+    image = np.flip(image.T)
+    mask = np.flip(mask.T)
+    mask[mask > 1] = 1
+    #mask = np.expand_dims(mask, axis=2)
+    image = np.expand_dims(image, axis=2)
     image = np.clip(image, -300, 1800)
     image = normalize_img(image) * 255.0
     img_rgb = np.tile(image, (1, 1, 3))
@@ -135,7 +139,7 @@ def hip_report_visualizer(
         mask, color=_ROI_COLOR, edge_color=_ROI_COLOR, alpha=0.0, area_threshold=0
     )
     vis_obj = vis.get_output()
-    vis_obj.save(os.path.join(output_dir, f"head_report_axial.png"))
+    vis_obj.save(os.path.join(output_dir, f"{anatomy}_report_axial.png"))
 
 
 def normalize_img(img: np.ndarray) -> np.ndarray:
