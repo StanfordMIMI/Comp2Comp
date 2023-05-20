@@ -12,6 +12,7 @@ from typing import Union
 
 import numpy as np
 from scipy import ndimage
+import nibabel as nib
 from totalsegmentator.libs import (
     download_pretrained_weights,
     nostdout,
@@ -124,6 +125,7 @@ class AorticCalciumSegmentation(InferenceClass):
             ct, aorta_mask, exclude_mask=spine_mask, remove_size=3
         )
 
+        #FIXME move to visualizer class instead
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_images_organs = os.path.join(self.output_dir, "images/")
         inference_pipeline.output_dir_images_organs = self.output_dir_images_organs
@@ -131,18 +133,16 @@ class AorticCalciumSegmentation(InferenceClass):
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
 
-        # np.save(os.path.join(self.output_dir_images_organs, 'ct.npy'), ct)
-        # np.save(os.path.join(self.output_dir_images_organs, "aorta_mask.npy"), aorta_mask)
-        # np.save(os.path.join(self.output_dir_images_organs, "spine_mask.npy"), spine_mask)
+        # save calclium masks 
+        seg_dir = inference_pipeline.output_dir_segmentations
+        calc_mask_nib = nib.Nifti1Image(inference_pipeline.calc_mask.astype(np.int8), 
+                                        inference_pipeline.medical_volume.affine, 
+                                        inference_pipeline.medical_volume.header)
+        
+        print('Saving aortic calcification mask..')
+        nib.save(calc_mask_nib, os.path.join(seg_dir, 'aortic_calcification.nii.gz'))
 
-        # np.save(
-        #     os.path.join(self.output_dir_images_organs, "calcium_mask.npy"),
-        #     inference_pipeline.calc_mask,
-        # )
-        # np.save(
-        #     os.path.join(self.output_dir_images_organs, "ct_scan.npy"),
-        #     inference_pipeline.medical_volume.get_fdata(),
-        # )
+
 
         return {}
 
