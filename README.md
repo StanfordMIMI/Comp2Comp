@@ -55,7 +55,7 @@ Below are the inference pipelines currently supported by Comp2Comp.
 
 ### Usage
 ```bash
-bin/C2C spine --input_path <path/to/input/folder>
+bin/C2C spine -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
@@ -68,7 +68,7 @@ bin/C2C spine --input_path <path/to/input/folder>
 
 ### Usage
 ```bash
-bin/C2C muscle_adipose_tissue --input_path <path/to/input/folder>
+bin/C2C muscle_adipose_tissue -i <path/to/input/folder>
 ```
 - DICOM files within the input_path folder and subfolders of input_path will be processed.
 
@@ -81,7 +81,7 @@ bin/C2C muscle_adipose_tissue --input_path <path/to/input/folder>
 
 ### Usage
 ```bash
-bin/C2C spine_muscle_adipose_tissue --input_path <path/to/input/folder>
+bin/C2C spine_muscle_adipose_tissue -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
@@ -94,7 +94,7 @@ bin/C2C spine_muscle_adipose_tissue --input_path <path/to/input/folder>
 
 ### Usage
 ```bash
-bin/C2C contrast_phase --input_path <path/to/input/folder>
+bin/C2C contrast_phase -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 - This package has extra dependencies. To install those, run:
@@ -107,7 +107,7 @@ pip install -e '.[contrast_phase]'
 
 ### Usage
 ```bash
-bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
+bin/C2C liver_spleen_pancreas -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
@@ -120,7 +120,7 @@ bin/C2C liver_spleen_pancreas --input_path <path/to/input/folder>
 
 ### Usage
 ```bash
-bin/C2C hip --input_path <path/to/input/folder>
+bin/C2C hip -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
@@ -133,7 +133,7 @@ bin/C2C hip --input_path <path/to/input/folder>
 
 ### Usage
 ```bash
-bin/C2C aortic_calcium --input_path <path/to/input/folder>
+bin/C2C aortic_calcium -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
@@ -155,7 +155,7 @@ Min volume (cm³):        0.005
 
 ### Usage
 ```bash
-bin/C2C all --input_path <path/to/input/folder>
+bin/C2C all -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
