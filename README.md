@@ -33,12 +33,12 @@ For installing on the Apple M1 chip, see [these instructions](https://github.com
 ## Basic Usage
 <a name="basic_usage"></a>
 ```bash
-bin/C2C <pipeline_name> --input_path <path/to/input/folder>
+bin/C2C <pipeline_name> -i <path/to/input/folder>
 ```
 
 For running on slurm, modify the above commands as follow:
 ```bash
-bin/C2C-slurm <pipeline_name> --input_path <path/to/input/folder>
+bin/C2C-slurm <pipeline_name> -i <path/to/input/folder>
 ```
 
 ## Inference Pipelines
