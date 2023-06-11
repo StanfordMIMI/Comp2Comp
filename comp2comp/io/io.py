@@ -6,12 +6,12 @@ import shutil
 from pathlib import Path
 from typing import Dict, Union
 
-import dicom2nifti
+#import dicom2nifti
 import dosma as dm
 
 from comp2comp.inference_class_base import InferenceClass
 
-# import SimpleITK as sitk
+import SimpleITK as sitk
 
 
 class DicomLoader(InferenceClass):
@@ -85,7 +85,8 @@ class DicomToNifti(InferenceClass):
 
         # if self.input_path is a folder
         if self.input_path.is_dir():
-            dicom2nifti.dicom_series_to_nifti(
+            #dicom2nifti.dicom_series_to_nifti(
+            dicom_series_to_nifti(
                 self.input_path,
                 output_file=os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"),
                 reorient_nifti=False,
@@ -102,12 +103,9 @@ class DicomToNifti(InferenceClass):
 
         return {}
 
-
-"""
 def dicom_series_to_nifti(input_path, output_file, reorient_nifti):
     reader = sitk.ImageSeriesReader()
     dicom_names = reader.GetGDCMSeriesFileNames(str(input_path))
     reader.SetFileNames(dicom_names)
     image = reader.Execute()
     sitk.WriteImage(image, output_file)
-"""
