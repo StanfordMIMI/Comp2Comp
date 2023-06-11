@@ -24,7 +24,9 @@ cd Comp2Comp && bin/install.sh
 Alternatively, Comp2Comp can be installed with `pip`:
 ```bash
 git clone https://github.com/StanfordMIMI/Comp2Comp/
-cd Comp2Comp 
+cd Comp2Comp
+conda create -n c2c_env python=3.8
+conda activate c2c_env
 pip install -e .
 ```
 
