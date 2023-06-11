@@ -83,7 +83,7 @@ def SpinePipelineBuilder(path, args):
             DicomToNifti(path),
             SpineSegmentation(args.spine_model, save=True),
             ToCanonical(),
-            SpineComputeROIs(args.spine_model),
+            SpineComputeROIs("ts_spine_chest"),
             SpineMetricsSaver(),
             SpineCoronalSagittalVisualizer(format="png"),
             SpineReport(format="png"),
