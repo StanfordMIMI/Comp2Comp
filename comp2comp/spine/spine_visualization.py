@@ -34,6 +34,7 @@ def spine_binary_segmentation_overlay(
         spine (bool, optional): Spine flag. Defaults to True.
         model_type (Models): Model type. Defaults to None.
     """
+    """
     _COLORS = (
         np.array(
             [
@@ -102,13 +103,41 @@ def spine_binary_segmentation_overlay(
         .astype(np.float32)
         .reshape(-1, 3)
     )
+    """
+    _COLORS = (
+        np.array(
+            [
+                1.000, 0.000, 0.000, # red
+                0.000, 1.000, 0.000, # green
+                0.000, 0.000, 1.000, # blue
+                1.000, 1.000, 0.000, # yellow
+                1.000, 0.000, 1.000, # magenta
+                0.000, 1.000, 1.000, # cyan
+                0.500, 0.000, 0.000, # dark red
+                0.000, 0.500, 0.000, # dark green
+                0.000, 0.000, 0.500, # dark blue
+                0.500, 0.500, 0.000, # dark yellow
+                0.500, 0.000, 0.500, # dark magenta
+                0.000, 0.500, 0.500, # dark cyan
+                0.750, 0.000, 0.000, # lighter dark red
+                0.000, 0.750, 0.000, # lighter dark green
+                0.000, 0.000, 0.750, # lighter dark blue
+                0.750, 0.750, 0.000, # lighter dark yellow
+                0.750, 0.000, 0.750, # lighter dark magenta
+                0.000, 0.750, 0.750  # lighter dark cyan
+            ]
+        )
+        .astype(np.float32)
+        .reshape(-1, 3)
+    )
+
 
     label_map = {
-        "L5": 0, 
-        "L4": 1, 
-        "L3": 2, 
-        "L2": 3, 
-        "L1": 4, 
+        "L5": 0,
+        "L4": 1,
+        "L3": 2,
+        "L2": 3,
+        "L1": 4,
         "T12": 5,
         "T11": 6,
         "T10": 7,

@@ -81,7 +81,7 @@ def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
     for level in centroids:
         label_idx = spine_model_type.categories[level]
         binary_seg = (seg[centroids[level], :, :] == label_idx).astype(int)
-        if np.sum(binary_seg) > 200:  # heuristic to make sure enough of the body is showing
+        if np.sum(binary_seg) > 25:  # heuristic to make sure enough of the body is showing
             slices[level] = binary_seg
     return slices
 
@@ -240,6 +240,7 @@ def compute_rois(seg, img, spine_model_type):
     centroids = compute_centroids(seg_np, spine_model_type)
     slices = get_slices(seg_np, centroids, spine_model_type)
     for level in slices:
+        print("level: ", level)
         slice = slices[level]
         # keep only the two largest connected components
         two_largest, two = keep_two_largest_connected_components(slice)
