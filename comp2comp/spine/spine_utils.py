@@ -4,13 +4,13 @@
 
 import logging
 import math
+import os
 from glob import glob
 from typing import Dict, List
-import os
 
 import cv2
-import numpy as np
 import nibabel as nib
+import numpy as np
 from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
 
@@ -44,9 +44,10 @@ def save_nifti_select_slices(output_dir: str, vertical_positions):
     nifti_np = nifti_in.get_fdata()
     nifti_np = nifti_np[:, :, vertical_positions]
     nifti_out = nib.Nifti1Image(nifti_np, nifti_in.affine, nifti_in.header)
-    # save the nifti 
+    # save the nifti
     nifti_output_path = os.path.join(output_dir, "segmentations", "converted_dcm.nii.gz")
     nib.save(nifti_out, nifti_output_path)
+
 
 # Function that takes a numpy array as input, computes the
 # sagittal centroid of each label and returns a list of the

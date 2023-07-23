@@ -1,21 +1,22 @@
 import os
+import zipfile
+from pathlib import Path
 from time import perf_counter
-from typing import List
+from typing import List, Union
 
 import cv2
 import h5py
+import nibabel as nib
 import numpy as np
 import pandas as pd
+import wget
 from keras import backend as K
 from tqdm import tqdm
-import nibabel as nib
 
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.metrics.metrics import CrossSectionalArea, HounsfieldUnits
 from comp2comp.models.models import Models
 from comp2comp.muscle_adipose_tissue.data import Dataset, predict
-
-#from nnunet.inference import predict
 
 
 class MuscleAdiposeTissueSegmentation(InferenceClass):
@@ -48,9 +49,37 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
             results[i]["preds"] = preds[i]
         return results
 
+    def download_muscle_adipose_tissue_model(self, model_dir: Union[str, Path]):
+        download_dir = Path(
+            os.path.join(
+                model_dir,
+                ".totalsegmentator/nnunet/results/nnUNet/2d/Task927_FatMuscle/nnUNetTrainerV2__nnUNetPlansv2.1",
+            )
+        )
+        all_path = download_dir / "all"
+        if not os.path.exists(all_path):
+            download_dir.mkdir(parents=True, exist_ok=True)
+            wget.download(
+                "https://huggingface.co/stanfordmimi/multilevel_muscle_adipose_tissue/resolve/main/all.zip",
+                out=os.path.join(download_dir, "all.zip"),
+            )
+            with zipfile.ZipFile(os.path.join(download_dir, "all.zip"), "r") as zip_ref:
+                zip_ref.extractall(download_dir)
+            os.remove(os.path.join(download_dir, "all.zip"))
+            wget.download(
+                "https://huggingface.co/stanfordmimi/multilevel_muscle_adipose_tissue/resolve/main/plans.pkl",
+                out=os.path.join(download_dir, "plans.pkl"),
+            )
+            print("Muscle and adipose tissue model downloaded.")
+        else:
+            print("Muscle and adipose tissue model already downloaded.")
+
     def __call__(self, inference_pipeline):
         inference_pipeline.muscle_adipose_tissue_model_type = self.model_type
         inference_pipeline.muscle_adipose_tissue_model_name = self.model_name
+
+        self.download_muscle_adipose_tissue_model(inference_pipeline.model_dir)
+
         """
         dicom_file_paths = inference_pipeline.dicom_file_paths
         # if dicom_file_names not an attribute of inference_pipeline, add it
@@ -71,40 +100,45 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         for result in results:
             spacings.append(result["spacing"])
         """
-        nifti_path = os.path.join(inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz")
-        output_path = os.path.join(inference_pipeline.output_dir, "segmentations", "converted_dcm_seg.nii.gz")
+        nifti_path = os.path.join(
+            inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
+        )
+        output_path = os.path.join(
+            inference_pipeline.output_dir, "segmentations", "converted_dcm_seg.nii.gz"
+        )
 
         from nnunet.inference import predict
+
         predict.predict_cases(
-            model = os.path.join(inference_pipeline.model_dir, ".totalsegmentator/nnunet/results/nnUNet/2d/Task927_FatMuscle/nnUNetTrainerV2__nnUNetPlansv2.1"),
-            list_of_lists = [[nifti_path]], 
-            output_filenames=[output_path], 
-            folds = 'all', 
-            save_npz = False, 
-            num_threads_preprocessing = 8,
-            num_threads_nifti_save = 8, 
-            segs_from_prev_stage=None, 
-            do_tta=False, 
+            model=os.path.join(
+                inference_pipeline.model_dir,
+                ".totalsegmentator/nnunet/results/nnUNet/2d/Task927_FatMuscle/nnUNetTrainerV2__nnUNetPlansv2.1",
+            ),
+            list_of_lists=[[nifti_path]],
+            output_filenames=[output_path],
+            folds="all",
+            save_npz=False,
+            num_threads_preprocessing=8,
+            num_threads_nifti_save=8,
+            segs_from_prev_stage=None,
+            do_tta=False,
             mixed_precision=True,
             overwrite_existing=False,
-            all_in_gpu=False, 
-            step_size=0.5, 
+            all_in_gpu=False,
+            step_size=0.5,
             checkpoint_name="model_final_checkpoint",
-            segmentation_export_kwargs=None
+            segmentation_export_kwargs=None,
         )
 
         image_nib = nib.load(nifti_path)
         image = image_nib.get_fdata()
         pred = nib.load(output_path).get_fdata()
-        # make into a list
-        print("IMAGES SHAPE: ", image.shape)
-        print("PRED SHAPE: ", pred.shape)
-        print(np.unique(pred))
+
         images = [image[:, :, i] for i in range(image.shape[-1])]
         preds = [pred[:, :, i] for i in range(pred.shape[-1])]
         spacings = [image_nib.header.get_zooms()[0:2] for i in range(image.shape[-1])]
 
-        # for each image in images, convert to one hot encoding 
+        # for each image in images, convert to one hot encoding
         masks = []
         for pred in preds:
             mask = np.zeros((pred.shape[0], pred.shape[1], 4))
