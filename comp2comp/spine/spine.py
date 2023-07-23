@@ -286,6 +286,8 @@ class SpineFindDicoms(InferenceClass):
             list(inference_pipeline.rois.keys()),
         )
 
+        spine_utils.save_nifti_select_slices(inference_pipeline.output_dir, inferior_superior_centers)
+
         dicom_files = [Path(d) for d in dicom_files]
         inference_pipeline.dicom_file_paths = dicom_files
         inference_pipeline.names = names

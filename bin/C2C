@@ -60,7 +60,7 @@ def MuscleAdiposeTissuePipelineBuilder(args):
     pipeline = InferencePipeline(
         [
             MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
-            MuscleAdiposeTissuePostProcessing(),
+            # MuscleAdiposeTissuePostProcessing(),
             MuscleAdiposeTissueComputeMetrics(),
             MuscleAdiposeTissueVisualizer(),
             MuscleAdiposeTissueH5Saver(),
