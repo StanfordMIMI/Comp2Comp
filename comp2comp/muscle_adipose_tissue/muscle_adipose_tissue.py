@@ -220,7 +220,9 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
             muscle_mask = mask[..., cats.index("muscle")]
             imat_mask = mask[..., cats.index("imat")]
             imat_mask = (
-                np.logical_and((image * muscle_mask) <= -30, (image * muscle_mask) >= -190)
+                np.logical_and(
+                    (image * muscle_mask) <= -30, (image * muscle_mask) >= -190
+                )
             ).astype(int)
             imat_mask = self.remove_small_objects(imat_mask)
             mask[..., cats.index("imat")] += imat_mask
@@ -229,7 +231,9 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
             images[file_idx] = image
             file_idx += 1
 
-        print(f"Completed post-processing in {(perf_counter() - start_time):.2f} seconds.")
+        print(
+            f"Completed post-processing in {(perf_counter() - start_time):.2f} seconds."
+        )
 
         return {"images": images, "masks": masks, "spacings": spacings}
 
@@ -245,7 +249,9 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
             ndarray: Filled mask.
         """
         int_mask = ((1 - mask) > 0.5).astype(np.int8)
-        components, output, stats, _ = cv2.connectedComponentsWithStats(int_mask, connectivity=8)
+        components, output, stats, _ = cv2.connectedComponentsWithStats(
+            int_mask, connectivity=8
+        )
         sizes = stats[1:, -1]
         components = components - 1
         # Larger threshold for SAT
@@ -269,7 +275,9 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
         """
         segs = []
         for n in range(len(ys)):
-            ys_out = [self._fill_holes(ys[n][..., i], i) for i in range(ys[n].shape[-1])]
+            ys_out = [
+                self._fill_holes(ys[n][..., i], i) for i in range(ys[n].shape[-1])
+            ]
             segs.append(np.stack(ys_out, axis=2).astype(float))
 
         return segs
@@ -368,7 +376,9 @@ class MuscleAdiposeTissueH5Saver(InferenceClass):
 
         for i, result in enumerate(results):
             file_name = self.dicom_file_names[i]
-            with h5py.File(os.path.join(self.h5_output_dir, file_name + ".h5"), "w") as f:
+            with h5py.File(
+                os.path.join(self.h5_output_dir, file_name + ".h5"), "w"
+            ) as f:
                 for cat in cats:
                     mask = result[cat]["mask"]
                     f.create_dataset(name=cat, data=np.array(mask, dtype=np.uint8))
@@ -420,5 +430,6 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
                 row.append(result[cat]["Cross-sectional Area (cm^2)"])
             df.loc[i] = row
         df.to_csv(
-            os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv"), index=False
+            os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv"),
+            index=False,
         )

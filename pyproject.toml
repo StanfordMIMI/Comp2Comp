@@ -1,4 +1,0 @@
-[tool.black]
-line-length = 100
-exclude = '(\.eggs|\.git|\.github|docs)'
-
