@@ -5,51 +5,21 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
-from comp2comp.aortic_calcium.aortic_calcium import (
-    AortaSegmentation,
-    AorticCalciumMetrics,
-    AorticCalciumSegmentation,
-)
-from comp2comp.aortic_calcium.visualization import (
-    AorticCalciumPrinter,
-    AorticCalciumVisualizer,
-)
+from comp2comp.aortic_calcium import aortic_calcium, aortic_calcium_visualization
 from comp2comp.contrast_phase.contrast_phase import ContrastPhaseDetection
-from comp2comp.hip.hip import (
-    HipComputeROIs,
-    HipMetricsSaver,
-    HipSegmentation,
-    HipVisualizer,
-)
+from comp2comp.hip import hip
 from comp2comp.inference_pipeline import InferencePipeline
-from comp2comp.io.io import DicomFinder, DicomToNifti
-from comp2comp.liver_spleen_pancreas.liver_spleen_pancreas import (
-    LiverSpleenPancreasSegmentation,
+from comp2comp.io import io
+from comp2comp.liver_spleen_pancreas import (
+    liver_spleen_pancreas,
+    liver_spleen_pancreas_visualization,
 )
-from comp2comp.liver_spleen_pancreas.visualization import (
-    LiverSpleenPancreasMetricsPrinter,
-    LiverSpleenPancreasVisualizer,
+from comp2comp.muscle_adipose_tissue import (
+    muscle_adipose_tissue,
+    muscle_adipose_tissue_visualization,
 )
-from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue import (
-    MuscleAdiposeTissueComputeMetrics,
-    MuscleAdiposeTissueH5Saver,
-    MuscleAdiposeTissueMetricsSaver,
-    MuscleAdiposeTissuePostProcessing,
-    MuscleAdiposeTissueSegmentation,
-)
-from comp2comp.muscle_adipose_tissue.muscle_adipose_tissue_visualization import (
-    MuscleAdiposeTissueVisualizer,
-)
-from comp2comp.spine.spine import (
-    AxialCropper,
-    SpineComputeROIs,
-    SpineCoronalSagittalVisualizer,
-    SpineFindDicoms,
-    SpineMetricsSaver,
-    SpineMuscleAdiposeTissueReport,
-    SpineReport,
-    SpineSegmentation,
-)
+from comp2comp.muscle_adipose_tissue import muscle_adipose_tissue_visualization
+from comp2comp.spine import spine
 from comp2comp.utils.orientation import ToCanonical
 from comp2comp.utils.process import process_2d, process_3d
 
@@ -59,12 +29,14 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 def MuscleAdiposeTissuePipelineBuilder(args):
     pipeline = InferencePipeline(
         [
-            MuscleAdiposeTissueSegmentation(16, args.muscle_fat_model),
-            MuscleAdiposeTissuePostProcessing(),
-            MuscleAdiposeTissueComputeMetrics(),
-            MuscleAdiposeTissueVisualizer(),
-            MuscleAdiposeTissueH5Saver(),
-            MuscleAdiposeTissueMetricsSaver(),
+            muscle_adipose_tissue.MuscleAdiposeTissueSegmentation(
+                16, args.muscle_fat_model
+            ),
+            muscle_adipose_tissue.MuscleAdiposeTissuePostProcessing(),
+            muscle_adipose_tissue.MuscleAdiposeTissueComputeMetrics(),
+            muscle_adipose_tissue_visualization.MuscleAdiposeTissueVisualizer(),
+            muscle_adipose_tissue.MuscleAdiposeTissueH5Saver(),
+            muscle_adipose_tissue.MuscleAdiposeTissueMetricsSaver(),
         ]
     )
     return pipeline
@@ -72,7 +44,7 @@ def MuscleAdiposeTissuePipelineBuilder(args):
 
 def MuscleAdiposeTissueFullPipelineBuilder(args):
     pipeline = InferencePipeline(
-        [DicomFinder(args.input_path), MuscleAdiposeTissuePipelineBuilder(args)]
+        [io.DicomFinder(args.input_path), MuscleAdiposeTissuePipelineBuilder(args)]
     )
     return pipeline
 
@@ -80,13 +52,13 @@ def MuscleAdiposeTissueFullPipelineBuilder(args):
 def SpinePipelineBuilder(path, args):
     pipeline = InferencePipeline(
         [
-            DicomToNifti(path),
-            SpineSegmentation(args.spine_model, save=True),
+            io.DicomToNifti(path),
+            spine.SpineSegmentation(args.spine_model, save=True),
             ToCanonical(),
-            SpineComputeROIs(args.spine_model),
-            SpineMetricsSaver(),
-            SpineCoronalSagittalVisualizer(format="png"),
-            SpineReport(format="png"),
+            spine.SpineComputeROIs(args.spine_model),
+            spine.SpineMetricsSaver(),
+            spine.SpineCoronalSagittalVisualizer(format="png"),
+            spine.SpineReport(format="png"),
         ]
     )
     return pipeline
@@ -95,10 +67,10 @@ def SpinePipelineBuilder(path, args):
 def AxialCropperPipelineBuilder(path, args):
     pipeline = InferencePipeline(
         [
-            DicomToNifti(path),
-            SpineSegmentation(args.spine_model),
+            io.DicomToNifti(path),
+            spine.SpineSegmentation(args.spine_model),
             ToCanonical(),
-            AxialCropper(lower_level="L5", upper_level="L1", save=True),
+            spine.AxialCropper(lower_level="L5", upper_level="L1", save=True),
         ]
     )
     return pipeline
@@ -108,61 +80,58 @@ def SpineMuscleAdiposeTissuePipelineBuilder(path, args):
     pipeline = InferencePipeline(
         [
             SpinePipelineBuilder(path, args),
-            SpineFindDicoms(),
+            spine.SpineFindDicoms(),
             MuscleAdiposeTissuePipelineBuilder(args),
-            SpineMuscleAdiposeTissueReport(),
+            spine.SpineMuscleAdiposeTissueReport(),
         ]
     )
     return pipeline
 
 
 def LiverSpleenPancreasPipelineBuilder(path, args):
-    pipeline = InferencePipeline([
-        DicomToNifti(path),
-        LiverSpleenPancreasSegmentation(),
-        ToCanonical(),
-        LiverSpleenPancreasVisualizer(),
-        LiverSpleenPancreasMetricsPrinter()
+    pipeline = InferencePipeline(
+        [
+            io.DicomToNifti(path),
+            liver_spleen_pancreas.LiverSpleenPancreasSegmentation(),
+            ToCanonical(),
+            liver_spleen_pancreas_visualization.LiverSpleenPancreasVisualizer(),
+            liver_spleen_pancreas_visualization.LiverSpleenPancreasMetricsPrinter(),
         ]
     )
     return pipeline
 
 
 def AorticCalciumPipelineBuilder(path, args):
-    pipeline = InferencePipeline([
-        DicomToNifti(path),
-        SpineSegmentation(model_name='ts_spine'),
-        ToCanonical(),
-        AortaSegmentation(),
-        ToCanonical(),
-        AorticCalciumSegmentation(),
-        AorticCalciumMetrics(),
-        AorticCalciumVisualizer(),
-        AorticCalciumPrinter(),
+    pipeline = InferencePipeline(
+        [
+            io.DicomToNifti(path),
+            spine.SpineSegmentation(model_name="ts_spine"),
+            ToCanonical(),
+            aortic_calcium.AortaSegmentation(),
+            ToCanonical(),
+            aortic_calcium.AorticCalciumSegmentation(),
+            aortic_calcium.AorticCalciumMetrics(),
+            aortic_calcium_visualization.AorticCalciumVisualizer(),
+            aortic_calcium_visualization.AorticCalciumPrinter(),
         ]
     )
     return pipeline
 
 
 def ContrastPhasePipelineBuilder(path, args):
-    pipeline = InferencePipeline(
-        [
-            DicomToNifti(path),
-            ContrastPhaseDetection(path)
-        ]
-    )
+    pipeline = InferencePipeline([io.DicomToNifti(path), ContrastPhaseDetection(path)])
     return pipeline
 
 
 def HipPipelineBuilder(path, args):
     pipeline = InferencePipeline(
         [
-            DicomToNifti(path),
-            HipSegmentation(args.hip_model),
+            io.DicomToNifti(path),
+            hip.HipSegmentation(args.hip_model),
             ToCanonical(),
-            HipComputeROIs(args.hip_model),
-            HipMetricsSaver(),
-            HipVisualizer(),
+            hip.HipComputeROIs(args.hip_model),
+            hip.HipMetricsSaver(),
+            hip.HipVisualizer(),
         ]
     )
     return pipeline
@@ -171,7 +140,7 @@ def HipPipelineBuilder(path, args):
 def AllPipelineBuilder(path, args):
     pipeline = InferencePipeline(
         [
-            DicomToNifti(path),
+            io.DicomToNifti(path),
             SpineMuscleAdiposeTissuePipelineBuilder(path, args),
             LiverSpleenPancreasPipelineBuilder(path, args),
             HipPipelineBuilder(path, args),
@@ -182,8 +151,8 @@ def AllPipelineBuilder(path, args):
 
 def argument_parser():
     base_parser = argparse.ArgumentParser(add_help=False)
-    base_parser.add_argument("--input_path", '-i', type=str, required=True)
-    base_parser.add_argument("--output_path", '-o', type=str)
+    base_parser.add_argument("--input_path", "-i", type=str, required=True)
+    base_parser.add_argument("--output_path", "-o", type=str)
     base_parser.add_argument("--overwrite_outputs", action="store_true")
 
     parser = argparse.ArgumentParser()
@@ -193,7 +162,9 @@ def argument_parser():
     muscle_adipose_tissue_parser = subparsers.add_parser(
         "muscle_adipose_tissue", parents=[base_parser]
     )
-    muscle_adipose_tissue_parser.add_argument("--muscle_fat_model", default="abCT_v0.0.1", type=str)
+    muscle_adipose_tissue_parser.add_argument(
+        "--muscle_fat_model", default="abCT_v0.0.1", type=str
+    )
 
     # Spine
     spine_parser = subparsers.add_parser("spine", parents=[base_parser])
@@ -204,15 +175,21 @@ def argument_parser():
         "spine_muscle_adipose_tissue", parents=[base_parser]
     )
     spine_muscle_adipose_tissue_parser.add_argument(
-        "--muscle_fat_model", default="abCT_v0.0.1", type=str
+        "--muscle_fat_model", default="stanford_v0.0.2", type=str
     )
-    spine_muscle_adipose_tissue_parser.add_argument("--spine_model", default="ts_spine", type=str)
+    spine_muscle_adipose_tissue_parser.add_argument(
+        "--spine_model", default="ts_spine", type=str
+    )
 
-    liver_spleen_pancreas = subparsers.add_parser("liver_spleen_pancreas", parents=[base_parser])
-    
+    liver_spleen_pancreas = subparsers.add_parser(
+        "liver_spleen_pancreas", parents=[base_parser]
+    )
+
     aortic_calcium = subparsers.add_parser("aortic_calcium", parents=[base_parser])
 
-    contrast_phase_parser = subparsers.add_parser("contrast_phase", parents=[base_parser])
+    contrast_phase_parser = subparsers.add_parser(
+        "contrast_phase", parents=[base_parser]
+    )
 
     hip_parser = subparsers.add_parser("hip", parents=[base_parser])
     hip_parser.add_argument(

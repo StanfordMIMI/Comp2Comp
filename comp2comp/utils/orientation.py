@@ -15,10 +15,16 @@ class ToCanonical(InferenceClass):
         Second dim goes from P to A.
         Third dim goes from I to S.
         """
-        canonical_segmentation = nib.as_closest_canonical(inference_pipeline.segmentation)
-        canonical_medical_volume = nib.as_closest_canonical(inference_pipeline.medical_volume)
+        canonical_segmentation = nib.as_closest_canonical(
+            inference_pipeline.segmentation
+        )
+        canonical_medical_volume = nib.as_closest_canonical(
+            inference_pipeline.medical_volume
+        )
 
         inference_pipeline.segmentation = canonical_segmentation
         inference_pipeline.medical_volume = canonical_medical_volume
-        inference_pipeline.pixel_spacing_list = canonical_medical_volume.header.get_zooms()
+        inference_pipeline.pixel_spacing_list = (
+            canonical_medical_volume.header.get_zooms()
+        )
         return {}

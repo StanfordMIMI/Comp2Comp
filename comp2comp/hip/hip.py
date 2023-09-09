@@ -52,7 +52,9 @@ class HipSegmentation(InferenceClass):
 
         return {}
 
-    def hip_seg(self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir):
+    def hip_seg(
+        self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir
+    ):
         """Run spine segmentation.
 
         Args:
@@ -80,7 +82,6 @@ class HipSegmentation(InferenceClass):
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
-
             img, seg = nnUNet_predict_image(
                 input_path,
                 output_path,
@@ -122,7 +123,9 @@ class HipComputeROIs(InferenceClass):
 
         model = inference_pipeline.model
         images_folder = os.path.join(inference_pipeline.output_dir, "dev")
-        results_dict = hip_utils.compute_rois(medical_volume, segmentation, model, images_folder)
+        results_dict = hip_utils.compute_rois(
+            medical_volume, segmentation, model, images_folder
+        )
         inference_pipeline.femur_results_dict = results_dict
         return {}
 
@@ -167,39 +170,47 @@ class HipVisualizer(InferenceClass):
         medical_volume = inference_pipeline.medical_volume
 
         left_head_roi = inference_pipeline.femur_results_dict["left_head"]["roi"]
-        left_head_centroid = inference_pipeline.femur_results_dict["left_head"]["centroid"]
+        left_head_centroid = inference_pipeline.femur_results_dict["left_head"][
+            "centroid"
+        ]
         left_head_hu = inference_pipeline.femur_results_dict["left_head"]["hu"]
 
-        left_intertrochanter_roi = inference_pipeline.femur_results_dict["left_intertrochanter"][
-            "roi"
-        ]
+        left_intertrochanter_roi = inference_pipeline.femur_results_dict[
+            "left_intertrochanter"
+        ]["roi"]
         left_intertrochanter_centroid = inference_pipeline.femur_results_dict[
             "left_intertrochanter"
         ]["centroid"]
-        left_intertrochanter_hu = inference_pipeline.femur_results_dict["left_intertrochanter"][
-            "hu"
-        ]
+        left_intertrochanter_hu = inference_pipeline.femur_results_dict[
+            "left_intertrochanter"
+        ]["hu"]
 
         left_neck_roi = inference_pipeline.femur_results_dict["left_neck"]["roi"]
-        left_neck_centroid = inference_pipeline.femur_results_dict["left_neck"]["centroid"]
+        left_neck_centroid = inference_pipeline.femur_results_dict["left_neck"][
+            "centroid"
+        ]
         left_neck_hu = inference_pipeline.femur_results_dict["left_neck"]["hu"]
 
         right_head_roi = inference_pipeline.femur_results_dict["right_head"]["roi"]
-        right_head_centroid = inference_pipeline.femur_results_dict["right_head"]["centroid"]
+        right_head_centroid = inference_pipeline.femur_results_dict["right_head"][
+            "centroid"
+        ]
         right_head_hu = inference_pipeline.femur_results_dict["right_head"]["hu"]
 
-        right_intertrochanter_roi = inference_pipeline.femur_results_dict["right_intertrochanter"][
-            "roi"
-        ]
+        right_intertrochanter_roi = inference_pipeline.femur_results_dict[
+            "right_intertrochanter"
+        ]["roi"]
         right_intertrochanter_centroid = inference_pipeline.femur_results_dict[
             "right_intertrochanter"
         ]["centroid"]
-        right_intertrochanter_hu = inference_pipeline.femur_results_dict["right_intertrochanter"][
-            "hu"
-        ]
+        right_intertrochanter_hu = inference_pipeline.femur_results_dict[
+            "right_intertrochanter"
+        ]["hu"]
 
         right_neck_roi = inference_pipeline.femur_results_dict["right_neck"]["roi"]
-        right_neck_centroid = inference_pipeline.femur_results_dict["right_neck"]["centroid"]
+        right_neck_centroid = inference_pipeline.femur_results_dict["right_neck"][
+            "centroid"
+        ]
         right_neck_hu = inference_pipeline.femur_results_dict["right_neck"]["hu"]
 
         output_dir = inference_pipeline.output_dir
@@ -260,7 +271,10 @@ class HipVisualizer(InferenceClass):
             [left_head_centroid, right_head_centroid],
             images_output_dir,
             "head",
-            {"Left Head HU": round(left_head_hu), "Right Head HU": round(right_head_hu)},
+            {
+                "Left Head HU": round(left_head_hu),
+                "Right Head HU": round(right_head_hu),
+            },
         )
         hip_report_visualizer(
             medical_volume.get_fdata(),
@@ -279,6 +293,9 @@ class HipVisualizer(InferenceClass):
             [left_neck_centroid, right_neck_centroid],
             images_output_dir,
             "neck",
-            {"Left Neck HU": round(left_neck_hu), "Right Neck HU": round(right_neck_hu)},
+            {
+                "Left Neck HU": round(left_neck_hu),
+                "Right Neck HU": round(right_neck_hu),
+            },
         )
         return {}

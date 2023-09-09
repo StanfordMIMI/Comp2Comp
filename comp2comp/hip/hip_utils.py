@@ -31,13 +31,21 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
         left_intertrochanter_roi,
         left_intertrochanter_centroid,
         left_intertrochanter_hu,
-    ) = get_femural_head_roi(left_femur_mask, medical_volume, output_dir, "left_intertrochanter")
+    ) = get_femural_head_roi(
+        left_femur_mask, medical_volume, output_dir, "left_intertrochanter"
+    )
     (
         right_intertrochanter_roi,
         right_intertrochanter_centroid,
         right_intertrochanter_hu,
-    ) = get_femural_head_roi(right_femur_mask, medical_volume, output_dir, "right_intertrochanter")
-    (left_neck_roi, left_neck_centroid, left_neck_hu,) = get_femural_neck_roi(
+    ) = get_femural_head_roi(
+        right_femur_mask, medical_volume, output_dir, "right_intertrochanter"
+    )
+    (
+        left_neck_roi,
+        left_neck_centroid,
+        left_neck_hu,
+    ) = get_femural_neck_roi(
         left_femur_mask,
         medical_volume,
         left_intertrochanter_roi,
@@ -46,7 +54,11 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
         left_head_centroid,
         output_dir,
     )
-    (right_neck_roi, right_neck_centroid, right_neck_hu,) = get_femural_neck_roi(
+    (
+        right_neck_roi,
+        right_neck_centroid,
+        right_neck_hu,
+    ) = get_femural_neck_roi(
         right_femur_mask,
         medical_volume,
         right_intertrochanter_roi,
@@ -84,8 +96,16 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
         )
 
     return {
-        "left_head": {"roi": left_head_roi, "centroid": left_head_centroid, "hu": left_head_hu},
-        "right_head": {"roi": right_head_roi, "centroid": right_head_centroid, "hu": right_head_hu},
+        "left_head": {
+            "roi": left_head_roi,
+            "centroid": left_head_centroid,
+            "hu": left_head_hu,
+        },
+        "right_head": {
+            "roi": right_head_roi,
+            "centroid": right_head_centroid,
+            "hu": right_head_hu,
+        },
         "left_intertrochanter": {
             "roi": left_intertrochanter_roi,
             "centroid": left_intertrochanter_centroid,
@@ -110,7 +130,12 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
 
 
 def get_femural_head_roi(
-    femur_mask, medical_volume, output_dir, anatomy, visualize_method=False, min_pixel_count=20
+    femur_mask,
+    medical_volume,
+    output_dir,
+    anatomy,
+    visualize_method=False,
+    min_pixel_count=20,
 ):
     top = np.where(femur_mask.sum(axis=(0, 1)) != 0)[0].max()
     top_mask = femur_mask[:, :, top]
@@ -134,8 +159,12 @@ def get_femural_head_roi(
 
     if len(valid_components) == 2:
         # Find the center of mass for each connected component
-        center_of_mass_1 = list(ndi.center_of_mass(top_mask, labeled, valid_components[0]))
-        center_of_mass_2 = list(ndi.center_of_mass(top_mask, labeled, valid_components[1]))
+        center_of_mass_1 = list(
+            ndi.center_of_mass(top_mask, labeled, valid_components[0])
+        )
+        center_of_mass_2 = list(
+            ndi.center_of_mass(top_mask, labeled, valid_components[1])
+        )
 
         # Assign left_center_of_mass to be the center of mass with lowest value in the first dimension
         if center_of_mass_1[0] < center_of_mass_2[0]:
@@ -172,7 +201,9 @@ def get_femural_head_roi(
     for _ in range(3):
         sagittal_slice = femur_mask[centroid[0], :, :]
         sagittal_slice = zoom(sagittal_slice, (1, zoom_factor), order=1).round()
-        centroid[1], centroid[2], radius_sagittal = inscribe_sagittal(sagittal_slice, zoom_factor)
+        centroid[1], centroid[2], radius_sagittal = inscribe_sagittal(
+            sagittal_slice, zoom_factor
+        )
 
         print(f"Centroid after inscribe sagittal: {centroid}")
 
@@ -232,7 +263,9 @@ def get_femural_neck_roi(
 
     z, y, x = np.where(intertrochanter_roi)
     intertrochanter_points = np.column_stack((z, y, x))
-    t_start = np.dot(intertrochanter_points - intertrochanter_centroid, unit_direction_vector).max()
+    t_start = np.dot(
+        intertrochanter_points - intertrochanter_centroid, unit_direction_vector
+    ).max()
 
     z, y, x = np.where(head_roi)
     head_points = np.column_stack((z, y, x))
@@ -244,7 +277,9 @@ def get_femural_neck_roi(
     z, y, x = np.indices(femur_mask.shape)
     coordinates = np.stack((z, y, x), axis=-1)
 
-    distance_to_line_origin = np.dot(coordinates - intertrochanter_centroid, unit_direction_vector)
+    distance_to_line_origin = np.dot(
+        coordinates - intertrochanter_centroid, unit_direction_vector
+    )
 
     coordinates_zoomed = coordinates * zooms
     intertrochanter_centroid_zoomed = np.array(intertrochanter_centroid) * zooms
@@ -253,7 +288,8 @@ def get_femural_neck_roi(
     distance_to_line = np.linalg.norm(
         np.cross(
             coordinates_zoomed - intertrochanter_centroid_zoomed,
-            coordinates_zoomed - (intertrochanter_centroid_zoomed + unit_direction_vector_zoomed),
+            coordinates_zoomed
+            - (intertrochanter_centroid_zoomed + unit_direction_vector_zoomed),
         ),
         axis=-1,
     ) / np.linalg.norm(unit_direction_vector_zoomed)
@@ -274,7 +310,9 @@ def get_femural_neck_roi(
 
     hu = get_mean_roi_hu(medical_volume, neck_roi)
 
-    centroid = list(intertrochanter_centroid + unit_direction_vector * (t_start + t_end) / 2)
+    centroid = list(
+        intertrochanter_centroid + unit_direction_vector * (t_start + t_end) / 2
+    )
     centroid = [round(x) for x in centroid]
 
     return neck_roi, centroid, hu

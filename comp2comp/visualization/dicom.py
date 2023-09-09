@@ -12,7 +12,9 @@ def to_dicom(input, output_path, plane="axial"):
     """Converts a png image to a dicom image.  Written with assistance from ChatGPT."""
     if isinstance(input, str) or isinstance(input, Path):
         png_path = input
-        dicom_path = os.path.join(output_path, os.path.basename(png_path).replace(".png", ".dcm"))
+        dicom_path = os.path.join(
+            output_path, os.path.basename(png_path).replace(".png", ".dcm")
+        )
         image = Image.open(png_path)
         image_array = np.array(image)
         image_array = image_array[:, :, :3]
@@ -55,7 +57,9 @@ def to_dicom(input, output_path, plane="axial"):
     elif plane.lower() == "coronal":
         ds.ImageOrientationPatient = [1, 0, 0, 0, 0, -1]
     else:
-        raise ValueError("Invalid plane value. Must be 'axial', 'sagittal', or 'coronal'.")
+        raise ValueError(
+            "Invalid plane value. Must be 'axial', 'sagittal', or 'coronal'."
+        )
 
     ds.PixelData = image_array.tobytes()
     pydicom.filewriter.write_file(dicom_path, ds, write_like_original=False)

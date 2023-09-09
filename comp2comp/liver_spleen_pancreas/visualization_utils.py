@@ -11,7 +11,6 @@ from PIL import Image
 
 
 def extract_axial_mid_slice(ct, mask, crop=True):
-
     slice_idx = np.argmax(mask.sum(axis=(0, 1)))
 
     ct_slice_z = np.transpose(ct[:, :, slice_idx], axes=(1, 0))
@@ -23,14 +22,17 @@ def extract_axial_mid_slice(ct, mask, crop=True):
     if crop:
         ct_range_x = np.where(ct_slice_z.max(axis=0) > -200)[0][[0, -1]]
 
-        ct_slice_z = ct_slice_z[ct_range_x[0] : ct_range_x[1], ct_range_x[0] : ct_range_x[1]]
-        mask_slice_z = mask_slice_z[ct_range_x[0] : ct_range_x[1], ct_range_x[0] : ct_range_x[1]]
+        ct_slice_z = ct_slice_z[
+            ct_range_x[0] : ct_range_x[1], ct_range_x[0] : ct_range_x[1]
+        ]
+        mask_slice_z = mask_slice_z[
+            ct_range_x[0] : ct_range_x[1], ct_range_x[0] : ct_range_x[1]
+        ]
 
     return ct_slice_z, mask_slice_z
 
 
 def extract_coronal_mid_slice(ct, mask, crop=True):
-
     # find the slice with max coherent extent of the organ
     coronary_extent = np.where(mask.sum(axis=(0, 2)))[0]
 
@@ -70,7 +72,6 @@ def save_slice(
     class_color=1,
     fontsize=14,
 ):
-
     # colormap for shown segmentations
     color_array = plt.get_cmap("tab10")(range(10))
     color_array = np.concatenate((np.array([[0, 0, 0, 0]]), color_array[:, :]), axis=0)
@@ -188,8 +189,9 @@ def slicedDilationOrErosion(input_mask, num_iteration, operation):
     return output_mask
 
 
-def extract_organ_metrics(ct, all_masks, class_num=None, vol_per_pixel=None, erode_mask=True):
-
+def extract_organ_metrics(
+    ct, all_masks, class_num=None, vol_per_pixel=None, erode_mask=True
+):
     if erode_mask:
         eroded_mask = slicedDilationOrErosion(
             input_mask=(all_masks == class_num), num_iteration=3, operation="erode"
@@ -216,9 +218,16 @@ def extract_organ_metrics(ct, all_masks, class_num=None, vol_per_pixel=None, ero
 
 
 def generate_slice_images(
-    ct, all_masks, class_nums, unit_dict, vol_per_pixel, pix_dims, root, fontsize=20, show=False
+    ct,
+    all_masks,
+    class_nums,
+    unit_dict,
+    vol_per_pixel,
+    pix_dims,
+    root,
+    fontsize=20,
+    show=False,
 ):
-
     all_results = {}
 
     colors = [1, 3, 4]
@@ -230,7 +239,9 @@ def generate_slice_images(
         coronal_path = os.path.join(root, organ_name.lower() + "_coronal.png")
 
         ct_slice_z, liver_slice_z = extract_axial_mid_slice(ct, all_masks == c_num)
-        results = extract_organ_metrics(ct, all_masks, class_num=c_num, vol_per_pixel=vol_per_pixel)
+        results = extract_organ_metrics(
+            ct, all_masks, class_num=c_num, vol_per_pixel=vol_per_pixel
+        )
 
         save_slice(
             ct_slice_z,
@@ -265,14 +276,20 @@ def generate_slice_images(
 
 
 def generate_liver_spleen_pancreas_report(root, organ_names):
-
-    axial_imgs = [Image.open(os.path.join(root, organ + "_axial.png")) for organ in organ_names]
-    coronal_imgs = [Image.open(os.path.join(root, organ + "_coronal.png")) for organ in organ_names]
+    axial_imgs = [
+        Image.open(os.path.join(root, organ + "_axial.png")) for organ in organ_names
+    ]
+    coronal_imgs = [
+        Image.open(os.path.join(root, organ + "_coronal.png")) for organ in organ_names
+    ]
 
     result_width = max(
-        sum([img.size[0] for img in axial_imgs]), sum([img.size[0] for img in coronal_imgs])
+        sum([img.size[0] for img in axial_imgs]),
+        sum([img.size[0] for img in coronal_imgs]),
     )
-    result_height = max([a.size[1] + c.size[1] for a, c in zip(axial_imgs, coronal_imgs)])
+    result_height = max(
+        [a.size[1] + c.size[1] for a, c in zip(axial_imgs, coronal_imgs)]
+    )
 
     result = Image.new("RGB", (result_width, result_height))
 

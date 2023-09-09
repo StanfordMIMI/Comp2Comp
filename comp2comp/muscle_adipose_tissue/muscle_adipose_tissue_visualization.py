@@ -107,7 +107,9 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
                 position = (40, 15)
             else:
                 position = (30, 15)
-            vis.draw_text(text=dicom_file_name, position=position, color=spine_color, font_size=24)
+            vis.draw_text(
+                text=dicom_file_name, position=position, color=spine_color, font_size=24
+            )
 
         for idx, tissue in enumerate(result.keys()):
             alpha_val = 0.9
@@ -116,7 +118,11 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
             mask = result[tissue]["mask"]
 
             vis.draw_binary_mask(
-                mask, color=color, edge_color=edge_color, alpha=alpha_val, area_threshold=0
+                mask,
+                color=color,
+                edge_color=edge_color,
+                alpha=alpha_val,
+                area_threshold=0,
             )
 
             hu_val = round(result[tissue]["Hounsfield Unit"])
