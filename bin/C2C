@@ -32,7 +32,7 @@ def MuscleAdiposeTissuePipelineBuilder(args):
             muscle_adipose_tissue.MuscleAdiposeTissueSegmentation(
                 16, args.muscle_fat_model
             ),
-            # MuscleAdiposeTissuePostProcessing(),
+            muscle_adipose_tissue.MuscleAdiposeTissuePostProcessing(),
             muscle_adipose_tissue.MuscleAdiposeTissueComputeMetrics(),
             muscle_adipose_tissue_visualization.MuscleAdiposeTissueVisualizer(),
             muscle_adipose_tissue.MuscleAdiposeTissueH5Saver(),
@@ -175,7 +175,7 @@ def argument_parser():
         "spine_muscle_adipose_tissue", parents=[base_parser]
     )
     spine_muscle_adipose_tissue_parser.add_argument(
-        "--muscle_fat_model", default="abCT_v0.0.1", type=str
+        "--muscle_fat_model", default="stanford_v0.0.2", type=str
     )
     spine_muscle_adipose_tissue_parser.add_argument(
         "--spine_model", default="ts_spine", type=str

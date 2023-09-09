@@ -78,76 +78,81 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         inference_pipeline.muscle_adipose_tissue_model_type = self.model_type
         inference_pipeline.muscle_adipose_tissue_model_name = self.model_name
 
-        self.download_muscle_adipose_tissue_model(inference_pipeline.model_dir)
+        if self.model_name == "stanford_v0.0.2":
+            self.download_muscle_adipose_tissue_model(inference_pipeline.model_dir)
+            nifti_path = os.path.join(
+                inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
+            )
+            output_path = os.path.join(
+                inference_pipeline.output_dir,
+                "segmentations",
+                "converted_dcm_seg.nii.gz",
+            )
 
-        """
-        dicom_file_paths = inference_pipeline.dicom_file_paths
-        # if dicom_file_names not an attribute of inference_pipeline, add it
-        if not hasattr(inference_pipeline, "dicom_file_names"):
-            inference_pipeline.dicom_file_names = [
-                dicom_file_path.stem for dicom_file_path in dicom_file_paths
+            from nnunet.inference import predict
+
+            predict.predict_cases(
+                model=os.path.join(
+                    inference_pipeline.model_dir,
+                    ".totalsegmentator/nnunet/results/nnUNet/2d/Task927_FatMuscle/nnUNetTrainerV2__nnUNetPlansv2.1",
+                ),
+                list_of_lists=[[nifti_path]],
+                output_filenames=[output_path],
+                folds="all",
+                save_npz=False,
+                num_threads_preprocessing=8,
+                num_threads_nifti_save=8,
+                segs_from_prev_stage=None,
+                do_tta=False,
+                mixed_precision=True,
+                overwrite_existing=False,
+                all_in_gpu=False,
+                step_size=0.5,
+                checkpoint_name="model_final_checkpoint",
+                segmentation_export_kwargs=None,
+            )
+
+            image_nib = nib.load(nifti_path)
+            image = image_nib.get_fdata()
+            pred = nib.load(output_path).get_fdata()
+
+            images = [image[:, :, i] for i in range(image.shape[-1])]
+            preds = [pred[:, :, i] for i in range(pred.shape[-1])]
+            spacings = [
+                image_nib.header.get_zooms()[0:2] for i in range(image.shape[-1])
             ]
-        self.model = self.model_type.load_model(inference_pipeline.model_dir)
 
-        results = self.forward_pass_2d(dicom_file_paths)
-        images = []
-        for result in results:
-            images.append(result["image"])
-        preds = []
-        for result in results:
-            preds.append(result["preds"])
-        spacings = []
-        for result in results:
-            spacings.append(result["spacing"])
-        """
-        nifti_path = os.path.join(
-            inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
-        )
-        output_path = os.path.join(
-            inference_pipeline.output_dir, "segmentations", "converted_dcm_seg.nii.gz"
-        )
+            # for each image in images, convert to one hot encoding
+            masks = []
+            for pred in preds:
+                mask = np.zeros((pred.shape[0], pred.shape[1], 4))
+                for i in range(1, 5):
+                    mask[:, :, i - 1] = pred == i
+                mask = mask.astype(np.uint8)
+                masks.append(mask)
+            return {"images": images, "preds": masks, "spacings": spacings}
 
-        from nnunet.inference import predict
+        else:
+            dicom_file_paths = inference_pipeline.dicom_file_paths
+            # if dicom_file_names not an attribute of inference_pipeline, add it
+            if not hasattr(inference_pipeline, "dicom_file_names"):
+                inference_pipeline.dicom_file_names = [
+                    dicom_file_path.stem for dicom_file_path in dicom_file_paths
+                ]
+            self.model = self.model_type.load_model(inference_pipeline.model_dir)
 
-        predict.predict_cases(
-            model=os.path.join(
-                inference_pipeline.model_dir,
-                ".totalsegmentator/nnunet/results/nnUNet/2d/Task927_FatMuscle/nnUNetTrainerV2__nnUNetPlansv2.1",
-            ),
-            list_of_lists=[[nifti_path]],
-            output_filenames=[output_path],
-            folds="all",
-            save_npz=False,
-            num_threads_preprocessing=8,
-            num_threads_nifti_save=8,
-            segs_from_prev_stage=None,
-            do_tta=False,
-            mixed_precision=True,
-            overwrite_existing=False,
-            all_in_gpu=False,
-            step_size=0.5,
-            checkpoint_name="model_final_checkpoint",
-            segmentation_export_kwargs=None,
-        )
+            results = self.forward_pass_2d(dicom_file_paths)
+            images = []
+            for result in results:
+                images.append(result["image"])
+            preds = []
+            for result in results:
+                preds.append(result["preds"])
+            spacings = []
+            for result in results:
+                spacings.append(result["spacing"])
 
-        image_nib = nib.load(nifti_path)
-        image = image_nib.get_fdata()
-        pred = nib.load(output_path).get_fdata()
-
-        images = [image[:, :, i] for i in range(image.shape[-1])]
-        preds = [pred[:, :, i] for i in range(pred.shape[-1])]
-        spacings = [image_nib.header.get_zooms()[0:2] for i in range(image.shape[-1])]
-
-        # for each image in images, convert to one hot encoding
-        masks = []
-        for pred in preds:
-            mask = np.zeros((pred.shape[0], pred.shape[1], 4))
-            for i in range(1, 5):
-                mask[:, :, i - 1] = pred == i
-            mask = mask.astype(np.uint8)
-            masks.append(mask)
-
-        return {"images": images, "masks": masks, "spacings": spacings}
+            return {"images": images, "preds": preds, "spacings": spacings}
 
 
 class MuscleAdiposeTissuePostProcessing(InferenceClass):
@@ -205,7 +210,10 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
 
         start_time = perf_counter()
 
-        masks = [self.preds_to_mask(p) for p in preds]
+        if self.model_name == "stanford_v0.0.2":
+            masks = preds
+        else:
+            masks = [self.preds_to_mask(p) for p in preds]
 
         for i, _ in enumerate(masks):
             # Keep only channels from the model_type categories dict
@@ -315,11 +323,6 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
         """Compute results for a given segmentation."""
         categories = self.model_type.categories
 
-        print("X Shape: ", x.shape)
-        print("Mask Shape: ", mask.shape)
-        print("Mask unique: ", np.unique(mask))
-        print(spacing)
-
         hu = HounsfieldUnits()
         csa_units = "cm^2" if spacing else ""
         csa = CrossSectionalArea(csa_units)
@@ -330,9 +333,6 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
         # check if any values are nan and replace with 0
         hu_vals = np.nan_to_num(hu_vals)
         csa_vals = np.nan_to_num(csa_vals)
-
-        print("HU: ", hu_vals)
-        print("CSA: ", csa_vals)
 
         assert mask.shape[-1] == len(
             categories
