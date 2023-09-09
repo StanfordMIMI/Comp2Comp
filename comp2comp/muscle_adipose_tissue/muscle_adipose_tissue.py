@@ -113,11 +113,19 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
             )
 
             image_nib = nib.load(nifti_path)
+            image_nib = nib.as_closest_canonical(image_nib)
             image = image_nib.get_fdata()
-            pred = nib.load(output_path).get_fdata()
+            pred = nib.load(output_path)
+            pred = nib.as_closest_canonical(pred)
+            pred = pred.get_fdata()
 
             images = [image[:, :, i] for i in range(image.shape[-1])]
             preds = [pred[:, :, i] for i in range(pred.shape[-1])]
+
+            # flip both axes and transpose
+            images = [np.flip(np.flip(image, axis=0), axis=1).T for image in images]
+            preds = [np.flip(np.flip(pred, axis=0), axis=1).T for pred in preds]
+
             spacings = [
                 image_nib.header.get_zooms()[0:2] for i in range(image.shape[-1])
             ]
