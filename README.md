@@ -92,6 +92,27 @@ bin/C2C spine_muscle_adipose_tissue -i <path/to/input/folder>
   <img src="figures/spine_muscle_adipose_tissue_example.png" height="300">
 </p>
 
+## AAA Segmentation and Maximum Diameter Measurement
+
+### Usage
+```bash
+bin/C2C aaa -i <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+### Example Output Image (slice with largest diameter)
+<p align="center">
+  <img src="figures/aortic_aneurysm_example.png" height="300">
+</p>
+
+<div align="center">
+
+| Example Output Video      | Example Output Graph     |
+|-----------------------------|----------------------------|
+| <p align="center"><img src="figures/aaa_segmentation_video.gif" height="300"></p> | <p align="center"><img src="figures/aaa_diameter_graph.png" height="300"></p> |
+
+</div>
+
 ## Contrast Phase Detection
 
 ### Usage
@@ -160,9 +181,6 @@ Min volume (cm³):        0.005
 bin/C2C all -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
-
-## In Progess
-- Abdominal Aortic Aneurysm Detection
 
 ## Contribute
 <a name="contribute"></a>
