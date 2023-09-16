@@ -182,9 +182,6 @@ bin/C2C all -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
-## In Progess
-- Abdominal Aortic Aneurysm Detection
-
 ## Contribute
 <a name="contribute"></a>
 If you would like to contribute to Comp2Comp, we recommend you clone the repository and install Comp2Comp with `pip` in editable mode.
