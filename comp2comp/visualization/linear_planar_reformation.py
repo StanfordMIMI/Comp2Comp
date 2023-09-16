@@ -36,15 +36,21 @@ def linear_planar_reformation(
             num = sagittal_centroids[i] - sagittal_centroids[i - 1]
 
         if dimension == "sagittal":
-            interp = list(np.linspace(sagittal_centroids[i - 1], sagittal_centroids[i], num=num))
+            interp = list(
+                np.linspace(sagittal_centroids[i - 1], sagittal_centroids[i], num=num)
+            )
             sagittal_vals.extend(interp)
 
         if dimension == "coronal":
-            interp = list(np.linspace(coronal_centroids[i - 1], coronal_centroids[i], num=num))
+            interp = list(
+                np.linspace(coronal_centroids[i - 1], coronal_centroids[i], num=num)
+            )
             coronal_vals.extend(interp)
 
         if dimension == "axial":
-            interp = list(np.linspace(axial_centroids[i - 1], axial_centroids[i], num=num))
+            interp = list(
+                np.linspace(axial_centroids[i - 1], axial_centroids[i], num=num)
+            )
             axial_vals.extend(interp)
 
     if dimension == "sagittal":
@@ -55,12 +61,16 @@ def linear_planar_reformation(
         sagittal_vals = sagittal_vals.astype(int)
 
     if dimension == "coronal":
-        coronal_vals.extend([coronal_centroids[-1]] * (medical_volume.shape[2] - len(coronal_vals)))
+        coronal_vals.extend(
+            [coronal_centroids[-1]] * (medical_volume.shape[2] - len(coronal_vals))
+        )
         coronal_vals = np.array(coronal_vals)
         coronal_vals = coronal_vals.astype(int)
 
     if dimension == "axial":
-        axial_vals.extend([axial_centroids[-1]] * (medical_volume.shape[0] - len(axial_vals)))
+        axial_vals.extend(
+            [axial_centroids[-1]] * (medical_volume.shape[0] - len(axial_vals))
+        )
         axial_vals = np.array(axial_vals)
         axial_vals = axial_vals.astype(int)
 

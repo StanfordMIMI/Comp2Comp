@@ -29,7 +29,11 @@ def get_available_gpus(num_gpus: int = None):
     num_requested_gpus = num_gpus
     try:
         num_gpus = (
-            len(subprocess.check_output("nvidia-smi --list-gpus", shell=True).decode().split("\n"))
+            len(
+                subprocess.check_output("nvidia-smi --list-gpus", shell=True)
+                .decode()
+                .split("\n")
+            )
             - 1
         )
 
@@ -44,10 +48,14 @@ def get_available_gpus(num_gpus: int = None):
         mems[2 * gpu_id] / mems[2 * gpu_id + 1] for gpu_id in range(num_gpus)
     ]
 
-    available_gpus = [gpu_id for gpu_id, mem in enumerate(gpu_percent_occupied_mem) if mem < 0.05]
+    available_gpus = [
+        gpu_id for gpu_id, mem in enumerate(gpu_percent_occupied_mem) if mem < 0.05
+    ]
     if num_requested_gpus and num_requested_gpus > len(available_gpus):
         raise ValueError(
-            "Requested {} gpus, only {} are free".format(num_requested_gpus, len(available_gpus))
+            "Requested {} gpus, only {} are free".format(
+                num_requested_gpus, len(available_gpus)
+            )
         )
 
     return available_gpus[:num_requested_gpus] if num_requested_gpus else available_gpus

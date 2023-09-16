@@ -25,8 +25,16 @@ class Models(enum.Enum):
         True,
         ("soft", "bone", "custom"),
     )
+
+    STANFORD_V_0_0_2 = (
+        3, 
+        "stanford_v0.0.2",
+        {"sat": 0, "vat": 1, "imat": 2, "muscle": 3},
+        True,
+        ("soft", "bone", "custom"),
+    )
     TS_SPINE_FULL = (
-        3,
+        4,
         "ts_spine_full",
         # Category name mapped to channel index
         {
@@ -59,7 +67,7 @@ class Models(enum.Enum):
         (),
     )
     TS_SPINE = (
-        4,
+        5,
         "ts_spine",
         # Category name mapped to channel index
         {"L5": 18, "L4": 19, "L3": 20, "L2": 21, "L1": 22, "T12": 23},
@@ -67,7 +75,7 @@ class Models(enum.Enum):
         (),
     )
     STANFORD_SPINE_V_0_0_1 = (
-        5,
+        6,
         "stanford_spine_v0.0.1",
         # Category name mapped to channel index
         {"L5": 24, "L4": 23, "L3": 22, "L2": 21, "L1": 20, "T12": 19},
@@ -75,7 +83,7 @@ class Models(enum.Enum):
         (),
     )
     TS_HIP = (
-        6,
+        7,
         "ts_hip",
         # Category name mapped to channel index
         {"femur_left": 88, "femur_right": 89},

@@ -39,7 +39,9 @@ class LiverSpleenPancreasSegmentation(InferenceClass):
 
         return {}
 
-    def organ_seg(self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir):
+    def organ_seg(
+        self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir
+    ):
         """Run organ segmentation.
 
         Args:
@@ -64,7 +66,6 @@ class LiverSpleenPancreasSegmentation(InferenceClass):
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
-
             seg, mvs = nnUNet_predict_image(
                 input_path,
                 output_path,

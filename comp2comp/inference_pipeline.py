@@ -41,7 +41,6 @@ class InferencePipeline(InferenceClass):
 
         output = {}
         for inference_class in self.inference_classes:
-
             function_keys = set(inspect.signature(inference_class).parameters.keys())
             function_keys.remove("inference_pipeline")
 
@@ -56,12 +55,15 @@ class InferencePipeline(InferenceClass):
 
             print(
                 "Running {} with input keys {}".format(
-                    inference_class.__repr__(), inspect.signature(inference_class).parameters.keys()
+                    inference_class.__repr__(),
+                    inspect.signature(inference_class).parameters.keys(),
                 )
             )
 
             if inference_pipeline:
-                output = inference_class(inference_pipeline=inference_pipeline, **output)
+                output = inference_class(
+                    inference_pipeline=inference_pipeline, **output
+                )
             else:
                 output = inference_class(inference_pipeline=self, **output)
 
@@ -92,7 +94,8 @@ if __name__ == "__main__":
     output_file_path = os.path.join(output_dir, "test.nii.gz")
 
     pipeline = InferencePipeline(
-        [DicomLoader(args.dicom_dir), NiftiSaver()], config={"output_dir": output_file_path}
+        [DicomLoader(args.dicom_dir), NiftiSaver()],
+        config={"output_dir": output_file_path},
     )
     pipeline()
 

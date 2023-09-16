@@ -8,7 +8,7 @@ exec_file = sys.argv[0].split('-')[0]
 command = exec_file + " " + ' '.join([pipes.quote(s) for s in sys.argv[1:]])
 
 
-def python_submit(command, node=None):
+def python_submit(command, node='amalfi'):
     bash_file = open("./slurm.sh", "w")
     bash_file.write(f'#!/bin/bash\n{command}')
     bash_file.close()

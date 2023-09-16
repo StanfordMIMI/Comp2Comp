@@ -53,7 +53,9 @@ class AortaSegmentation(InferenceClass):
 
         return {}
 
-    def aorta_seg(self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir):
+    def aorta_seg(
+        self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir
+    ):
         """Run organ segmentation.
 
         Args:
@@ -78,7 +80,6 @@ class AortaSegmentation(InferenceClass):
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
-
             seg, mvs = nnUNet_predict_image(
                 input_path,
                 output_path,
@@ -115,7 +116,6 @@ class AorticCalciumSegmentation(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
-
         ct = inference_pipeline.medical_volume.get_fdata()
         aorta_mask = inference_pipeline.segmentation.get_fdata() == 7
         spine_mask = inference_pipeline.spine_segmentation.get_fdata() > 0
@@ -256,7 +256,9 @@ class AorticCalciumSegmentation(InferenceClass):
 
         # equal to one standard deviation to the left of the curve
         quant = 0.158
-        quantile_median_dist = np.median(aorta_ct_points) - np.quantile(aorta_ct_points, q=quant)
+        quantile_median_dist = np.median(aorta_ct_points) - np.quantile(
+            aorta_ct_points, q=quant
+        )
         calc_thres = np.median(aorta_ct_points) + quantile_median_dist * num_std
 
         t0 = time.time()
@@ -266,7 +268,10 @@ class AorticCalciumSegmentation(InferenceClass):
             if dilation_iteration is not None:
                 struct = ndimage.iterate_structure(struct, dilation_iteration)
             aorta_dilated = slicedDilationOrErosion(
-                aorta_mask, struct=struct, num_iteration=dilation_iteration, operation="dilate"
+                aorta_mask,
+                struct=struct,
+                num_iteration=dilation_iteration,
+                operation="dilate",
             )
 
             if show_time:
@@ -284,7 +289,10 @@ class AorticCalciumSegmentation(InferenceClass):
             struct = ndimage.iterate_structure(struct, aorta_erode_iteration)
 
             aorta_eroded = slicedDilationOrErosion(
-                aorta_mask, struct=struct, num_iteration=aorta_erode_iteration, operation="erode"
+                aorta_mask,
+                struct=struct,
+                num_iteration=aorta_erode_iteration,
+                operation="erode",
             )
             calc_mask = calc_mask * (aorta_eroded == 0)
             if show_time:
@@ -293,7 +301,9 @@ class AorticCalciumSegmentation(InferenceClass):
         t0 = time.time()
         if exclude_mask is not None:
             if dilation_exclude_mask is not None:
-                struct_exclude = ndimage.generate_binary_structure(*dilation_exclude_mask)
+                struct_exclude = ndimage.generate_binary_structure(
+                    *dilation_exclude_mask
+                )
                 if dilation_iteration_exclude is not None:
                     struct_exclude = ndimage.iterate_structure(
                         struct_exclude, dilation_iteration_exclude
@@ -355,10 +365,11 @@ class AorticCalciumMetrics(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
-
         calc_mask = inference_pipeline.calc_mask
 
-        inference_pipeline.pix_dims = inference_pipeline.medical_volume.header["pixdim"][1:4]
+        inference_pipeline.pix_dims = inference_pipeline.medical_volume.header[
+            "pixdim"
+        ][1:4]
         # divided with 10 to get in cm
         inference_pipeline.vol_per_pixel = np.prod(inference_pipeline.pix_dims / 10)
 
@@ -379,7 +390,9 @@ class AorticCalciumMetrics(InferenceClass):
 
             tmp_ct_vals = ct[tmp_mask]
 
-            metrics["volume"].append(len(tmp_ct_vals) * inference_pipeline.vol_per_pixel)
+            metrics["volume"].append(
+                len(tmp_ct_vals) * inference_pipeline.vol_per_pixel
+            )
             metrics["mean_hu"].append(np.mean(tmp_ct_vals))
             metrics["median_hu"].append(np.median(tmp_ct_vals))
             metrics["max_hu"].append(np.max(tmp_ct_vals))

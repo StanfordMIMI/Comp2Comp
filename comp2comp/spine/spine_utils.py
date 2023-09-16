@@ -4,10 +4,12 @@
 
 import logging
 import math
+import os
 from glob import glob
 from typing import Dict, List
 
 import cv2
+import nibabel as nib
 import numpy as np
 from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
@@ -34,6 +36,19 @@ def find_spine_dicoms(centroids: Dict, path: str, levels):
     dicom_files = list(np.array(dicom_files)[vertical_positions])
 
     return (dicom_files, levels, vertical_positions)
+
+
+def save_nifti_select_slices(output_dir: str, vertical_positions):
+    nifti_path = os.path.join(output_dir, "segmentations", "converted_dcm.nii.gz")
+    nifti_in = nib.load(nifti_path)
+    nifti_np = nifti_in.get_fdata()
+    nifti_np = nifti_np[:, :, vertical_positions]
+    nifti_out = nib.Nifti1Image(nifti_np, nifti_in.affine, nifti_in.header)
+    # save the nifti
+    nifti_output_path = os.path.join(
+        output_dir, "segmentations", "converted_dcm.nii.gz"
+    )
+    nib.save(nifti_out, nifti_output_path)
 
 
 # Function that takes a numpy array as input, computes the
@@ -81,7 +96,9 @@ def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
     for level in centroids:
         label_idx = spine_model_type.categories[level]
         binary_seg = (seg[centroids[level], :, :] == label_idx).astype(int)
-        if np.sum(binary_seg) > 200:  # heuristic to make sure enough of the body is showing
+        if (
+            np.sum(binary_seg) > 200
+        ):  # heuristic to make sure enough of the body is showing
             slices[level] = binary_seg
     return slices
 
@@ -272,7 +289,9 @@ def keep_two_largest_connected_components(mask: Dict):
     """
     mask = mask.astype(np.uint8)
     # sort connected components by size
-    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
+        mask, connectivity=8
+    )
     stats = stats[1:, 4]
     sorted_indices = np.argsort(stats)[::-1]
     # keep only the two largest connected components
@@ -460,9 +479,13 @@ def curved_planar_reformation(mvs, centroids):
 
     for i in range(1, len(axial_centroids)):
         num = axial_centroids[i] - axial_centroids[i - 1]
-        interp = list(np.linspace(sagittal_centroids[i - 1], sagittal_centroids[i], num=num))
+        interp = list(
+            np.linspace(sagittal_centroids[i - 1], sagittal_centroids[i], num=num)
+        )
         sagittal_vals.extend(interp)
-        interp = list(np.linspace(coronal_centroids[i - 1], coronal_centroids[i], num=num))
+        interp = list(
+            np.linspace(coronal_centroids[i - 1], coronal_centroids[i], num=num)
+        )
         coronal_vals.extend(interp)
 
     sagittal_vals.extend([sagittal_centroids[-1]] * (mvs.shape[2] - len(sagittal_vals)))

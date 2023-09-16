@@ -34,10 +34,14 @@ def method_visualizer(
     sagittal_image = np.clip(sagittal_image, -300, 1800)
     sagittal_image = normalize_img(sagittal_image) * 255.0
 
-    sagittal_image = sagittal_image.reshape((sagittal_image.shape[0], sagittal_image.shape[1], 1))
+    sagittal_image = sagittal_image.reshape(
+        (sagittal_image.shape[0], sagittal_image.shape[1], 1)
+    )
     img_rgb = np.tile(sagittal_image, (1, 1, 3))
     vis = Visualizer(img_rgb)
-    vis.draw_circle(circle_coord=center_sagittal, color=[0, 1, 0], radius=radius_sagittal)
+    vis.draw_circle(
+        circle_coord=center_sagittal, color=[0, 1, 0], radius=radius_sagittal
+    )
     vis.draw_binary_mask(sagittal_slice)
 
     vis_obj = vis.get_output()
@@ -82,11 +86,17 @@ def hip_roi_visualizer(
 
     sagittal_image = np.clip(sagittal_image, -300, 1800)
     sagittal_image = normalize_img(sagittal_image) * 255.0
-    sagittal_image = sagittal_image.reshape((sagittal_image.shape[0], sagittal_image.shape[1], 1))
+    sagittal_image = sagittal_image.reshape(
+        (sagittal_image.shape[0], sagittal_image.shape[1], 1)
+    )
     img_rgb = np.tile(sagittal_image, (1, 1, 3))
     vis = Visualizer(img_rgb)
     vis.draw_binary_mask(
-        sagittal_roi, color=_ROI_COLOR, edge_color=_ROI_COLOR, alpha=0.0, area_threshold=0
+        sagittal_roi,
+        color=_ROI_COLOR,
+        edge_color=_ROI_COLOR,
+        alpha=0.0,
+        area_threshold=0,
     )
     vis.draw_text(
         text=f"Mean HU: {round(hu)}",
@@ -121,7 +131,9 @@ def hip_roi_visualizer(
 
 def hip_report_visualizer(medical_volume, roi, centroids, output_dir, anatomy, labels):
     _ROI_COLOR = np.array([1.000, 0.340, 0.200])
-    image, mask = linear_planar_reformation(medical_volume, roi, centroids, dimension="axial")
+    image, mask = linear_planar_reformation(
+        medical_volume, roi, centroids, dimension="axial"
+    )
     # add 3rd dim to image
     image = np.flip(image.T)
     mask = np.flip(mask.T)
@@ -132,7 +144,9 @@ def hip_report_visualizer(medical_volume, roi, centroids, output_dir, anatomy, l
     image = normalize_img(image) * 255.0
     img_rgb = np.tile(image, (1, 1, 3))
     vis = Visualizer(img_rgb)
-    vis.draw_binary_mask(mask, color=_ROI_COLOR, edge_color=_ROI_COLOR, alpha=0.0, area_threshold=0)
+    vis.draw_binary_mask(
+        mask, color=_ROI_COLOR, edge_color=_ROI_COLOR, alpha=0.0, area_threshold=0
+    )
     pos_idx = 0
     for key, value in labels.items():
         vis.draw_text(
