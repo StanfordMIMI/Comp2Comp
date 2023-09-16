@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-"""
-@author: louisblankemeier
-"""
 import os
 import pipes  # or shlex if python3
 import sys
@@ -17,12 +14,13 @@ def python_submit(command, node=None):
     bash_file.close()
     slurm_output_path = Path("./slurm/")
     slurm_output_path.mkdir(parents=True, exist_ok=True)
+
     if node is None:
-        os.system('sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out \
-             --mem=256000 --time=30-00:00:00 slurm.sh ')
+        os.system('sbatch --ntasks=1 --cpus-per-task=1 --output ./slurm/slurm-%j.out \
+             --mem-per-cpu=8G -p gpu --gpus 1 --time=1:00:00 slurm.sh ')
     else:
-        os.system(f'sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out \
-            --nodelist={node} --mem=256000 --time=30-00:00:00 slurm.sh')
+        os.system(f'sbatch --ntasks=1 --cpus-per-task=1 --output ./slurm/slurm-%j.out \
+            --nodelist={node} --mem-per-cpu=8G -p gpu --gpus 1 --time=1:00:00 slurm.sh')
     os.remove("./slurm.sh")
 
 
