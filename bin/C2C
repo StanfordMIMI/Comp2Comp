@@ -23,8 +23,22 @@ from comp2comp.spine import spine
 from comp2comp.utils.orientation import ToCanonical
 from comp2comp.utils.process import process_2d, process_3d
 
+from comp2comp.aaa import aaa
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
+### AAA Pipeline
+
+def AAAPipelineBuilder(path, args):
+    pipeline = InferencePipeline(
+      [
+        AxialCropperPipelineBuilder(path, args),
+        aaa.AortaSegmentation(),
+        aaa.AortaDiameter(),
+        aaa.AortaMetricsSaver()
+      ]
+    )
+    return pipeline
 
 def MuscleAdiposeTissuePipelineBuilder(args):
     pipeline = InferencePipeline(
@@ -198,6 +212,23 @@ def argument_parser():
         type=str,
     )
 
+    # AAA
+    aorta_diameter_parser = subparsers.add_parser("aaa", help="aorta diameter", parents=[base_parser])
+
+    aorta_diameter_parser.add_argument(
+        "--aorta_model",
+        default="ts_spine",
+        type=str,
+        help="aorta model to use for inference",
+    )
+
+    aorta_diameter_parser.add_argument(
+        "--spine_model",
+        default="ts_spine",
+        type=str,
+        help="spine model to use for inference",
+    )
+
     all_parser = subparsers.add_parser("all", parents=[base_parser])
     all_parser.add_argument(
         "--muscle_fat_model",
@@ -233,6 +264,8 @@ def main():
         process_3d(args, AorticCalciumPipelineBuilder)
     elif args.pipeline == "hip":
         process_3d(args, HipPipelineBuilder)
+    elif args.pipeline == "aaa":
+        process_3d(args, AAAPipelineBuilder)
     elif args.pipeline == "all":
         process_3d(args, AllPipelineBuilder)
     else:
