@@ -72,7 +72,6 @@ class ContrastPhaseDetection(InferenceClass):
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
-
             img, seg = nnUNet_predict_image(
                 input_path,
                 output_path,

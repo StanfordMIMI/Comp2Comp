@@ -41,7 +41,11 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
     ) = get_femural_head_roi(
         right_femur_mask, medical_volume, output_dir, "right_intertrochanter"
     )
-    (left_neck_roi, left_neck_centroid, left_neck_hu,) = get_femural_neck_roi(
+    (
+        left_neck_roi,
+        left_neck_centroid,
+        left_neck_hu,
+    ) = get_femural_neck_roi(
         left_femur_mask,
         medical_volume,
         left_intertrochanter_roi,
@@ -50,7 +54,11 @@ def compute_rois(medical_volume, segmentation, model, output_dir, save=False):
         left_head_centroid,
         output_dir,
     )
-    (right_neck_roi, right_neck_centroid, right_neck_hu,) = get_femural_neck_roi(
+    (
+        right_neck_roi,
+        right_neck_centroid,
+        right_neck_hu,
+    ) = get_femural_neck_roi(
         right_femur_mask,
         medical_volume,
         right_intertrochanter_roi,

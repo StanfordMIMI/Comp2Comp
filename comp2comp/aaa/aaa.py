@@ -15,9 +15,7 @@ import numpy as np
 import pandas as pd
 import pydicom
 import wget
-from totalsegmentator.libs import (
-    nostdout,
-)
+from totalsegmentator.libs import nostdout
 
 from comp2comp.inference_class_base import InferenceClass
 
@@ -142,7 +140,6 @@ class AortaSegmentation(InferenceClass):
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
-
             img, seg = nnUNet_predict_image(
                 input_path,
                 output_path,
@@ -189,7 +186,6 @@ class AortaDiameter(InferenceClass):
         return (img - img.min()) / (img.max() - img.min())
 
     def __call__(self, inference_pipeline):
-
         axial_masks = (
             inference_pipeline.axial_masks
         )  # list of 2D numpy arrays of shape (512, 512)
@@ -223,7 +219,6 @@ class AortaDiameter(InferenceClass):
         diameterDict = {}
 
         for i in range(len(ct_img)):
-
             mask = axial_masks[i].astype("uint8")
 
             img = ct_img[i]
@@ -236,10 +231,11 @@ class AortaDiameter(InferenceClass):
             contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
             if len(contours) != 0:
-
                 areas = [cv2.contourArea(c) for c in contours]
                 sorted_areas = np.sort(areas)
 
+                areas = [cv2.contourArea(c) for c in contours]
+                sorted_areas = np.sort(areas)
                 contours = contours[areas.index(sorted_areas[-1])]
 
                 img.copy()

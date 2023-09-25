@@ -10,7 +10,6 @@ class AorticCalciumVisualizer(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
-
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_images_organs = os.path.join(self.output_dir, "images/")
         inference_pipeline.output_dir_images_organs = self.output_dir_images_organs
@@ -26,7 +25,6 @@ class AorticCalciumPrinter(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
-
         metrics = inference_pipeline.metrics
 
         inference_pipeline.csv_output_dir = os.path.join(

@@ -137,7 +137,6 @@ class SpineSegmentation(InferenceClass):
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
-
             img, seg = nnUNet_predict_image(
                 input_path,
                 output_path,
@@ -295,7 +294,6 @@ class SpineFindDicoms(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
-
         dicom_files, names, inferior_superior_centers = spine_utils.find_spine_dicoms(
             inference_pipeline.centroids_3d,
             inference_pipeline.dicom_series_path,
@@ -321,7 +319,6 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
         self.format = format
 
     def __call__(self, inference_pipeline):
-
         output_path = inference_pipeline.output_dir
         spine_model_type = inference_pipeline.spine_model_type
 
