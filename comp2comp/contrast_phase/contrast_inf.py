@@ -184,11 +184,15 @@ def getFeatures(TSArray, scanArray):
 
     # Erode vessels to get only the center of the vessels
     struct2 = np.ones((3, 3, 3))
-    aortaMaskEroded = ndi.binary_erosion(aortaMask, structure=struct2).astype(aortaMask.dtype)
+    aortaMaskEroded = ndi.binary_erosion(aortaMask, structure=struct2).astype(
+        aortaMask.dtype
+    )
     IVCMaskEroded = ndi.binary_erosion(IVCMask, structure=struct2).astype(IVCMask.dtype)
 
     struct3 = np.ones((1, 1, 1))
-    portalMaskEroded = ndi.binary_erosion(portalMask, structure=struct3).astype(portalMask.dtype)
+    portalMaskEroded = ndi.binary_erosion(portalMask, structure=struct3).astype(
+        portalMask.dtype
+    )
     # If portalMaskEroded has less then 500 values, use the original portalMask
     if np.count_nonzero(portalMaskEroded) < 500:
         portalMaskEroded = portalMask
@@ -208,7 +212,9 @@ def getFeatures(TSArray, scanArray):
     kidneyLHull = kidneyLHull * (kidneyLMask == 0)
     # erode the kidneyHull to remove the edges
     struct = np.ones((3, 3, 3))
-    kidneyLHull = ndi.binary_erosion(kidneyLHull, structure=struct).astype(kidneyLHull.dtype)
+    kidneyLHull = ndi.binary_erosion(kidneyLHull, structure=struct).astype(
+        kidneyLHull.dtype
+    )
     # keep the values of the scanArray that are in the Left Convex Hull
     pelvisLArray = keep_masked_values(scanArray, kidneyLHull)
 
@@ -218,7 +224,9 @@ def getFeatures(TSArray, scanArray):
     kidneyRHull = kidneyRHull * (kidneyRMask == 0)
     # erode the kidneyHull to remove the edges
     struct = np.ones((3, 3, 3))
-    kidneyRHull = ndi.binary_erosion(kidneyRHull, structure=struct).astype(kidneyRHull.dtype)
+    kidneyRHull = ndi.binary_erosion(kidneyRHull, structure=struct).astype(
+        kidneyRHull.dtype
+    )
     # keep the values of the scanArray that are in the Right Convex Hull
     pelvisRArray = keep_masked_values(scanArray, kidneyRHull)
 
@@ -315,7 +323,14 @@ def getFeatures(TSArray, scanArray):
     )
     # Add the stats for the IVCArray to the list
     stats.extend(
-        [IVC_max_val, IVC_min_val, IVC_mean_val, IVC_median_val, IVC_std_val, IVC_variance_val]
+        [
+            IVC_max_val,
+            IVC_min_val,
+            IVC_mean_val,
+            IVC_median_val,
+            IVC_std_val,
+            IVC_variance_val,
+        ]
     )
     # Add the stats for the portalArray to the list
     stats.extend(
@@ -434,10 +449,18 @@ if __name__ == "__main__":
     parser.add_argument("--TS_path", type=str, required=True, help="Input image")
     parser.add_argument("--scan_path", type=str, required=True, help="Input image")
     parser.add_argument(
-        "--output_dir", type=str, required=False, help="Output .txt prediction", default=None
+        "--output_dir",
+        type=str,
+        required=False,
+        help="Output .txt prediction",
+        default=None,
     )
     parser.add_argument(
-        "--save_sample", type=bool, required=False, help="Save jpeg sample ", default=False
+        "--save_sample",
+        type=bool,
+        required=False,
+        help="Save jpeg sample ",
+        default=False,
     )
     args = parser.parse_args()
     predict_phase(args.TS_path, args.scan_path, args.output_dir, args.save_sample)

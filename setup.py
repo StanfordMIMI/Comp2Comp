@@ -8,9 +8,13 @@ from setuptools import find_packages, setup
 
 
 def get_version():
-    init_py_path = path.join(path.abspath(path.dirname(__file__)), "comp2comp", "__init__.py")
+    init_py_path = path.join(
+        path.abspath(path.dirname(__file__)), "comp2comp", "__init__.py"
+    )
     init_py = open(init_py_path, "r").readlines()
-    version_line = [line.strip() for line in init_py if line.startswith("__version__")][0]
+    version_line = [line.strip() for line in init_py if line.startswith("__version__")][
+        0
+    ]
     version = version_line.split("=")[-1].strip().strip("'\"")
 
     # The following is used to build release packages.

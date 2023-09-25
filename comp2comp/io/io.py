@@ -22,7 +22,9 @@ class DicomLoader(InferenceClass):
         self.dr = dm.DicomReader()
 
     def __call__(self, inference_pipeline) -> Dict:
-        medical_volume = self.dr.load(self.dicom_dir, group_by=None, sort_by="InstanceNumber")[0]
+        medical_volume = self.dr.load(
+            self.dicom_dir, group_by=None, sort_by="InstanceNumber"
+        )[0]
         return {"medical_volume": medical_volume}
 
 
@@ -34,7 +36,9 @@ class NiftiSaver(InferenceClass):
         # self.output_dir = Path(output_path)
         self.nw = dm.NiftiWriter()
 
-    def __call__(self, inference_pipeline, medical_volume: dm.MedicalVolume) -> Dict[str, Path]:
+    def __call__(
+        self, inference_pipeline, medical_volume: dm.MedicalVolume
+    ) -> Dict[str, Path]:
         nifti_file = inference_pipeline.output_dir
         self.nw.write(medical_volume, nifti_file)
         return {"nifti_file": nifti_file}
@@ -73,7 +77,9 @@ class DicomToNifti(InferenceClass):
 
     def __call__(self, inference_pipeline):
         if os.path.exists(
-            os.path.join(inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz")
+            os.path.join(
+                inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
+            )
         ):
             return {}
         if hasattr(inference_pipeline, "medical_volume"):
@@ -86,17 +92,21 @@ class DicomToNifti(InferenceClass):
         if self.input_path.is_dir():
             dicom_series_to_nifti(
                 self.input_path,
-                output_file=os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"),
+                output_file=os.path.join(
+                    segmentations_output_dir, "converted_dcm.nii.gz"
+                ),
                 reorient_nifti=False,
             )
             inference_pipeline.dicom_series_path = str(self.input_path)
         elif str(self.input_path).endswith(".nii"):
             shutil.copy(
-                self.input_path, os.path.join(segmentations_output_dir, "converted_dcm.nii")
+                self.input_path,
+                os.path.join(segmentations_output_dir, "converted_dcm.nii"),
             )
         elif str(self.input_path).endswith(".nii.gz"):
             shutil.copy(
-                self.input_path, os.path.join(segmentations_output_dir, "converted_dcm.nii.gz")
+                self.input_path,
+                os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"),
             )
 
         return {}

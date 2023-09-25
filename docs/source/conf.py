@@ -6,9 +6,9 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'comp2comp'
-copyright = '2023, StanfordMIMI'
-author = 'StanfordMIMI'
+project = "comp2comp"
+copyright = "2023, StanfordMIMI"
+author = "StanfordMIMI"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -37,7 +37,7 @@ autosummary_imported_members = True
 
 bibtex_bibfiles = ["references.bib"]
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
 
 
