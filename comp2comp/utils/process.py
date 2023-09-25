@@ -8,6 +8,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from time import time
+import shutil
 
 from comp2comp.io.io_utils import get_dicom_or_nifti_paths_and_num
 
@@ -97,11 +98,16 @@ def process_3d(args, pipeline_builder):
 
             pipeline(output_dir=output_dir, model_dir=model_dir)
 
+
+            if not args.save_segmentations:
+                # remove the segmentations folder
+                segmentations_dir = os.path.join(output_dir, "segmentations")
+                if os.path.exists(segmentations_dir):
+                    shutil.rmtree(segmentations_dir)
+
             print(f"Finished processing {path} in {time() - st:.1f} seconds\n")
 
         except Exception:
             print(f"ERROR PROCESSING {path}\n")
             traceback.print_exc()
-            # if os.path.exists(output_dir):
-            #     shutil.rmtree(output_dir)
             continue

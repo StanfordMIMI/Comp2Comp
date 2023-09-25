@@ -168,6 +168,7 @@ def argument_parser():
     base_parser = argparse.ArgumentParser(add_help=False)
     base_parser.add_argument("--input_path", "-i", type=str, required=True)
     base_parser.add_argument("--output_path", "-o", type=str)
+    base_parser.add_argument("--save_segmentations", action="store_true")
     base_parser.add_argument("--overwrite_outputs", action="store_true")
 
     parser = argparse.ArgumentParser()
