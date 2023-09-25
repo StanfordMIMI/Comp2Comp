@@ -169,7 +169,7 @@ bin/C2C all -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
-## Slice-by-Slice 2D Analysis of Muscle and Adipose Tissue [Depricated]
+## Slice-by-Slice 2D Analysis of Muscle and Adipose Tissue [Deprecated]
 
 ### Usage
 ```bash
