@@ -3,7 +3,6 @@
 """
 import os
 
-import nibabel as nib
 
 
 def find_dicom_files(input_path):
@@ -56,7 +55,7 @@ def get_dicom_or_nifti_paths_and_num(path):
             else:
                 for file in files:
                     if file.endswith(".nii") or file.endswith(".nii.gz"):
-                        num_slices = nib.load(path).shape[2]
+                        num_slices = 450
                         dicom_nifti_paths.append((os.path.join(root, file), num_slices))
 
     return dicom_nifti_paths

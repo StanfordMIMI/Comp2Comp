@@ -1,28 +1,46 @@
 #!/usr/bin/env python
 import os
-import pipes  # or shlex if python3
+import pipes
+import subprocess
 import sys
 from pathlib import Path
 
-exec_file = sys.argv[0].split('-')[0]
-command = exec_file + " " + ' '.join([pipes.quote(s) for s in sys.argv[1:]])
+exec_file = sys.argv[0].split("-")[0]
+command = exec_file + " " + " ".join([pipes.quote(s) for s in sys.argv[1:]])
 
 
-def python_submit(command, node='amalfi'):
+def submit_command(command):
+    subprocess.run(command.split(" "), check=True, capture_output=False)
+
+
+def python_submit(command, node="amalfi"):
     bash_file = open("./slurm.sh", "w")
-    bash_file.write(f'#!/bin/bash\n{command}')
+    bash_file.write(f"#!/bin/bash\n{command}")
     bash_file.close()
     slurm_output_path = Path("./slurm/")
     slurm_output_path.mkdir(parents=True, exist_ok=True)
 
-    if node is None:
-        os.system('sbatch --ntasks=1 --cpus-per-task=1 --output ./slurm/slurm-%j.out \
-             --mem-per-cpu=8G -p gpu --gpus 1 --time=1:00:00 slurm.sh ')
-    else:
-        os.system(f'sbatch --ntasks=1 --cpus-per-task=1 --output ./slurm/slurm-%j.out \
-            --nodelist={node} --mem-per-cpu=8G -p gpu --gpus 1 --time=1:00:00 slurm.sh')
+    try:
+        if node is None:
+            command = "sbatch --ntasks=1 --cpus-per-task=1 --output ./slurm/slurm-%j.out \
+                --mem-per-cpu=8G -p gpu --gpus 1 --time=1:00:00 slurm.sh"
+            submit_command(command)
+            print(f'Submitted the command --- "{command}" --- to slurm.')
+        else:
+            command = f"sbatch --ntasks=1 --cpus-per-task=1 --output ./slurm/slurm-%j.out \
+                --nodelist={node} --mem-per-cpu=8G -p gpu --gpus 1 --time=1:00:00 slurm.sh"
+            submit_command(command)
+            print(f'Submitted the command --- "{command}" --- to slurm.')
+    except subprocess.CalledProcessError:
+        if node == None:
+            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --time=100-00:00:00 slurm.sh "
+            submit_command(command)
+            print(f'Submitted the command --- "{command}" --- to slurm.')
+        else:
+            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --nodelist={node} --time=100-00:00:00 slurm.sh"
+            submit_command(command)
+            print(f'Submitted the command --- "{command}" --- to slurm.')
     os.remove("./slurm.sh")
 
 
-print(f'Submitted the command "{command}" to slurm.')
 python_submit(command)
