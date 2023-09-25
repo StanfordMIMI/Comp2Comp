@@ -169,19 +169,6 @@ bin/C2C all -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
-## Slice-by-Slice 2D Analysis of Muscle and Adipose Tissue [Deprecated]
-
-### Usage
-```bash
-bin/C2C muscle_adipose_tissue -i <path/to/input/folder>
-```
-- DICOM files within the input_path folder and subfolders of input_path will be processed.
-
-### Example Output Image
-<p align="center">
-  <img src="figures/muscle_adipose_tissue_example.png" height="300">
-</p>
-
 ## Contribute
 <a name="contribute"></a>
 If you would like to contribute to Comp2Comp, we recommend you clone the repository and install Comp2Comp with `pip` in editable mode.

@@ -294,20 +294,18 @@ class SpineFindDicoms(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
-        dicom_files, names, inferior_superior_centers = spine_utils.find_spine_dicoms(
+        inferior_superior_centers = spine_utils.find_spine_dicoms(
             inference_pipeline.centroids_3d,
-            inference_pipeline.dicom_series_path,
-            list(inference_pipeline.rois.keys()),
         )
 
         spine_utils.save_nifti_select_slices(
             inference_pipeline.output_dir, inferior_superior_centers
         )
-
-        dicom_files = [Path(d) for d in dicom_files]
-        inference_pipeline.dicom_file_paths = dicom_files
-        inference_pipeline.names = names
-        inference_pipeline.dicom_file_names = names
+        inference_pipeline.dicom_file_paths = [
+            str(center) for center in inferior_superior_centers
+        ]
+        inference_pipeline.names = list(inference_pipeline.rois.keys())
+        inference_pipeline.dicom_file_names = list(inference_pipeline.rois.keys())
         inference_pipeline.inferior_superior_centers = inferior_superior_centers
 
         return {}

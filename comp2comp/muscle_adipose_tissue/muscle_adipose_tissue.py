@@ -130,12 +130,14 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
                 image_nib.header.get_zooms()[0:2] for i in range(image.shape[-1])
             ]
 
+            categories = self.model_type.categories
+
             # for each image in images, convert to one hot encoding
             masks = []
             for pred in preds:
                 mask = np.zeros((pred.shape[0], pred.shape[1], 4))
-                for i in range(1, 5):
-                    mask[:, :, i - 1] = pred == i
+                for i, category in enumerate(categories):
+                    mask[:, :, i] = pred == categories[category]
                 mask = mask.astype(np.uint8)
                 masks.append(mask)
             return {"images": images, "preds": masks, "spacings": spacings}
@@ -225,7 +227,7 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
 
         for i, _ in enumerate(masks):
             # Keep only channels from the model_type categories dict
-            masks[i] = masks[i][..., [categories[cat] for cat in categories]]
+            masks[i] = np.squeeze(masks[i])
 
         masks = self.fill_holes(masks)
 
@@ -413,19 +415,18 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
     def save_results(self, results):
         """Save results to a CSV file."""
         categories = self.model_type.categories
-        cats = list(categories.keys())
         df = pd.DataFrame(
             columns=[
-                "File Name",
-                "File Path",
+                "Level",
+                "Index",
                 "Muscle HU",
                 "Muscle CSA (cm^2)",
-                "IMAT HU",
-                "IMAT CSA (cm^2)",
                 "SAT HU",
                 "SAT CSA (cm^2)",
                 "VAT HU",
                 "VAT CSA (cm^2)",
+                "IMAT HU",
+                "IMAT CSA (cm^2)",
             ]
         )
 
@@ -433,10 +434,11 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
             row = []
             row.append(self.dicom_file_names[i])
             row.append(self.dicom_file_paths[i])
-            for cat in cats:
+            for cat in result:
                 row.append(result[cat]["Hounsfield Unit"])
                 row.append(result[cat]["Cross-sectional Area (cm^2)"])
             df.loc[i] = row
+        df = df.iloc[::-1]
         df.to_csv(
             os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv"),
             index=False,

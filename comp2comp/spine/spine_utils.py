@@ -17,7 +17,7 @@ from scipy.ndimage import zoom
 from comp2comp.spine import spine_visualization
 
 
-def find_spine_dicoms(centroids: Dict, path: str, levels):
+def find_spine_dicoms(centroids: Dict): #, path: str, levels):
     """Find the dicom files corresponding to the spine T12 - L5 levels."""
 
     vertical_positions = []
@@ -25,17 +25,18 @@ def find_spine_dicoms(centroids: Dict, path: str, levels):
         centroid = centroids[level]
         vertical_positions.append(round(centroid[2]))
 
-    dicom_files = []
-    ipps = []
-    for dicom_path in glob(path + "/*.dcm"):
-        ipp = dcmread(dicom_path).ImagePositionPatient
-        ipps.append(ipp[2])
-        dicom_files.append(dicom_path)
+    # dicom_files = []
+    # ipps = []
+    # for dicom_path in glob(path + "/*.dcm"):
+    #     ipp = dcmread(dicom_path).ImagePositionPatient
+    #     ipps.append(ipp[2])
+    #     dicom_files.append(dicom_path)
 
-    dicom_files = [x for _, x in sorted(zip(ipps, dicom_files))]
-    dicom_files = list(np.array(dicom_files)[vertical_positions])
+    # dicom_files = [x for _, x in sorted(zip(ipps, dicom_files))]
+    # dicom_files = list(np.array(dicom_files)[vertical_positions])
 
-    return (dicom_files, levels, vertical_positions)
+    # return (dicom_files, levels, vertical_positions)
+    return vertical_positions
 
 
 def save_nifti_select_slices(output_dir: str, vertical_positions):

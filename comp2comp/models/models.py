@@ -29,7 +29,7 @@ class Models(enum.Enum):
     STANFORD_V_0_0_2 = (
         3, 
         "stanford_v0.0.2",
-        {"sat": 0, "vat": 1, "imat": 2, "muscle": 3},
+        {"muscle": 4, "sat": 1, "vat": 2, "imat": 3},
         True,
         ("soft", "bone", "custom"),
     )
