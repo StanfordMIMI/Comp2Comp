@@ -44,6 +44,7 @@ docs/_build
 # ignore yml file
 *.yml
 *.yaml
+!.github/workflows/format.yml
 
 # ignore images
 *.png
