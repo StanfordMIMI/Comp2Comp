@@ -1,4 +1,4 @@
-name: Format code
+name: Autoformat code
 
 on:
     push:
@@ -11,15 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Format code with black
+      - name: Format code
         run: |
           pip install black
           black .
-      - name: Sort imports with isort
+      - name: Sort imports
         run: |
           pip install isort
           isort .
-      - name: Remove unused imports with autoflake
+      - name: Remove unused imports
         run: |
           pip install autoflake
           autoflake --in-place --remove-all-unused-imports --remove-unused-variables --recursive .
@@ -28,6 +28,6 @@ jobs:
         with:
           author_name: ${{ github.actor }}
           author_email: ${{ github.actor }}@users.noreply.github.com
-          message: "Format code with black"
+          message: "Autoformat code"
           add: "."
           branch: ${{ github.ref }}
