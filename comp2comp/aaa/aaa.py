@@ -234,6 +234,8 @@ class AortaDiameter(InferenceClass):
                 areas = [cv2.contourArea(c) for c in contours]
                 sorted_areas = np.sort(areas)
 
+                areas = [cv2.contourArea(c) for c in contours]
+                sorted_areas = np.sort(areas)
                 contours = contours[areas.index(sorted_areas[-1])]
 
                 img.copy()
