@@ -171,19 +171,7 @@ bin/C2C all -i <path/to/input/folder>
 
 ## Contribute
 <a name="contribute"></a>
-If you would like to contribute to Comp2Comp, we recommend you clone the repository and install Comp2Comp with `pip` in editable mode.
-
-```bash
-git clone https://github.com/StanfordMIMI/Comp2Comp
-cd Comp2Comp
-pip install -e '.[dev]'
-make dev-lint
-```
-
-To run tests, run:
-```bash
-make autoformat
-```
+We welcome pull requests from the community. If you find 
 
 ## Citation
 <a name="citation"></a>
