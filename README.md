@@ -171,7 +171,7 @@ bin/C2C all -i <path/to/input/folder>
 
 ## Contribute
 <a name="contribute"></a>
-We welcome pull requests from the community. If you find 
+We welcome all pull requests. If you have any issues, suggestions, or feedback, please open a new issue.
 
 ## Citation
 <a name="citation"></a>
