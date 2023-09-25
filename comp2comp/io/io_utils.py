@@ -3,7 +3,6 @@
 """
 import os
 
-import nibabel as nib
 
 
 def find_dicom_files(input_path):
