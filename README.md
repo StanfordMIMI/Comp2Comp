@@ -66,19 +66,6 @@ bin/C2C spine -i <path/to/input/folder>
   <img src="figures/spine_example.png" height="300">
 </p>
 
-## Slice-by-Slice 2D Analysis of Muscle and Adipose Tissue
-
-### Usage
-```bash
-bin/C2C muscle_adipose_tissue -i <path/to/input/folder>
-```
-- DICOM files within the input_path folder and subfolders of input_path will be processed.
-
-### Example Output Image
-<p align="center">
-  <img src="figures/muscle_adipose_tissue_example.png" height="300">
-</p>
-
 ## End-to-End Spine, Muscle, and Adipose Tissue Analysis at T12-L5
 
 ### Usage
@@ -181,6 +168,19 @@ Min volume (cm³):        0.005
 bin/C2C all -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+## Slice-by-Slice 2D Analysis of Muscle and Adipose Tissue [Depricated]
+
+### Usage
+```bash
+bin/C2C muscle_adipose_tissue -i <path/to/input/folder>
+```
+- DICOM files within the input_path folder and subfolders of input_path will be processed.
+
+### Example Output Image
+<p align="center">
+  <img src="figures/muscle_adipose_tissue_example.png" height="300">
+</p>
 
 ## Contribute
 <a name="contribute"></a>
