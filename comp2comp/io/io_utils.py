@@ -4,7 +4,6 @@
 import os
 
 
-
 def find_dicom_files(input_path):
     dicom_series = []
     if not os.path.isdir(input_path):
