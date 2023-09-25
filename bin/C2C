@@ -23,7 +23,7 @@ from comp2comp.muscle_adipose_tissue import (
     muscle_adipose_tissue_visualization,
 )
 from comp2comp.spine import spine
-from comp2comp.utils.orientation import ToCanonical
+from comp2comp.utils import orientation
 from comp2comp.utils.process import process_2d, process_3d
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -69,7 +69,7 @@ def SpinePipelineBuilder(path, args):
         [
             io.DicomToNifti(path),
             spine.SpineSegmentation(args.spine_model, save=True),
-            ToCanonical(),
+            orientation.ToCanonical(),
             spine.SpineComputeROIs(args.spine_model),
             spine.SpineMetricsSaver(),
             spine.SpineCoronalSagittalVisualizer(format="png"),
@@ -84,7 +84,7 @@ def AxialCropperPipelineBuilder(path, args):
         [
             io.DicomToNifti(path),
             spine.SpineSegmentation(args.spine_model),
-            ToCanonical(),
+            orientation.ToCanonical(),
             spine.AxialCropper(lower_level="L5", upper_level="L1", save=True),
         ]
     )
@@ -108,7 +108,7 @@ def LiverSpleenPancreasPipelineBuilder(path, args):
         [
             io.DicomToNifti(path),
             liver_spleen_pancreas.LiverSpleenPancreasSegmentation(),
-            ToCanonical(),
+            orientation.ToCanonical(),
             liver_spleen_pancreas_visualization.LiverSpleenPancreasVisualizer(),
             liver_spleen_pancreas_visualization.LiverSpleenPancreasMetricsPrinter(),
         ]
@@ -121,9 +121,9 @@ def AorticCalciumPipelineBuilder(path, args):
         [
             io.DicomToNifti(path),
             spine.SpineSegmentation(model_name="ts_spine"),
-            ToCanonical(),
+            orientation.ToCanonical(),
             aortic_calcium.AortaSegmentation(),
-            ToCanonical(),
+            orientation.ToCanonical(),
             aortic_calcium.AorticCalciumSegmentation(),
             aortic_calcium.AorticCalciumMetrics(),
             aortic_calcium_visualization.AorticCalciumVisualizer(),
@@ -143,7 +143,7 @@ def HipPipelineBuilder(path, args):
         [
             io.DicomToNifti(path),
             hip.HipSegmentation(args.hip_model),
-            ToCanonical(),
+            orientation.ToCanonical(),
             hip.HipComputeROIs(args.hip_model),
             hip.HipMetricsSaver(),
             hip.HipVisualizer(),
