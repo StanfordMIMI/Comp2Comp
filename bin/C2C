@@ -251,9 +251,7 @@ def argument_parser():
 
 def main():
     args = argument_parser().parse_args()
-    if args.pipeline == "muscle_adipose_tissue":
-        process_2d(args, MuscleAdiposeTissueFullPipelineBuilder)
-    elif args.pipeline == "spine_muscle_adipose_tissue":
+    if args.pipeline == "spine_muscle_adipose_tissue":
         process_3d(args, SpineMuscleAdiposeTissuePipelineBuilder)
     elif args.pipeline == "spine":
         process_3d(args, SpinePipelineBuilder)
