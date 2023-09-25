@@ -35,7 +35,9 @@ class ContrastPhaseDetection(InferenceClass):
 
         # segArray, imgArray = self.convertNibToNumpy(seg, img)
 
-        imgNiftiPath = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
+        imgNiftiPath = os.path.join(
+            self.output_dir_segmentations, "converted_dcm.nii.gz"
+        )
         segNiftPath = os.path.join(self.output_dir_segmentations, "s01.nii.gz")
 
         predict_phase(segNiftPath, imgNiftiPath, outputPath=self.output_dir)

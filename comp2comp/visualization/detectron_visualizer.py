@@ -2,7 +2,6 @@
 import colorsys
 import logging
 import math
-import os
 from enum import Enum, unique
 from pathlib import Path
 

@@ -88,7 +88,9 @@ class Dataset(k_utils.Sequence):
 
         xs = [(x.pixel_array + int(x.RescaleIntercept)).astype("float32") for x in dcms]
 
-        params = [{"spacing": header.PixelSpacing, "image": x} for header, x in zip(dcms, xs)]
+        params = [
+            {"spacing": header.PixelSpacing, "image": x} for header, x in zip(dcms, xs)
+        ]
 
         # Preprocess xs via windowing.
         xs = np.stack(xs, axis=0)
@@ -186,7 +188,9 @@ def predict(
     """
 
     if num_workers > 0:
-        enqueuer = OrderedEnqueuer(dataset, use_multiprocessing=use_multiprocessing, shuffle=False)
+        enqueuer = OrderedEnqueuer(
+            dataset, use_multiprocessing=use_multiprocessing, shuffle=False
+        )
         enqueuer.start(workers=num_workers, max_queue_size=max_queue_size)
         output_generator = enqueuer.get()
     else:

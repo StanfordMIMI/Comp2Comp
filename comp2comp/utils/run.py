@@ -108,7 +108,9 @@ def find_files(
                 output_path = format_output_path(possible_dir)
                 if not exist_ok and os.path.isfile(output_path):
                     logger.info(
-                        "Skipping {} - results exist at {}".format(possible_dir, output_path)
+                        "Skipping {} - results exist at {}".format(
+                            possible_dir, output_path
+                        )
                     )
                     continue
                 ret_files.append(possible_dir)

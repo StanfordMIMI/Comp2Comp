@@ -59,7 +59,9 @@ class SpineSegmentation(InferenceClass):
 
         model_dir = Path(model_dir)
         config_dir = model_dir / Path("." + self.model_name)
-        (config_dir / "nnunet/results/nnUNet/3d_fullres").mkdir(exist_ok=True, parents=True)
+        (config_dir / "nnunet/results/nnUNet/3d_fullres").mkdir(
+            exist_ok=True, parents=True
+        )
         (config_dir / "nnunet/results/nnUNet/2d").mkdir(exist_ok=True, parents=True)
         weights_dir = config_dir / "nnunet/results"
         self.weights_dir = weights_dir
@@ -86,7 +88,9 @@ class SpineSegmentation(InferenceClass):
                 "https://huggingface.co/louisblankemeier/spine_v1/resolve/main/fold_0.zip",
                 out=os.path.join(download_dir, "fold_0.zip"),
             )
-            with zipfile.ZipFile(os.path.join(download_dir, "fold_0.zip"), "r") as zip_ref:
+            with zipfile.ZipFile(
+                os.path.join(download_dir, "fold_0.zip"), "r"
+            ) as zip_ref:
                 zip_ref.extractall(download_dir)
             os.remove(os.path.join(download_dir, "fold_0.zip"))
             wget.download(
@@ -97,7 +101,9 @@ class SpineSegmentation(InferenceClass):
         else:
             print("Spine model already downloaded.")
 
-    def spine_seg(self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir):
+    def spine_seg(
+        self, input_path: Union[str, Path], output_path: Union[str, Path], model_dir
+    ):
         """Run spine segmentation.
 
         Args:
@@ -202,24 +208,34 @@ class AxialCropper(InferenceClass):
         """
         segmentation = inference_pipeline.segmentation
         segmentation_data = segmentation.get_fdata()
-        upper_level_index = np.where(segmentation_data == self.upper_level_index)[2].max()
-        lower_level_index = np.where(segmentation_data == self.lower_level_index)[2].min()
+        upper_level_index = np.where(segmentation_data == self.upper_level_index)[
+            2
+        ].max()
+        lower_level_index = np.where(segmentation_data == self.lower_level_index)[
+            2
+        ].min()
         segmentation = segmentation.slicer[:, :, lower_level_index:upper_level_index]
         inference_pipeline.segmentation = segmentation
 
         medical_volume = inference_pipeline.medical_volume
-        medical_volume = medical_volume.slicer[:, :, lower_level_index:upper_level_index]
+        medical_volume = medical_volume.slicer[
+            :, :, lower_level_index:upper_level_index
+        ]
         inference_pipeline.medical_volume = medical_volume
 
         if self.save:
             nib.save(
                 segmentation,
-                os.path.join(inference_pipeline.output_dir, "segmentations", "spine.nii.gz"),
+                os.path.join(
+                    inference_pipeline.output_dir, "segmentations", "spine.nii.gz"
+                ),
             )
             nib.save(
                 medical_volume,
                 os.path.join(
-                    inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
+                    inference_pipeline.output_dir,
+                    "segmentations",
+                    "converted_dcm.nii.gz",
                 ),
             )
         return {}
@@ -338,7 +354,9 @@ class SpineReport(InferenceClass):
         coronal_image = inference_pipeline.spine_vis_coronal
         # concatenate these numpy arrays laterally
         img = np.concatenate((coronal_image, sagittal_image), axis=1)
-        output_path = os.path.join(inference_pipeline.output_dir, "images", "spine_report")
+        output_path = os.path.join(
+            inference_pipeline.output_dir, "images", "spine_report"
+        )
         if self.format == "png":
             im = Image.fromarray(img)
             im.save(output_path + ".png")

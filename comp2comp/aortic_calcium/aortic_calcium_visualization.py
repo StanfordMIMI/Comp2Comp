@@ -29,20 +29,29 @@ class AorticCalciumPrinter(InferenceClass):
 
         metrics = inference_pipeline.metrics
 
-        inference_pipeline.csv_output_dir = os.path.join(inference_pipeline.output_dir, "metrics")
+        inference_pipeline.csv_output_dir = os.path.join(
+            inference_pipeline.output_dir, "metrics"
+        )
         os.makedirs(inference_pipeline.csv_output_dir, exist_ok=True)
 
         with open(
-            os.path.join(inference_pipeline.csv_output_dir, "aortic_calcification.csv"), "w"
+            os.path.join(inference_pipeline.csv_output_dir, "aortic_calcification.csv"),
+            "w",
         ) as f:
             f.write("Volume (cm^3),Mean HU,Median HU,Max HU\n")
             for vol, mean, median, max in zip(
-                metrics["volume"], metrics["mean_hu"], metrics["median_hu"], metrics["max_hu"]
+                metrics["volume"],
+                metrics["mean_hu"],
+                metrics["median_hu"],
+                metrics["max_hu"],
             ):
                 f.write("{},{:.1f},{:.1f},{:.1f}\n".format(vol, mean, median, max))
 
         with open(
-            os.path.join(inference_pipeline.csv_output_dir, "aortic_calcification_total.csv"), "w"
+            os.path.join(
+                inference_pipeline.csv_output_dir, "aortic_calcification_total.csv"
+            ),
+            "w",
         ) as f:
             f.write("Total number,{}\n".format(metrics["num_calc"]))
             f.write("Total volume (cm^3),{}\n".format(metrics["volume_total"]))
@@ -54,10 +63,17 @@ class AorticCalciumPrinter(InferenceClass):
         else:
             print("Statistics on aortic calcifications:")
             print("{:<{}}{}".format("Total number:", distance, metrics["num_calc"]))
-            print("{:<{}}{:.3f}".format("Total volume (cm³):", distance, metrics["volume_total"]))
+            print(
+                "{:<{}}{:.3f}".format(
+                    "Total volume (cm³):", distance, metrics["volume_total"]
+                )
+            )
             print(
                 "{:<{}}{:.1f}+/-{:.1f}".format(
-                    "Mean HU:", distance, np.mean(metrics["mean_hu"]), np.std(metrics["mean_hu"])
+                    "Mean HU:",
+                    distance,
+                    np.mean(metrics["mean_hu"]),
+                    np.std(metrics["mean_hu"]),
                 )
             )
             print(
@@ -70,7 +86,10 @@ class AorticCalciumPrinter(InferenceClass):
             )
             print(
                 "{:<{}}{:.1f}+/-{:.1f}".format(
-                    "Max HU:", distance, np.mean(metrics["max_hu"]), np.std(metrics["max_hu"])
+                    "Max HU:",
+                    distance,
+                    np.mean(metrics["max_hu"]),
+                    np.std(metrics["max_hu"]),
                 )
             )
             print(
@@ -86,8 +105,16 @@ class AorticCalciumPrinter(InferenceClass):
                     "Median volume (cm³):", distance, np.median(metrics["volume"])
                 )
             )
-            print("{:<{}}{:.3f}".format("Max volume (cm³):", distance, np.max(metrics["volume"])))
-            print("{:<{}}{:.3f}".format("Min volume (cm³):", distance, np.min(metrics["volume"])))
+            print(
+                "{:<{}}{:.3f}".format(
+                    "Max volume (cm³):", distance, np.max(metrics["volume"])
+                )
+            )
+            print(
+                "{:<{}}{:.3f}".format(
+                    "Min volume (cm³):", distance, np.min(metrics["volume"])
+                )
+            )
 
         print("\n")
 
