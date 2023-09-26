@@ -5,19 +5,17 @@
 import logging
 import math
 import os
-from glob import glob
 from typing import Dict, List
 
 import cv2
 import nibabel as nib
 import numpy as np
-from pydicom.filereader import dcmread
 from scipy.ndimage import zoom
 
 from comp2comp.spine import spine_visualization
 
 
-def find_spine_dicoms(centroids: Dict): #, path: str, levels):
+def find_spine_dicoms(centroids: Dict):  # , path: str, levels):
     """Find the dicom files corresponding to the spine T12 - L5 levels."""
 
     vertical_positions = []

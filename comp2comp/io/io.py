@@ -8,8 +8,8 @@ from typing import Dict, Union
 
 # import dicom2nifti
 import dosma as dm
-import SimpleITK as sitk
 import pydicom
+import SimpleITK as sitk
 
 from comp2comp.inference_class_base import InferenceClass
 

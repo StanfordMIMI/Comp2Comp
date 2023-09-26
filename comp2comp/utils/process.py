@@ -3,12 +3,12 @@
 """
 
 import os
+import shutil
 import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
 from time import time
-import shutil
 
 from comp2comp.io import io_utils
 
