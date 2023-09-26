@@ -1,7 +1,10 @@
 """
 @author: louisblankemeier
 """
+import csv
 import os
+
+import pydicom
 
 
 def find_dicom_files(input_path):
@@ -47,7 +50,7 @@ def get_dicom_or_nifti_paths_and_num(path):
     if path.endswith(".nii") or path.endswith(".nii.gz"):
         return [(path, 1)]
     dicom_nifti_paths = []
-    for root, _, files in os.walk(path):
+    for root, dirs, files in os.walk(path):
         if len(files) > 0:
             if all(file.endswith(".dcm") or file.endswith(".dicom") for file in files):
                 dicom_nifti_paths.append((root, len(files)))
@@ -58,3 +61,17 @@ def get_dicom_or_nifti_paths_and_num(path):
                         dicom_nifti_paths.append((os.path.join(root, file), num_slices))
 
     return dicom_nifti_paths
+
+
+def write_dicom_metadata_to_csv(ds, csv_filename):
+    with open(csv_filename, "w", newline="") as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(["Tag", "Keyword", "Value"])
+
+        for element in ds:
+            tag = element.tag
+            keyword = pydicom.datadict.keyword_for_tag(tag)
+            if keyword == "PixelData":
+                continue
+            value = str(element.value)
+            csvwriter.writerow([tag, keyword, value])

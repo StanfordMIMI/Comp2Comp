@@ -22,6 +22,7 @@ from totalsegmentator.libs import (
 )
 
 from comp2comp.inference_class_base import InferenceClass
+from comp2comp.io import io_utils
 from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
 from comp2comp.visualization.dicom import to_dicom
@@ -250,13 +251,14 @@ class SpineComputeROIs(InferenceClass):
         # Compute ROIs
         inference_pipeline.spine_model_type = self.spine_model_type
 
-        (spine_hus, rois, centroids_3d) = spine_utils.compute_rois(
+        (spine_hus, rois, segmentation_hus, centroids_3d) = spine_utils.compute_rois(
             inference_pipeline.segmentation,
             inference_pipeline.medical_volume,
             self.spine_model_type,
         )
 
         inference_pipeline.spine_hus = spine_hus
+        inference_pipeline.segmentation_hus = segmentation_hus
         inference_pipeline.rois = rois
         inference_pipeline.centroids_3d = centroids_3d
 
@@ -272,20 +274,30 @@ class SpineMetricsSaver(InferenceClass):
     def __call__(self, inference_pipeline):
         """Save metrics to a CSV file."""
         self.spine_hus = inference_pipeline.spine_hus
+        self.seg_hus = inference_pipeline.segmentation_hus
         self.output_dir = inference_pipeline.output_dir
         self.csv_output_dir = os.path.join(self.output_dir, "metrics")
         if not os.path.exists(self.csv_output_dir):
             os.makedirs(self.csv_output_dir, exist_ok=True)
         self.save_results()
+        if hasattr(inference_pipeline, "dicom_ds"):
+            if not os.path.exists(os.path.join(self.output_dir, "dicom_metadata.csv")):
+                io_utils.write_dicom_metadata_to_csv(
+                    inference_pipeline.dicom_ds,
+                    os.path.join(self.output_dir, "dicom_metadata.csv"),
+                )
+
         return {}
 
     def save_results(self):
         """Save results to a CSV file."""
-        df = pd.DataFrame(columns=["Level", "ROI HU"])
+        df = pd.DataFrame(columns=["Level", "ROI HU", "Seg HU"])
         for i, level in enumerate(self.spine_hus):
             hu = self.spine_hus[level]
-            row = [level, hu]
+            seg_hu = self.seg_hus[level]
+            row = [level, hu, seg_hu]
             df.loc[i] = row
+        df = df.iloc[::-1]
         df.to_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"), index=False)
 
 
@@ -327,6 +339,7 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
             list(inference_pipeline.centroids_3d.values()),
             output_path,
             spine_hus=inference_pipeline.spine_hus,
+            seg_hus=inference_pipeline.segmentation_hus,
             model_type=spine_model_type,
             pixel_spacing=inference_pipeline.pixel_spacing_list,
             format=self.format,
