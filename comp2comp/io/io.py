@@ -9,6 +9,7 @@ from typing import Dict, Union
 # import dicom2nifti
 import dosma as dm
 import SimpleITK as sitk
+import pydicom
 
 from comp2comp.inference_class_base import InferenceClass
 
@@ -115,6 +116,14 @@ class DicomToNifti(InferenceClass):
 def dicom_series_to_nifti(input_path, output_file, reorient_nifti):
     reader = sitk.ImageSeriesReader()
     dicom_names = reader.GetGDCMSeriesFileNames(str(input_path))
+    print("Reading dicoms...")
+    ds = pydicom.filereader.dcmread(dicom_names[0])
+    image_type_list = list(ds.ImageType)
+    if any("gsi" in s.lower() for s in image_type_list):
+        raise ValueError("GSI Image Type detected")
     reader.SetFileNames(dicom_names)
     image = reader.Execute()
+    if image.GetDirection() != (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
+        raise ValueError("Image orientation is not axial")
+    print(ds)
     sitk.WriteImage(image, output_file)

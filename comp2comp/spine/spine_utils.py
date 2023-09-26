@@ -268,15 +268,19 @@ def compute_rois(seg, img, spine_model_type):
     rois = {}
     spine_hus = {}
     centroids_3d = {}
+    segmentation_hus = {}
     for i, level in enumerate(slices):
         slice = slices[level]
         center_of_mass = compute_center_of_mass(slice)
         centroid = np.array([centroids[level], center_of_mass[1], center_of_mass[0]])
         roi = roi_from_mask(img, centroid)
-        spine_hus[level] = mean_img_mask(img.get_fdata(), roi, i)
+        image_numpy = img.get_fdata()
+        spine_hus[level] = mean_img_mask(image_numpy, roi, i)
         rois[level] = roi
+        mask = (seg_np == spine_model_type.categories[level]).astype(int)
+        segmentation_hus[level] = mean_img_mask(image_numpy, mask, i)
         centroids_3d[level] = centroid
-    return (spine_hus, rois, centroids_3d)
+    return (spine_hus, rois, segmentation_hus, centroids_3d)
 
 
 def keep_two_largest_connected_components(mask: Dict):
@@ -358,6 +362,7 @@ def visualize_coronal_sagittal_spine(
     centroids_3d: np.ndarray,
     output_dir: str,
     spine_hus=None,
+    seg_hus=None,
     model_type=None,
     pixel_spacing=None,
     format="png",
@@ -453,6 +458,7 @@ def visualize_coronal_sagittal_spine(
         output_dir,
         sagittal_name,
         spine_hus=spine_hus,
+        seg_hus=seg_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
     )
@@ -462,6 +468,7 @@ def visualize_coronal_sagittal_spine(
         output_dir,
         coronal_name,
         spine_hus=spine_hus,
+        seg_hus=seg_hus,
         model_type=model_type,
         pixel_spacing=pixel_spacing,
     )

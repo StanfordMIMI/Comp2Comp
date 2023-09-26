@@ -250,13 +250,14 @@ class SpineComputeROIs(InferenceClass):
         # Compute ROIs
         inference_pipeline.spine_model_type = self.spine_model_type
 
-        (spine_hus, rois, centroids_3d) = spine_utils.compute_rois(
+        (spine_hus, rois, segmentation_hus, centroids_3d) = spine_utils.compute_rois(
             inference_pipeline.segmentation,
             inference_pipeline.medical_volume,
             self.spine_model_type,
         )
 
         inference_pipeline.spine_hus = spine_hus
+        inference_pipeline.segmentation_hus = segmentation_hus
         inference_pipeline.rois = rois
         inference_pipeline.centroids_3d = centroids_3d
 
@@ -272,6 +273,7 @@ class SpineMetricsSaver(InferenceClass):
     def __call__(self, inference_pipeline):
         """Save metrics to a CSV file."""
         self.spine_hus = inference_pipeline.spine_hus
+        self.seg_hus = inference_pipeline.segmentation_hus
         self.output_dir = inference_pipeline.output_dir
         self.csv_output_dir = os.path.join(self.output_dir, "metrics")
         if not os.path.exists(self.csv_output_dir):
@@ -281,11 +283,13 @@ class SpineMetricsSaver(InferenceClass):
 
     def save_results(self):
         """Save results to a CSV file."""
-        df = pd.DataFrame(columns=["Level", "ROI HU"])
+        df = pd.DataFrame(columns=["Level", "ROI HU", "Seg HU"])
         for i, level in enumerate(self.spine_hus):
             hu = self.spine_hus[level]
-            row = [level, hu]
+            seg_hu = self.seg_hus[level]
+            row = [level, hu, seg_hu]
             df.loc[i] = row
+        df = df.iloc[::-1]
         df.to_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"), index=False)
 
 
@@ -327,6 +331,7 @@ class SpineCoronalSagittalVisualizer(InferenceClass):
             list(inference_pipeline.centroids_3d.values()),
             output_path,
             spine_hus=inference_pipeline.spine_hus,
+            seg_hus=inference_pipeline.segmentation_hus,
             model_type=spine_model_type,
             pixel_spacing=inference_pipeline.pixel_spacing_list,
             format=self.format,

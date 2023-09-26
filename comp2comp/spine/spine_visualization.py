@@ -18,6 +18,7 @@ def spine_binary_segmentation_overlay(
     file_name: str,
     figure_text_key=None,
     spine_hus=None,
+    seg_hus=None,
     spine=True,
     model_type=None,
     pixel_spacing=None,
@@ -66,7 +67,7 @@ def spine_binary_segmentation_overlay(
     _ROI_COLOR = np.array([1.000, 0.340, 0.200])
 
     _SPINE_TEXT_OFFSET_FROM_TOP = 10.0
-    _SPINE_TEXT_OFFSET_FROM_RIGHT = 63.0
+    _SPINE_TEXT_OFFSET_FROM_RIGHT = 40.0
     _SPINE_TEXT_VERTICAL_SPACING = 14.0
 
     img_in = np.clip(img_in, -300, 1800)
@@ -108,17 +109,59 @@ def spine_binary_segmentation_overlay(
             area_threshold=0,
         )
 
+    vis.draw_text(
+        text="ROI",
+        position=(
+            mask.shape[1] - _SPINE_TEXT_OFFSET_FROM_RIGHT - 35,
+            _SPINE_TEXT_OFFSET_FROM_TOP,
+        ),
+        color=[1, 1, 1],
+        font_size=9,
+        horizontal_alignment="center",
+    )
+
+    vis.draw_text(
+        text="Seg",
+        position=(
+            mask.shape[1] - _SPINE_TEXT_OFFSET_FROM_RIGHT,
+            _SPINE_TEXT_OFFSET_FROM_TOP,
+        ),
+        color=[1, 1, 1],
+        font_size=9,
+        horizontal_alignment="center",
+    )
+
     # draw text and lines
     for i, level in enumerate(levels):
         vis.draw_text(
-            text=f"{level}: {round(float(spine_hus[level]))}",
+            text=f"{level}:",
             position=(
-                mask.shape[1] - _SPINE_TEXT_OFFSET_FROM_RIGHT,
-                _SPINE_TEXT_VERTICAL_SPACING * i + _SPINE_TEXT_OFFSET_FROM_TOP,
+                mask.shape[1] - _SPINE_TEXT_OFFSET_FROM_RIGHT - 80,
+                _SPINE_TEXT_VERTICAL_SPACING * (i + 1) + _SPINE_TEXT_OFFSET_FROM_TOP,
             ),
             color=_COLORS[label_map[level]],
             font_size=9,
             horizontal_alignment="left",
+        )
+        vis.draw_text(
+            text=f"{round(float(spine_hus[level]))}",
+            position=(
+                mask.shape[1] - _SPINE_TEXT_OFFSET_FROM_RIGHT - 35,
+                _SPINE_TEXT_VERTICAL_SPACING * (i + 1) + _SPINE_TEXT_OFFSET_FROM_TOP,
+            ),
+            color=_COLORS[label_map[level]],
+            font_size=9,
+            horizontal_alignment="center",
+        )
+        vis.draw_text(
+            text=f"{round(float(seg_hus[level]))}",
+            position=(
+                mask.shape[1] - _SPINE_TEXT_OFFSET_FROM_RIGHT,
+                _SPINE_TEXT_VERTICAL_SPACING * (i + 1) + _SPINE_TEXT_OFFSET_FROM_TOP,
+            ),
+            color=_COLORS[label_map[level]],
+            font_size=9,
+            horizontal_alignment="center",
         )
 
         """

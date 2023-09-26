@@ -10,7 +10,7 @@ from pathlib import Path
 from time import time
 import shutil
 
-from comp2comp.io.io_utils import get_dicom_or_nifti_paths_and_num
+from comp2comp.io import io_utils
 
 
 def process_2d(args, pipeline_builder):
@@ -49,7 +49,7 @@ def process_3d(args, pipeline_builder):
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_path = os.path.join(output_path, date_time)
 
-    for path, num in get_dicom_or_nifti_paths_and_num(args.input_path):
+    for path, num in io_utils.get_dicom_or_nifti_paths_and_num(args.input_path):
         try:
             st = time()
 
@@ -87,7 +87,10 @@ def process_3d(args, pipeline_builder):
                 output_dir = Path(
                     os.path.join(
                         output_path,
-                        Path(os.path.basename(os.path.normpath(path))),
+                        Path(os.path.basename(os.path.normpath(args.input_path))),
+                        os.path.relpath(
+                            os.path.normpath(path), os.path.normpath(args.input_path)
+                        ),
                     )
                 )
 
@@ -97,7 +100,6 @@ def process_3d(args, pipeline_builder):
             pipeline = pipeline_builder(path, args)
 
             pipeline(output_dir=output_dir, model_dir=model_dir)
-
 
             if not args.save_segmentations:
                 # remove the segmentations folder
@@ -110,4 +112,6 @@ def process_3d(args, pipeline_builder):
         except Exception:
             print(f"ERROR PROCESSING {path}\n")
             traceback.print_exc()
+            if os.path.exists(output_dir):
+                shutil.rmtree(output_dir)
             continue
