@@ -414,7 +414,7 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
 
     def save_results(self, results):
         """Save results to a CSV file."""
-        categories = self.model_type.categories
+        self.model_type.categories
         df = pd.DataFrame(
             columns=[
                 "Level",

@@ -22,10 +22,10 @@ from totalsegmentator.libs import (
 )
 
 from comp2comp.inference_class_base import InferenceClass
+from comp2comp.io import io_utils
 from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
 from comp2comp.visualization.dicom import to_dicom
-from comp2comp.io import io_utils
 
 
 class SpineSegmentation(InferenceClass):
