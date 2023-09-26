@@ -25,6 +25,7 @@ from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
 from comp2comp.visualization.dicom import to_dicom
+from comp2comp.io import io_utils
 
 
 class SpineSegmentation(InferenceClass):
@@ -279,6 +280,13 @@ class SpineMetricsSaver(InferenceClass):
         if not os.path.exists(self.csv_output_dir):
             os.makedirs(self.csv_output_dir, exist_ok=True)
         self.save_results()
+        if hasattr(inference_pipeline, "dicom_ds"):
+            if not os.path.exists(os.path.join(self.output_dir, "dicom_metadata.csv")):
+                io_utils.write_dicom_metadata_to_csv(
+                    inference_pipeline.dicom_ds,
+                    os.path.join(self.output_dir, "dicom_metadata.csv"),
+                )
+
         return {}
 
     def save_results(self):

@@ -91,7 +91,7 @@ class DicomToNifti(InferenceClass):
 
         # if self.input_path is a folder
         if self.input_path.is_dir():
-            dicom_series_to_nifti(
+            ds = dicom_series_to_nifti(
                 self.input_path,
                 output_file=os.path.join(
                     segmentations_output_dir, "converted_dcm.nii.gz"
@@ -99,6 +99,7 @@ class DicomToNifti(InferenceClass):
                 reorient_nifti=False,
             )
             inference_pipeline.dicom_series_path = str(self.input_path)
+            inference_pipeline.dicom_ds = ds
         elif str(self.input_path).endswith(".nii"):
             shutil.copy(
                 self.input_path,
@@ -125,5 +126,5 @@ def dicom_series_to_nifti(input_path, output_file, reorient_nifti):
     image = reader.Execute()
     if image.GetDirection() != (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
         raise ValueError("Image orientation is not axial")
-    print(ds)
     sitk.WriteImage(image, output_file)
+    return ds

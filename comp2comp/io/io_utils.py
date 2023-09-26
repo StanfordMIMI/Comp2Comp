@@ -2,6 +2,8 @@
 @author: louisblankemeier
 """
 import os
+import csv
+import pydicom
 
 
 def find_dicom_files(input_path):
@@ -58,3 +60,17 @@ def get_dicom_or_nifti_paths_and_num(path):
                         dicom_nifti_paths.append((os.path.join(root, file), num_slices))
 
     return dicom_nifti_paths
+
+def write_dicom_metadata_to_csv(ds, csv_filename):
+    with open(csv_filename, 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(['Tag', 'Keyword', 'Value'])
+
+        for element in ds:
+            tag = element.tag
+            keyword = pydicom.datadict.keyword_for_tag(tag)
+            if keyword == 'PixelData':
+                continue
+            value = str(element.value)
+            csvwriter.writerow([tag, keyword, value])
+
