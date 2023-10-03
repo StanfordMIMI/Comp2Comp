@@ -121,8 +121,8 @@ def series_selector(dicom_path):
         raise ValueError("Not primary image type")
     if not any("original" in s.lower() for s in image_type_list):
         raise ValueError("Not original image type")
-    if any("gsi" in s.lower() for s in image_type_list):
-        raise ValueError("GSI image type")
+    # if any("gsi" in s.lower() for s in image_type_list):
+    #     raise ValueError("GSI image type")
     if ds.ImageOrientationPatient != [1, 0, 0, 0, 1, 0]:
         raise ValueError("Image orientation is not axial")
     return ds
