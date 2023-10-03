@@ -33,11 +33,11 @@ def python_submit(command, node="amalfi"):
             print(f'Submitted the command --- "{command}" --- to slurm.')
     except subprocess.CalledProcessError:
         if node == None:
-            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --time=100-00:00:00 slurm.sh "
+            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --mem=128000 --time=100-00:00:00 slurm.sh "
             submit_command(command)
             print(f'Submitted the command --- "{command}" --- to slurm.')
         else:
-            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --nodelist={node} --time=100-00:00:00 slurm.sh"
+            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --nodelist={node} --mem=128000 --time=100-00:00:00 slurm.sh"
             submit_command(command)
             print(f'Submitted the command --- "{command}" --- to slurm.')
     os.remove("./slurm.sh")

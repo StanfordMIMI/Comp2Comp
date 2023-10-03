@@ -114,17 +114,25 @@ class DicomToNifti(InferenceClass):
         return {}
 
 
+def series_selector(dicom_path):
+    ds = pydicom.filereader.dcmread(dicom_path)
+    image_type_list = list(ds.ImageType)
+    if not any("primary" in s.lower() for s in image_type_list):
+        raise ValueError("Not primary image type")
+    if not any("original" in s.lower() for s in image_type_list):
+        raise ValueError("Not original image type")
+    if any("gsi" in s.lower() for s in image_type_list):
+        raise ValueError("GSI image type")
+    if ds.ImageOrientationPatient != [1, 0, 0, 0, 1, 0]:
+        raise ValueError("Image orientation is not axial")
+    return ds
+
+
 def dicom_series_to_nifti(input_path, output_file, reorient_nifti):
     reader = sitk.ImageSeriesReader()
     dicom_names = reader.GetGDCMSeriesFileNames(str(input_path))
-    print("Reading dicoms...")
-    ds = pydicom.filereader.dcmread(dicom_names[0])
-    image_type_list = list(ds.ImageType)
-    if any("gsi" in s.lower() for s in image_type_list):
-        raise ValueError("GSI Image Type detected")
+    ds = series_selector(dicom_names[0])
     reader.SetFileNames(dicom_names)
     image = reader.Execute()
-    if image.GetDirection() != (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
-        raise ValueError("Image orientation is not axial")
     sitk.WriteImage(image, output_file)
     return ds
