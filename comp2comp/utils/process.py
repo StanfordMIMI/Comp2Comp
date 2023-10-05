@@ -5,10 +5,10 @@
 import os
 import shutil
 import sys
+import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-import time
 
 from comp2comp.io import io_utils
 
@@ -118,5 +118,3 @@ def process_3d(args, pipeline_builder):
             if len(os.listdir(os.path.dirname(output_dir))) == 0:
                 shutil.rmtree(os.path.dirname(output_dir))
             continue
-
-
