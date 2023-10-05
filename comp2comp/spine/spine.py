@@ -15,17 +15,21 @@ import numpy as np
 import pandas as pd
 import wget
 from PIL import Image
-from totalsegmentator.libs import (
-    download_pretrained_weights,
-    nostdout,
-    setup_nnunet,
-)
+from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.io import io_utils
 from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
 from comp2comp.visualization.dicom import to_dicom
+
+# from totalsegmentator.libs import (
+#     download_pretrained_weights,
+#     nostdout,
+#     setup_nnunet,
+# )
+
+
 
 
 class SpineSegmentation(InferenceClass):
@@ -45,11 +49,56 @@ class SpineSegmentation(InferenceClass):
 
         self.model_dir = inference_pipeline.model_dir
 
-        seg, mv = self.spine_seg(
-            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
-            self.output_dir_segmentations + "spine.nii.gz",
-            inference_pipeline.model_dir,
+        # seg, mv = self.spine_seg(
+        #     os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+        #     self.output_dir_segmentations + "spine.nii.gz",
+        #     inference_pipeline.model_dir,
+        # )
+        os.environ["TOTALSEG_WEIGHTS_PATH"] = self.model_dir
+
+        seg = totalsegmentator(
+            input=os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+            output=os.path.join(self.output_dir_segmentations, "segmentation.nii"),
+            task_ids=[292],
+            ml=True,
+            nr_thr_resamp=1,
+            nr_thr_saving=6,
+            fast=False,
+            nora_tag="None",
+            preview=False,
+            task="total",
+            # roi_subset=[
+            #     "vertebrae_T12",
+            #     "vertebrae_L1",
+            #     "vertebrae_L2",
+            #     "vertebrae_L3",
+            #     "vertebrae_L4",
+            #     "vertebrae_L5",
+            # ],
+            roi_subset=None,
+            statistics=False,
+            radiomics=False,
+            crop_path=None,
+            body_seg=False,
+            force_split=False,
+            output_type="nifti",
+            quiet=False,
+            verbose=False,
+            test=0,
+            skip_saving=True,
+            device="gpu",
+            license_number=None,
+            statistics_exclude_masks_at_border=True,
+            no_derived_masks=False,
+            v1_order=False,
         )
+        mv = nib.load(
+            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
+        )
+
+        # inference_pipeline.segmentation = nib.load(
+        #     os.path.join(self.output_dir_segmentations, "segmentation.nii")
+        # )
         inference_pipeline.segmentation = seg
         inference_pipeline.medical_volume = mv
         inference_pipeline.save_segmentations = self.save_segmentations
@@ -115,6 +164,7 @@ class SpineSegmentation(InferenceClass):
         print("Segmenting spine...")
         st = time()
         os.environ["SCRATCH"] = self.model_dir
+        os.environ["TOTALSEG_WEIGHTS_PATH"] = self.model_dir
 
         # Setup nnunet
         model = "3d_fullres"

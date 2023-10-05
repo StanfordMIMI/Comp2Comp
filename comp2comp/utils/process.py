@@ -5,10 +5,10 @@
 import os
 import shutil
 import sys
+import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-from time import time
 
 from comp2comp.io import io_utils
 
@@ -51,7 +51,7 @@ def process_3d(args, pipeline_builder):
 
     for path, num in io_utils.get_dicom_or_nifti_paths_and_num(args.input_path):
         try:
-            st = time()
+            st = time.time()
 
             if path.endswith(".nii") or path.endswith(".nii.gz"):
                 print("Processing: ", path)
@@ -107,11 +107,14 @@ def process_3d(args, pipeline_builder):
                 if os.path.exists(segmentations_dir):
                     shutil.rmtree(segmentations_dir)
 
-            print(f"Finished processing {path} in {time() - st:.1f} seconds\n")
+            print(f"Finished processing {path} in {time.time() - st:.1f} seconds\n")
 
         except Exception:
             print(f"ERROR PROCESSING {path}\n")
             traceback.print_exc()
             if os.path.exists(output_dir):
                 shutil.rmtree(output_dir)
+            # remove parent folder if empty
+            if len(os.listdir(os.path.dirname(output_dir))) == 0:
+                shutil.rmtree(os.path.dirname(output_dir))
             continue

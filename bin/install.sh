@@ -18,7 +18,7 @@ ABCT_ENV_NAME="c2c_env"
 hasAnaconda=0
 updateEnv=0
 updatePath=1
-pythonVersion="3.8"
+pythonVersion="3.9"
 cudaVersion=""
 
 while [[ $# -gt 0 ]]; do
@@ -94,10 +94,10 @@ if [[ `conda env list | grep $ABCT_ENV_NAME` ]]; then
         exit 0
     else
         conda env remove -n $ABCT_ENV_NAME
-        conda create -y -n $ABCT_ENV_NAME python=3.8
+        conda create -y -n $ABCT_ENV_NAME python=3.9
     fi
 else
-    conda create -y -n $ABCT_ENV_NAME python=3.8
+    conda create -y -n $ABCT_ENV_NAME python=3.9
 fi
 
 conda activate $ABCT_ENV_NAME
@@ -139,7 +139,7 @@ conda activate $ABCT_ENV_NAME
 # echo $currDir
 # exit 1
 
-pip install -e .
+pip install -e . --no-cache-dir
 
 echo ""
 echo ""
