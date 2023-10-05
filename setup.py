@@ -41,7 +41,7 @@ setup(
     url="https://github.com/StanfordMIMI/Comp2Comp",
     description="Computed tomography to body composition.",
     packages=find_packages(exclude=("configs", "tests")),
-    python_requires=">=3.6",
+    python_requires=">=3.9",
     install_requires=[
         "pydicom",
         "moviepy",
@@ -59,6 +59,7 @@ setup(
         "wget",
         "tensorflow==2.12.0",
         "totalsegmentator @ git+https://github.com/StanfordMIMI/TotalSegmentator.git",
+        "totalsegmentatorv2 @ git+https://github.com/StanfordMIMI/TotalSegmentatorV2.git",
     ],
     extras_require={
         "all": ["shapely", "psutil"],

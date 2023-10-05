@@ -70,7 +70,8 @@ class Models(enum.Enum):
         5,
         "ts_spine",
         # Category name mapped to channel index
-        {"L5": 18, "L4": 19, "L3": 20, "L2": 21, "L1": 22, "T12": 23},
+        # {"L5": 18, "L4": 19, "L3": 20, "L2": 21, "L1": 22, "T12": 23},
+        {"L5": 27, "L4": 28, "L3": 29, "L2": 30, "L1": 31, "T12": 32},
         False,
         (),
     )
