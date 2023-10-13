@@ -240,7 +240,7 @@ class AxialCropper(InferenceClass):
         super().__init__()
         self.lower_level = lower_level
         self.upper_level = upper_level
-        ts_spine_full_model = Models.model_from_name("ts_spine_full")
+        ts_spine_full_model = Models.model_from_name("ts_spine")
         categories = ts_spine_full_model.categories
         try:
             self.lower_level_index = categories[self.lower_level]
