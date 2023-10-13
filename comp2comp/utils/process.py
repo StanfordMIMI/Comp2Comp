@@ -5,10 +5,11 @@
 import os
 import shutil
 import sys
+import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-import time
+
 
 from comp2comp.io import io_utils
 

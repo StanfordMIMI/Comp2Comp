@@ -16,12 +16,6 @@ import pandas as pd
 import wget
 from PIL import Image
 
-# from totalsegmentator.libs import (
-#     download_pretrained_weights,
-#     nostdout,
-#     setup_nnunet,
-# )
-
 from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.inference_class_base import InferenceClass
@@ -29,6 +23,14 @@ from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
 from comp2comp.visualization.dicom import to_dicom
 from comp2comp.io import io_utils
+
+# from totalsegmentator.libs import (
+#     download_pretrained_weights,
+#     nostdout,
+#     setup_nnunet,
+# )
+
+
 
 
 class SpineSegmentation(InferenceClass):
