@@ -48,6 +48,7 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
             spine = False
         else:
             spine = True
+            self.spine_masks = inference_pipeline.spine_masks
 
         for i, (image, result) in enumerate(zip(images, results)):
             # now, result is a dict with keys for each tissue
@@ -109,6 +110,12 @@ class MuscleAdiposeTissueVisualizer(InferenceClass):
                 position = (30, 15)
             vis.draw_text(
                 text=dicom_file_name, position=position, color=spine_color, font_size=24
+            )
+            vis.draw_binary_mask(
+                self.spine_masks[dicom_file_name],
+                color=spine_color,
+                alpha=0.9,
+                area_threshold=0,
             )
 
         for idx, tissue in enumerate(result.keys()):

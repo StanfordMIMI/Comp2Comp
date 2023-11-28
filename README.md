@@ -53,6 +53,19 @@ The first argument of the `__call__` function of `InferenceClass` must be the `I
 
 Below are the inference pipelines currently supported by Comp2Comp.
 
+## End-to-End Spine, Muscle, and Adipose Tissue Analysis at T12-L5
+
+### Usage
+```bash
+bin/C2C spine_muscle_adipose_tissue -i <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+### Example Output Image
+<p align="center">
+  <img src="figures/spine_muscle_adipose_tissue_example.png" height="300">
+</p>
+
 ## Spine Bone Mineral Density from 3D Trabecular Bone Regions at T12-L5
 
 ### Usage
@@ -66,18 +79,27 @@ bin/C2C spine -i <path/to/input/folder>
   <img src="figures/spine_example.png" height="300">
 </p>
 
-## End-to-End Spine, Muscle, and Adipose Tissue Analysis at T12-L5
+## Abdominal Aortic Calcification Segmentation
 
 ### Usage
 ```bash
-bin/C2C spine_muscle_adipose_tissue -i <path/to/input/folder>
+bin/C2C aortic_calcium -i <path/to/input/folder>
 ```
 - input_path should contain a DICOM series or subfolders that contain DICOM series.
 
-### Example Output Image
-<p align="center">
-  <img src="figures/spine_muscle_adipose_tissue_example.png" height="300">
-</p>
+### Example Output
+```
+Statistics on aortic calcifications:
+Total number:            7
+Total volume (cm³):      0.348
+Mean HU:                 570.3+/-85.8
+Median HU:               544.2+/-85.3
+Max HU:                  981.7+/-266.4
+Mean volume (cm³):       0.005+/-0.059
+Median volume (cm³):     0.022
+Max volume (cm³):        0.184
+Min volume (cm³):        0.005
+```
 
 ## AAA Segmentation and Maximum Diameter Measurement
 
@@ -126,48 +148,6 @@ bin/C2C liver_spleen_pancreas -i <path/to/input/folder>
   <img src="figures/liver_spleen_pancreas_example.png" height="300">
 </p>
 
-## 3D Analysis of the Femur
-
-### Usage
-```bash
-bin/C2C hip -i <path/to/input/folder>
-```
-- input_path should contain a DICOM series or subfolders that contain DICOM series.
-
-### Example Output Image
-<p align="center">
-  <img src="figures/hip_example.png" height="300">
-</p>
-
-## Abdominal Aortic Calcification Segmentation
-
-### Usage
-```bash
-bin/C2C aortic_calcium -i <path/to/input/folder>
-```
-- input_path should contain a DICOM series or subfolders that contain DICOM series.
-
-### Example Output
-```
-Statistics on aortic calcifications:
-Total number:            7
-Total volume (cm³):      0.348
-Mean HU:                 570.3+/-85.8
-Median HU:               544.2+/-85.3
-Max HU:                  981.7+/-266.4
-Mean volume (cm³):       0.005+/-0.059
-Median volume (cm³):     0.022
-Max volume (cm³):        0.184
-Min volume (cm³):        0.005
-```
-
-## Pipeline that runs all currently implemented pipelines
-
-### Usage
-```bash
-bin/C2C all -i <path/to/input/folder>
-```
-- input_path should contain a DICOM series or subfolders that contain DICOM series.
 
 ## Contribute
 <a name="contribute"></a>

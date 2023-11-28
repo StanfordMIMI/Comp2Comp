@@ -13,7 +13,7 @@ def submit_command(command):
     subprocess.run(command.split(" "), check=True, capture_output=False)
 
 
-def python_submit(command, node="siena"):
+def python_submit(command, node=None):
     bash_file = open("./slurm.sh", "w")
     bash_file.write(f"#!/bin/bash\n{command}")
     bash_file.close()

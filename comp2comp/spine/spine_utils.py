@@ -139,7 +139,7 @@ def compute_center_of_mass(mask: np.ndarray):
 
 # Function that takes a 3d centroid and retruns a binary mask with a 3d
 # roi around the centroid
-def roi_from_mask(img, centroid: np.ndarray):
+def roi_from_mask(img, centroid: np.ndarray, seg: np.ndarray, slice: np.ndarray):
     """Compute a 3D ROI from a 3D mask.
 
     Args:
@@ -173,45 +173,110 @@ def roi_from_mask(img, centroid: np.ndarray):
     ] = 1
     """
     # spherical ROI around centroid
+    spherical = False
     roi = np.zeros(img_np.shape)
-    i_lower = math.floor(centroid[0] - length_i)
-    j_lower = math.floor(centroid[1] - length_j)
-    k_lower = math.floor(centroid[2] - length_k)
-    i_lower_idx = 1000
-    j_lower_idx = 1000
-    k_lower_idx = 1000
-    i_upper_idx = 0
-    j_upper_idx = 0
-    k_upper_idx = 0
-    found_pixels = False
-    for i in range(i_lower, i_lower + 2 * math.ceil(length_i) + 1):
-        for j in range(j_lower, j_lower + 2 * math.ceil(length_j) + 1):
-            for k in range(k_lower, k_lower + 2 * math.ceil(length_k) + 1):
-                if (i - centroid[0]) ** 2 / length_i**2 + (
-                    j - centroid[1]
-                ) ** 2 / length_j**2 + (k - centroid[2]) ** 2 / length_k**2 <= 1:
-                    roi[i, j, k] = 1
-                    if i < i_lower_idx:
-                        i_lower_idx = i
-                    if j < j_lower_idx:
-                        j_lower_idx = j
-                    if k < k_lower_idx:
-                        k_lower_idx = k
-                    if i > i_upper_idx:
-                        i_upper_idx = i
-                    if j > j_upper_idx:
-                        j_upper_idx = j
-                    if k > k_upper_idx:
-                        k_upper_idx = k
-                    found_pixels = True
-    if not found_pixels:
-        print("No pixels in ROI!")
-        raise ValueError
-    print(
-        f"Number of pixels included in i, j, and k directions: {i_upper_idx - i_lower_idx + 1}, "
-        f"{j_upper_idx - j_lower_idx + 1}, {k_upper_idx - k_lower_idx + 1}"
-    )
-    return roi
+
+    if spherical:
+        i_lower = math.floor(centroid[0] - length_i)
+        j_lower = math.floor(centroid[1] - length_j)
+        k_lower = math.floor(centroid[2] - length_k)
+        i_lower_idx = 1000
+        j_lower_idx = 1000
+        k_lower_idx = 1000
+        i_upper_idx = 0
+        j_upper_idx = 0
+        k_upper_idx = 0
+        found_pixels = False
+        for i in range(i_lower, i_lower + 2 * math.ceil(length_i) + 1):
+            for j in range(j_lower, j_lower + 2 * math.ceil(length_j) + 1):
+                for k in range(k_lower, k_lower + 2 * math.ceil(length_k) + 1):
+                    if (i - centroid[0]) ** 2 / length_i**2 + (
+                        j - centroid[1]
+                    ) ** 2 / length_j**2 + (
+                        k - centroid[2]
+                    ) ** 2 / length_k**2 <= 1:
+                        roi[i, j, k] = 1
+                        if i < i_lower_idx:
+                            i_lower_idx = i
+                        if j < j_lower_idx:
+                            j_lower_idx = j
+                        if k < k_lower_idx:
+                            k_lower_idx = k
+                        if i > i_upper_idx:
+                            i_upper_idx = i
+                        if j > j_upper_idx:
+                            j_upper_idx = j
+                        if k > k_upper_idx:
+                            k_upper_idx = k
+                        found_pixels = True
+        if not found_pixels:
+            print("No pixels in ROI!")
+            raise ValueError
+        print(
+            f"Number of pixels included in i, j, and k directions: {i_upper_idx - i_lower_idx + 1}, "
+            f"{j_upper_idx - j_lower_idx + 1}, {k_upper_idx - k_lower_idx + 1}"
+        )
+        return roi
+    else:
+        mask = None
+        inferior_superior_line = seg[int(centroid[0]), int(centroid[1]), :]
+        # get the center point
+        updated_z_center = np.mean(np.where(inferior_superior_line == 1))
+        lower_z_idx = updated_z_center - ((length_k * 1.5) // 2)
+        upper_z_idx = updated_z_center + ((length_k * 1.5) // 2)
+        for idx in range(int(lower_z_idx), int(upper_z_idx) + 1):
+            posterior_anterior_line = slice[:, idx]
+            updated_posterior_anterior_center = np.mean(
+                np.where(posterior_anterior_line == 1)
+            )
+            # take the center to be the 1/4 percentile
+            updated_posterior_anterior_center = (
+                np.min(np.where(posterior_anterior_line == 1))
+                + np.sum(posterior_anterior_line) * 0.58
+            )
+            posterior_anterior_length = (np.sum(posterior_anterior_line) * 0.5) // 2
+            left_right_line = seg[:, int(updated_posterior_anterior_center), idx]
+            updated_left_right_center = np.mean(np.where(left_right_line == 1))
+            left_right_length = (np.sum(left_right_line) * 0.65) // 2
+            # roi_2d = np.zeros((img_np.shape[0], img_np.shape[1]))
+            # roi_2d[
+            #     int(updated_left_right_center - left_right_length) : int(
+            #         updated_left_right_center + left_right_length
+            #     ),
+            #     int(
+            #         updated_posterior_anterior_center
+            #         - (posterior_anterior_length * 0.5)
+            #     ) : int(updated_posterior_anterior_center + posterior_anterior_length),
+            # ] = 1
+
+            roi_2d = np.zeros((img_np.shape[0], img_np.shape[1]))
+            h = updated_left_right_center
+            k = updated_posterior_anterior_center
+
+            # Semi-axes lengths (a, b)
+            a = left_right_length
+            b = posterior_anterior_length
+
+            # Calculate the min and max indices for x and y
+            x_min = int(max(h - a, 0))
+            x_max = int(min(h + a, img_np.shape[0]))
+            y_min = int(max(k - b, 0))
+            y_max = int(min(k + b, img_np.shape[1]))
+
+            # Create an oval ROI within the bounds
+            for x in range(x_min - 2, x_max + 2):
+                for y in range(y_min - 2, y_max + 2):
+                    if ((x - h) / a) ** 2 + ((y - k) / b) ** 2 <= 1:
+                        roi_2d[x, y] = 1
+            roi[:, :, idx] = roi_2d
+            if idx == int(centroid[2]):
+                mask = np.flip(np.flip(np.transpose(roi_2d), axis=0), axis=1)
+            if idx == updated_z_center:
+                updated_mask = np.flip(np.flip(np.transpose(roi_2d), axis=0), axis=1)
+        if mask is None:
+            mask = updated_mask
+
+        return roi, mask
 
 
 # Function that takes a 3d image and a 3d binary mask and returns that average
@@ -267,18 +332,25 @@ def compute_rois(seg, img, spine_model_type):
     spine_hus = {}
     centroids_3d = {}
     segmentation_hus = {}
+    spine_masks = {}
     for i, level in enumerate(slices):
         slice = slices[level]
         center_of_mass = compute_center_of_mass(slice)
         centroid = np.array([centroids[level], center_of_mass[1], center_of_mass[0]])
-        roi = roi_from_mask(img, centroid)
+        roi, mask_2d = roi_from_mask(
+            img,
+            centroid,
+            (seg_np == spine_model_type.categories[level]).astype(int),
+            slice,
+        )
         image_numpy = img.get_fdata()
         spine_hus[level] = mean_img_mask(image_numpy, roi, i)
         rois[level] = roi
         mask = (seg_np == spine_model_type.categories[level]).astype(int)
         segmentation_hus[level] = mean_img_mask(image_numpy, mask, i)
         centroids_3d[level] = centroid
-    return (spine_hus, rois, segmentation_hus, centroids_3d)
+        spine_masks[level] = mask_2d
+    return (spine_hus, rois, segmentation_hus, centroids_3d, spine_masks)
 
 
 def keep_two_largest_connected_components(mask: Dict):

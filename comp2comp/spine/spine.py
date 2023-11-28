@@ -302,7 +302,7 @@ class SpineComputeROIs(InferenceClass):
         # Compute ROIs
         inference_pipeline.spine_model_type = self.spine_model_type
 
-        (spine_hus, rois, segmentation_hus, centroids_3d) = spine_utils.compute_rois(
+        (spine_hus, rois, segmentation_hus, centroids_3d, spine_masks) = spine_utils.compute_rois(
             inference_pipeline.segmentation,
             inference_pipeline.medical_volume,
             self.spine_model_type,
@@ -312,6 +312,7 @@ class SpineComputeROIs(InferenceClass):
         inference_pipeline.segmentation_hus = segmentation_hus
         inference_pipeline.rois = rois
         inference_pipeline.centroids_3d = centroids_3d
+        inference_pipeline.spine_masks = spine_masks
 
         return {}
 
@@ -331,12 +332,12 @@ class SpineMetricsSaver(InferenceClass):
         if not os.path.exists(self.csv_output_dir):
             os.makedirs(self.csv_output_dir, exist_ok=True)
         self.save_results()
-        if hasattr(inference_pipeline, "dicom_ds"):
-            if not os.path.exists(os.path.join(self.output_dir, "dicom_metadata.csv")):
-                io_utils.write_dicom_metadata_to_csv(
-                    inference_pipeline.dicom_ds,
-                    os.path.join(self.output_dir, "dicom_metadata.csv"),
-                )
+        # if hasattr(inference_pipeline, "dicom_ds"):
+        #     if not os.path.exists(os.path.join(self.output_dir, "dicom_metadata.csv")):
+        #         io_utils.write_dicom_metadata_to_csv(
+        #             inference_pipeline.dicom_ds,
+        #             os.path.join(self.output_dir, "dicom_metadata.csv"),
+        #         )
 
         return {}
 
