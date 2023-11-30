@@ -124,12 +124,12 @@ def series_selector(dicom_path, pipeline_name=None):
             raise ValueError("Not primary image type")
         if not any("original" in s.lower() for s in image_type_list):
             raise ValueError("Not original image type")
+        if ds.ImageOrientationPatient != [1, 0, 0, 0, 1, 0]:
+            raise ValueError("Image orientation is not axial")
     else:
-        print(f"Skipping primary and original image type check for the {pipeline_name} pipeline.")
+        print(f"Skipping primary, original, and orientation image type check for the {pipeline_name} pipeline.")
     # if any("gsi" in s.lower() for s in image_type_list):
     #     raise ValueError("GSI image type")
-    if ds.ImageOrientationPatient != [1, 0, 0, 0, 1, 0]:
-        raise ValueError("Image orientation is not axial")
     return ds
 
 
