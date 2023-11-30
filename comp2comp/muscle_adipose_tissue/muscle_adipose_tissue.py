@@ -275,10 +275,11 @@ class MuscleAdiposeTissuePostProcessing(InferenceClass):
         # Larger threshold for SAT
         # TODO make this configurable / parameter
         if mask_id == 2:
-            min_size = 50
+            # min_size = 50
+            min_size = 0
         else:
-            # min_size = 50  # Smaller threshold for everything else
-            min_size = 5
+            # min_size = 5
+            min_size = 0
         img_out = np.ones_like(mask)
         for i in range(0, components):
             if sizes[i] > min_size:
