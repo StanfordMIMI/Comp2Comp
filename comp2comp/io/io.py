@@ -98,6 +98,7 @@ class DicomToNifti(InferenceClass):
                     segmentations_output_dir, "converted_dcm.nii.gz"
                 ),
                 reorient_nifti=False,
+                pipeline_name=self.pipeline_name,
             )
             inference_pipeline.dicom_series_path = str(self.input_path)
             inference_pipeline.dicom_ds = ds
@@ -118,7 +119,7 @@ class DicomToNifti(InferenceClass):
 def series_selector(dicom_path, pipeline_name=None):
     ds = pydicom.filereader.dcmread(dicom_path)
     image_type_list = list(ds.ImageType)
-    if pipeline_name and (pipeline_name != "aaa"):
+    if pipeline_name != "aaa":
         if not any("primary" in s.lower() for s in image_type_list):
             raise ValueError("Not primary image type")
         if not any("original" in s.lower() for s in image_type_list):
