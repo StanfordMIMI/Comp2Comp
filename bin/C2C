@@ -82,7 +82,7 @@ def SpinePipelineBuilder(path, args):
 def AxialCropperPipelineBuilder(path, args):
     pipeline = InferencePipeline(
         [
-            io.DicomToNifti(path),
+            io.DicomToNifti(path, "aaa"),
             spine.SpineSegmentation(args.spine_model),
             orientation.ToCanonical(),
             spine.AxialCropper(lower_level="L5", upper_level="L1", save=True),

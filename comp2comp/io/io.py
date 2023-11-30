@@ -71,10 +71,11 @@ class DicomFinder(InferenceClass):
 class DicomToNifti(InferenceClass):
     """Convert dicom files to NIfTI files."""
 
-    def __init__(self, input_path: Union[str, Path], save=True):
+    def __init__(self, input_path: Union[str, Path], pipeline_name=None, save=True):
         super().__init__()
         self.input_path = Path(input_path)
         self.save = save
+        self.pipeline_name = pipeline_name
 
     def __call__(self, inference_pipeline):
         if os.path.exists(
@@ -114,13 +115,16 @@ class DicomToNifti(InferenceClass):
         return {}
 
 
-def series_selector(dicom_path):
+def series_selector(dicom_path, pipeline_name=None):
     ds = pydicom.filereader.dcmread(dicom_path)
     image_type_list = list(ds.ImageType)
-    if not any("primary" in s.lower() for s in image_type_list):
-        raise ValueError("Not primary image type")
-    if not any("original" in s.lower() for s in image_type_list):
-        raise ValueError("Not original image type")
+    if pipeline_name and (pipeline_name != "aaa"):
+        if not any("primary" in s.lower() for s in image_type_list):
+            raise ValueError("Not primary image type")
+        if not any("original" in s.lower() for s in image_type_list):
+            raise ValueError("Not original image type")
+    else:
+        print(f"Skipping primary and original image type check for the {pipeline_name} pipeline.")
     # if any("gsi" in s.lower() for s in image_type_list):
     #     raise ValueError("GSI image type")
     if ds.ImageOrientationPatient != [1, 0, 0, 0, 1, 0]:
@@ -128,10 +132,10 @@ def series_selector(dicom_path):
     return ds
 
 
-def dicom_series_to_nifti(input_path, output_file, reorient_nifti):
+def dicom_series_to_nifti(input_path, output_file, reorient_nifti, pipeline_name=None):
     reader = sitk.ImageSeriesReader()
     dicom_names = reader.GetGDCMSeriesFileNames(str(input_path))
-    ds = series_selector(dicom_names[0])
+    ds = series_selector(dicom_names[0], pipeline_name=pipeline_name)
     reader.SetFileNames(dicom_names)
     image = reader.Execute()
     sitk.WriteImage(image, output_file)
