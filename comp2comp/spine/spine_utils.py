@@ -45,7 +45,7 @@ def save_nifti_select_slices(output_dir: str, vertical_positions):
     nifti_out = nib.Nifti1Image(nifti_np, nifti_in.affine, nifti_in.header)
     # save the nifti
     nifti_output_path = os.path.join(
-        output_dir, "segmentations", "converted_dcm.nii.gz"
+        output_dir, "segmentations", "converted_dcm_multilevel.nii.gz"
     )
     nib.save(nifti_out, nifti_output_path)
 

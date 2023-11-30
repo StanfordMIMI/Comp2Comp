@@ -97,6 +97,12 @@ class SpineSegmentation(InferenceClass):
             os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
         )
 
+        # save the seg
+        nib.save(
+            seg,
+            os.path.join(self.output_dir_segmentations, "spine_seg.nii.gz"),
+        )
+
         # inference_pipeline.segmentation = nib.load(
         #     os.path.join(self.output_dir_segmentations, "segmentation.nii")
         # )

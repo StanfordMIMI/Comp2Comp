@@ -81,12 +81,12 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         if self.model_name == "stanford_v0.0.2":
             self.download_muscle_adipose_tissue_model(inference_pipeline.model_dir)
             nifti_path = os.path.join(
-                inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
+                inference_pipeline.output_dir, "segmentations", "converted_dcm_multilevel.nii.gz"
             )
             output_path = os.path.join(
                 inference_pipeline.output_dir,
                 "segmentations",
-                "converted_dcm_seg.nii.gz",
+                "multilevel_muscle_fat_seg.nii.gz",
             )
 
             from nnunet.inference import predict
