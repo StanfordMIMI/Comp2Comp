@@ -57,51 +57,66 @@ class SpineSegmentation(InferenceClass):
         # )
         os.environ["TOTALSEG_WEIGHTS_PATH"] = self.model_dir
 
-        seg = totalsegmentator(
-            input=os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
-            output=os.path.join(self.output_dir_segmentations, "segmentation.nii"),
-            task_ids=[292],
-            ml=True,
-            nr_thr_resamp=1,
-            nr_thr_saving=6,
-            fast=False,
-            nora_tag="None",
-            preview=False,
-            task="total",
-            # roi_subset=[
-            #     "vertebrae_T12",
-            #     "vertebrae_L1",
-            #     "vertebrae_L2",
-            #     "vertebrae_L3",
-            #     "vertebrae_L4",
-            #     "vertebrae_L5",
-            # ],
-            roi_subset=None,
-            statistics=False,
-            radiomics=False,
-            crop_path=None,
-            body_seg=False,
-            force_split=False,
-            output_type="nifti",
-            quiet=False,
-            verbose=False,
-            test=0,
-            skip_saving=True,
-            device="gpu",
-            license_number=None,
-            statistics_exclude_masks_at_border=True,
-            no_derived_masks=False,
-            v1_order=False,
-        )
-        mv = nib.load(
-            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
-        )
+        cache_dir = "/dataNAS/people/lblankem/install_testing_v1/Comp2Comp/outputs/2023-11-30_14-21-29/medstar/abdct/studies"
 
-        # save the seg
-        nib.save(
-            seg,
-            os.path.join(self.output_dir_segmentations, "spine_seg.nii.gz"),
-        )
+        split_output_dir = str(self.output_dir).split("/")
+        study_name = split_output_dir[-2]
+        series_name = split_output_dir[-1]
+
+        cache_image_path = os.path.join(cache_dir, study_name, series_name, "segmentations/converted_dcm.nii.gz")
+        cache_seg_path = os.path.join(cache_dir, study_name, series_name, "segmentations/spine_seg.nii.gz")
+        
+        if os.path.exists(cache_image_path) and os.path.exists(cache_seg_path):
+            print("Using cached spine segmentation.")
+            seg = nib.load(cache_seg_path)
+            mv = nib.load(cache_image_path)
+
+        else:
+            seg = totalsegmentator(
+                input=os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+                output=os.path.join(self.output_dir_segmentations, "segmentation.nii"),
+                task_ids=[292],
+                ml=True,
+                nr_thr_resamp=1,
+                nr_thr_saving=6,
+                fast=False,
+                nora_tag="None",
+                preview=False,
+                task="total",
+                # roi_subset=[
+                #     "vertebrae_T12",
+                #     "vertebrae_L1",
+                #     "vertebrae_L2",
+                #     "vertebrae_L3",
+                #     "vertebrae_L4",
+                #     "vertebrae_L5",
+                # ],
+                roi_subset=None,
+                statistics=False,
+                radiomics=False,
+                crop_path=None,
+                body_seg=False,
+                force_split=False,
+                output_type="nifti",
+                quiet=False,
+                verbose=False,
+                test=0,
+                skip_saving=True,
+                device="gpu",
+                license_number=None,
+                statistics_exclude_masks_at_border=True,
+                no_derived_masks=False,
+                v1_order=False,
+            )
+            mv = nib.load(
+                os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
+            )
+
+            # save the seg
+            nib.save(
+                seg,
+                os.path.join(self.output_dir_segmentations, "spine_seg.nii.gz"),
+            )
 
         # inference_pipeline.segmentation = nib.load(
         #     os.path.join(self.output_dir_segmentations, "segmentation.nii")
@@ -265,12 +280,18 @@ class AxialCropper(InferenceClass):
         """
         segmentation = inference_pipeline.segmentation
         segmentation_data = segmentation.get_fdata()
-        upper_level_index = np.where(segmentation_data == self.upper_level_index)[
-            2
-        ].max()
-        lower_level_index = np.where(segmentation_data == self.lower_level_index)[
-            2
-        ].min()
+        try:
+            upper_level_index = np.where(segmentation_data == self.upper_level_index)[
+                2
+            ].max()
+        except:
+            upper_level_index = segmentation_data.shape[2]
+        try:
+            lower_level_index = np.where(segmentation_data == self.lower_level_index)[
+                2
+            ].min()
+        except:
+            lower_level_index = 0
         segmentation = segmentation.slicer[:, :, lower_level_index:upper_level_index]
         inference_pipeline.segmentation = segmentation
 
