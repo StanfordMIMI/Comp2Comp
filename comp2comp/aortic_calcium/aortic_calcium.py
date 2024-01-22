@@ -411,11 +411,9 @@ class AorticCalciumMetrics(InferenceClass):
                 49: "vertebrae_C2",
                 50: "vertebrae_C1",'''
         
-        # breakpoint()
         t12_level = np.where((spine_mask == 32).sum(axis=(0,1)))[0]
         l1_level = np.where((spine_mask == 31).sum(axis=(0,1)))[0]
         
-        breakpoint()
         
         if len(t12_level) != 0 and len(l1_level) != 0:
             sep_plane = round(np.mean([t12_level[0], l1_level[-1]]))
