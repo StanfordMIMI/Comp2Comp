@@ -85,20 +85,40 @@ bin/C2C spine -i <path/to/input/folder>
 ```bash
 bin/C2C aortic_calcium -i <path/to/input/folder>
 ```
-- input_path should contain a DICOM series or subfolders that contain DICOM series.
+- input_path should contain a DICOM series or subfolders that contain DICOM series, or a nifti file.
+- Aortic calcifications are detected through an adaptive threshold in a dilated aorta mask
+- Aortic calcifications are divided into abdominal and thoracic at the T12 level
+- Segmentation masks for aortic calcium, the dilated aorta mask and the T12 seperation plane are saved in ./segmentation_masks/
+- Metrics on an aggregated and individual level for the calcifications are written to .csv files in ./metrics/
 
 ### Example Output
 ```
 Statistics on aortic calcifications:
-Total number:            7
-Total volume (cm³):      0.348
-Mean HU:                 570.3+/-85.8
-Median HU:               544.2+/-85.3
-Max HU:                  981.7+/-266.4
-Mean volume (cm³):       0.005+/-0.059
-Median volume (cm³):     0.022
-Max volume (cm³):        0.184
-Min volume (cm³):        0.005
+Abdominal:
+Total number:            10
+Total volume (cm³):      0.161
+Mean HU:                 383.3+/-66.4
+Median HU:               366.5+/-62.9
+Max HU:                  571.9+/-190.6
+Mean volume (cm³):       0.016+/-0.020
+Median volume (cm³):     0.011
+Max volume (cm³):        0.074
+Min volume (cm³):        0.002
+Threshold (HU):          266.000
+
+
+Thoracic:
+Total number:            1
+Total volume (cm³):      0.030
+Mean HU:                 378.1+/-0.0
+Median HU:               376.0+/-0.0
+Max HU:                  538.0+/-0.0
+Mean volume (cm³):       0.030+/-0.000
+Median volume (cm³):     0.030
+Max volume (cm³):        0.030
+Min volume (cm³):        0.030
+Threshold (HU):          266.000
+
 ```
 
 ## AAA Segmentation and Maximum Diameter Measurement
