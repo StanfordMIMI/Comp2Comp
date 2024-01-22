@@ -12,11 +12,13 @@ from typing import Union
 
 import numpy as np
 from scipy import ndimage
-from totalsegmentator.libs import (
-    download_pretrained_weights,
-    nostdout,
-    setup_nnunet,
-)
+# from totalsegmentator.libs import (
+#     download_pretrained_weights,
+#     nostdout,
+#     setup_nnunet,
+# )
+from totalsegmentatorv2.python_api import totalsegmentator
+
 
 from comp2comp.inference_class_base import InferenceClass
 
@@ -41,7 +43,7 @@ class AortaSegmentation(InferenceClass):
 
         self.model_dir = inference_pipeline.model_dir
 
-        mv, seg = self.aorta_seg(
+        seg = self.aorta_seg(
             os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
             self.output_dir_segmentations + "organs.nii.gz",
             inference_pipeline.model_dir,
@@ -66,47 +68,50 @@ class AortaSegmentation(InferenceClass):
         print("Segmenting aorta...")
         st = time.time()
         os.environ["SCRATCH"] = self.model_dir
-
-        # Setup nnunet
-        model = "3d_fullres"
-        folds = [0]
-        trainer = "nnUNetTrainerV2_ep4000_nomirror"
-        crop_path = None
-        task_id = [251]
-
-        setup_nnunet()
-        download_pretrained_weights(task_id[0])
-
-        from totalsegmentator.nnunet import nnUNet_predict_image
-
-        with nostdout():
-            seg, mvs = nnUNet_predict_image(
-                input_path,
-                output_path,
-                task_id,
-                model=model,
-                folds=folds,
-                trainer=trainer,
-                tta=False,
-                multilabel_image=True,
-                resample=1.5,
-                crop=None,
-                crop_path=crop_path,
-                task_name="total",
-                nora_tag="None",
-                preview=False,
-                nr_threads_resampling=1,
-                nr_threads_saving=6,
-                quiet=False,
-                verbose=True,
-                test=0,
-            )
+ 
+        seg = totalsegmentator(
+            input = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+            output = os.path.join(self.output_dir_segmentations, "segmentation.nii"),
+            task_ids = [293],
+            ml = True,
+            nr_thr_resamp = 1,
+            nr_thr_saving = 6,
+            fast = False,
+            nora_tag = "None",
+            preview = False,
+            task = "total",
+            # roi_subset = [
+            #     "vertebrae_T12",
+            #     "vertebrae_L1",
+            #     "vertebrae_L2",
+            #     "vertebrae_L3",
+            #     "vertebrae_L4",
+            #     "vertebrae_L5",
+            # ],
+            roi_subset = None,
+            statistics = False,
+            radiomics = False,
+            crop_path = None,
+            body_seg = False,
+            force_split = False,
+            output_type = "nifti",
+            quiet = False,
+            verbose = False,
+            test = 0,
+            skip_saving = True,
+            device = "gpu",
+            license_number = None,
+            statistics_exclude_masks_at_border = True,
+            no_derived_masks = False,
+            v1_order = False,
+        )
+        
         end = time.time()
 
         # Log total time for spine segmentation
         print(f"Total time for aorta segmentation: {end-st:.2f}s.")
 
-        return seg, mvs
+        return seg
 
 
 class AorticCalciumSegmentation(InferenceClass):
@@ -117,35 +122,48 @@ class AorticCalciumSegmentation(InferenceClass):
 
     def __call__(self, inference_pipeline):
         ct = inference_pipeline.medical_volume.get_fdata()
-        aorta_mask = inference_pipeline.segmentation.get_fdata() == 7
+        aorta_mask = inference_pipeline.segmentation.get_fdata().astype(np.int8) == 52
         spine_mask = inference_pipeline.spine_segmentation.get_fdata() > 0
-
-        inference_pipeline.calc_mask = self.detectCalcifications(
-            ct, aorta_mask, exclude_mask=spine_mask, remove_size=3
+             
+        calcification_results = self.detectCalcifications(
+            ct, aorta_mask, exclude_mask=spine_mask, remove_size=3, return_dilated_mask=True
         )
-
+        
+        inference_pipeline.calc_mask = calcification_results['calc_mask']
+        inference_pipeline.calcium_threshold = calcification_results['threshold']
+        
+        # Set output dirs
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_images_organs = os.path.join(self.output_dir, "images/")
         inference_pipeline.output_dir_images_organs = self.output_dir_images_organs
+        self.output_dir_segmentation_masks = os.path.join(self.output_dir, "segmentation_masks/")
+        inference_pipeline.output_dir_segmentation_masks = self.output_dir_segmentation_masks
 
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
-
-        # np.save(os.path.join(self.output_dir_images_organs, 'ct.npy'), ct)
-        # np.save(os.path.join(self.output_dir_images_organs, "aorta_mask.npy"), aorta_mask)
-        # np.save(os.path.join(self.output_dir_images_organs, "spine_mask.npy"), spine_mask)
-
-        # np.save(
-        #     os.path.join(self.output_dir_images_organs, "calcium_mask.npy"),
-        #     inference_pipeline.calc_mask,
-        # )
-        # np.save(
-        #     os.path.join(self.output_dir_images_organs, "ct_scan.npy"),
-        #     inference_pipeline.medical_volume.get_fdata(),
-        # )
+        if not os.path.exists(self.output_dir_segmentation_masks):
+            os.makedirs(self.output_dir_segmentation_masks)
+                
+        # save masks
+        inference_pipeline.saveArrToNifti(
+            inference_pipeline.calc_mask,
+            os.path.join(inference_pipeline.output_dir_segmentation_masks, 
+                         "calcium_segmentations.nii.gz")
+            )
+        inference_pipeline.saveArrToNifti(
+            calcification_results['dilated_mask'],
+            os.path.join(inference_pipeline.output_dir_segmentation_masks, 
+                         "dilated_aorta.nii.gz")
+            )
+        inference_pipeline.saveArrToNifti(
+            ct,
+            os.path.join(inference_pipeline.output_dir_segmentation_masks, 
+                         "ct.nii.gz")
+            )
 
         return {}
-
+        
+    
     def detectCalcifications(
         self,
         ct,
@@ -236,7 +254,7 @@ class AorticCalciumSegmentation(InferenceClass):
             output_mask[x_start:x_end, y_start:y_end, :] = mask_slice
 
             return output_mask
-
+        
         # remove parts that are not the abdominal aorta
         labelled_aorta, num_classes = ndimage.label(aorta_mask)
         if num_classes > 1:
@@ -341,7 +359,7 @@ class AorticCalciumSegmentation(InferenceClass):
             if verbose:
                 print("Excluded {} foci under {}".format(counter, remove_size))
 
-        if not all([return_dilated_mask, return_dilated_exclude]):
+        if not any([return_dilated_mask, return_dilated_exclude]):
             return calc_mask.astype(np.int8)
         else:
             results = {}
@@ -366,43 +384,108 @@ class AorticCalciumMetrics(InferenceClass):
 
     def __call__(self, inference_pipeline):
         calc_mask = inference_pipeline.calc_mask
-
+        spine_mask = inference_pipeline.spine_segmentation.get_fdata().astype(np.int8) 
+        '''     26: "vertebrae_S1",
+                27: "vertebrae_L5",
+                28: "vertebrae_L4",
+                29: "vertebrae_L3",
+                30: "vertebrae_L2",
+                31: "vertebrae_L1",
+                32: "vertebrae_T12",
+                33: "vertebrae_T11",
+                34: "vertebrae_T10",
+                35: "vertebrae_T9",
+                36: "vertebrae_T8",
+                37: "vertebrae_T7",
+                38: "vertebrae_T6",
+                39: "vertebrae_T5",
+                40: "vertebrae_T4",
+                41: "vertebrae_T3",
+                42: "vertebrae_T2",
+                43: "vertebrae_T1",
+                44: "vertebrae_C7",
+                45: "vertebrae_C6",
+                46: "vertebrae_C5",
+                47: "vertebrae_C4",
+                48: "vertebrae_C3",
+                49: "vertebrae_C2",
+                50: "vertebrae_C1",'''
+        
+        # breakpoint()
+        t12_level = np.where((spine_mask == 32).sum(axis=(0,1)))[0]
+        l1_level = np.where((spine_mask == 31).sum(axis=(0,1)))[0]
+        
+        breakpoint()
+        
+        if len(t12_level) != 0 and len(l1_level) != 0:
+            sep_plane = round(np.mean([t12_level[0], l1_level[-1]]))
+        elif len(t12_level) == 0 and len(l1_level) != 0:
+            print('WARNNG: could not locate T12, using L1 only..')
+            sep_plane = l1_level[-1]
+        elif len(t12_level) != 0 and len(l1_level) == 0:
+            print('WARNNG: could not locate L1, using T12 only..')
+            sep_plane = t12_level[0]
+        else: 
+            raise ValueError('Could not locate spine either T12 or L1, aborting..')
+            
+        planes = np.zeros_like(spine_mask, dtype=np.int8)
+        planes[:,:,sep_plane] = 1
+        planes[spine_mask == 32] = 2
+        planes[spine_mask == 31] = 3
+        
+        inference_pipeline.saveArrToNifti(
+            planes,
+            os.path.join(inference_pipeline.output_dir_segmentation_masks, 
+                          "t12_plane.nii.gz")
+            )        
+        
         inference_pipeline.pix_dims = inference_pipeline.medical_volume.header[
             "pixdim"
         ][1:4]
         # divided with 10 to get in cm
         inference_pipeline.vol_per_pixel = np.prod(inference_pipeline.pix_dims / 10)
+        
+        all_regions = {}
+        region_names = ['Abdominal', 'Thoracic']
+        
+        ct_full = inference_pipeline.medical_volume.get_fdata()
 
-        # count statistics for individual calcifications
-        labelled_calc, num_lesions = ndimage.label(calc_mask)
-
-        metrics = {
-            "volume": [],
-            "mean_hu": [],
-            "median_hu": [],
-            "max_hu": [],
-        }
-
-        ct = inference_pipeline.medical_volume.get_fdata()
-
-        for i in range(1, num_lesions + 1):
-            tmp_mask = labelled_calc == i
-
-            tmp_ct_vals = ct[tmp_mask]
-
-            metrics["volume"].append(
-                len(tmp_ct_vals) * inference_pipeline.vol_per_pixel
-            )
-            metrics["mean_hu"].append(np.mean(tmp_ct_vals))
-            metrics["median_hu"].append(np.median(tmp_ct_vals))
-            metrics["max_hu"].append(np.max(tmp_ct_vals))
-
-        # Volume of calcificaitons
-        calc_vol = np.sum(metrics["volume"])
-        metrics["volume_total"] = calc_vol
-
-        metrics["num_calc"] = len(metrics["volume"])
-
-        inference_pipeline.metrics = metrics
+        for i in range(2): 
+            # count statistics for individual calcifications
+            if i == 0:
+                labelled_calc, num_lesions = ndimage.label(calc_mask[:,:,:sep_plane])
+                ct = ct_full[:,:,:sep_plane]
+            elif i == 1:
+                labelled_calc, num_lesions = ndimage.label(calc_mask[:,:,sep_plane:])
+                ct = ct_full[:,:,sep_plane:]
+                        
+            metrics = {
+                "volume": [],
+                "mean_hu": [],
+                "median_hu": [],
+                "max_hu": [],
+            }
+                
+            for j in range(1, num_lesions + 1):
+                tmp_mask = labelled_calc == j
+    
+                tmp_ct_vals = ct[tmp_mask]
+    
+                metrics["volume"].append(
+                    len(tmp_ct_vals) * inference_pipeline.vol_per_pixel
+                )
+                metrics["mean_hu"].append(np.mean(tmp_ct_vals))
+                metrics["median_hu"].append(np.median(tmp_ct_vals))
+                metrics["max_hu"].append(np.max(tmp_ct_vals))
+    
+            # Volume of calcificaitons
+            calc_vol = np.sum(metrics["volume"])
+            metrics["volume_total"] = calc_vol
+    
+            metrics["num_calc"] = len(metrics["volume"])
+    
+            all_regions[region_names[i]] = metrics
+    
+        inference_pipeline.metrics = all_regions
 
         return {}

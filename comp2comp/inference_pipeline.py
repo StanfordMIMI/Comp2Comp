@@ -8,6 +8,7 @@ from typing import Dict, List
 
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.io.io import DicomLoader, NiftiSaver
+import nibabel as nib
 
 
 class InferencePipeline(InferenceClass):
@@ -78,6 +79,26 @@ class InferencePipeline(InferenceClass):
         print("Inference pipeline finished.\n")
 
         return output
+
+    def saveArrToNifti(
+            self,
+            arr,
+            path):
+        '''
+        Saves an array to nifti using the CT as reference
+
+        Args:
+            arr (ndarray): input array.
+            path (str, Path): full save path.
+
+        Returns:
+            None.
+
+        '''
+        img = nib.Nifti1Image(arr, 
+                                  self.medical_volume.affine,
+                                  self.medical_volume.header)        
+        nib.save(img, path)    
 
 
 if __name__ == "__main__":
