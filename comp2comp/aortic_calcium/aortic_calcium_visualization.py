@@ -57,6 +57,7 @@ class AorticCalciumPrinter(InferenceClass):
                 ):
                     f.write("{},{:.1f},{:.1f},{:.1f}\n".format(vol, mean, median, max))
         
+        
         # Write total results
         with open(
             os.path.join(
@@ -68,8 +69,49 @@ class AorticCalciumPrinter(InferenceClass):
                 f.write(region + ',\n')
     
                 f.write("Total number,{}\n".format(metrics["num_calc"]))
-                f.write("Total volume (cm^3),{}\n".format(metrics["volume_total"]))
-                f.write("Threshold (HU),{}\n".format(inference_pipeline.calcium_threshold))
+                f.write("Total volume (cm^3),{:.1f}\n".format(metrics["volume_total"]))
+                f.write("Threshold (HU),{:.1f}\n".format(inference_pipeline.calcium_threshold))
+                
+                f.write("{},{:.1f}+/-{:.1f}\n".format(
+                        "Mean HU",
+                        np.mean(metrics["mean_hu"]),
+                        np.std(metrics["mean_hu"]),
+                    )
+                )
+                f.write("{},{:.1f}+/-{:.1f}\n".format(
+                        "Median HU",
+                        np.mean(metrics["median_hu"]),
+                        np.std(metrics["median_hu"]),
+                    )
+                )
+                f.write("{},{:.1f}+/-{:.1f}\n".format(
+                        "Max HU",
+                        np.mean(metrics["max_hu"]),
+                        np.std(metrics["max_hu"]),
+                    )
+                )
+                f.write("{},{:.1f}+/-{:.1f}\n".format(
+                        "Mean volume (cm³):",
+                        np.mean(metrics["volume"]),
+                        np.std(metrics["volume"]),
+                    )
+                )
+                f.write("{},{:.1f}\n".format(
+                    "Median volume (cm³)", np.median(metrics["volume"])
+                    )
+                )
+                f.write("{},{:.1f}\n".format(
+                        "Max volume (cm³)", np.max(metrics["volume"])
+                    )
+                )
+                f.write("{},{:.1f}\n".format(
+                        "Min volume (cm³):", np.min(metrics["volume"])
+                    )
+                )
+                
+                if inference_pipeline.args.threshold == 'agatson':
+                    f.write("Agatson score,{:.1f}\n".format(metrics["agatson_score"]))
+                   
 
         distance = 25
         print("\n")
@@ -139,7 +181,15 @@ class AorticCalciumPrinter(InferenceClass):
                         "Threshold (HU):", distance, inference_pipeline.calcium_threshold
                     )
                 )
+                if inference_pipeline.args.threshold == 'agatson':
+                    print(
+                        "{:<{}}{:.1f}".format(
+                            "Agatson score:", distance, metrics["agatson_score"]
+                        )
+                    )
+                    
     
                 print("\n")
 
         return {}
+    

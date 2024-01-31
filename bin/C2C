@@ -128,7 +128,8 @@ def AorticCalciumPipelineBuilder(path, args):
             aortic_calcium.AorticCalciumMetrics(),
             aortic_calcium_visualization.AorticCalciumVisualizer(),
             aortic_calcium_visualization.AorticCalciumPrinter(),
-        ]
+        ],
+        args=args
     )
     return pipeline
 
@@ -201,8 +202,13 @@ def argument_parser():
         "liver_spleen_pancreas", parents=[base_parser]
     )
 
-    aortic_calcium = subparsers.add_parser("aortic_calcium", parents=[base_parser])
-
+    aortic_calcium = subparsers.add_parser(
+        "aortic_calcium", parents=[base_parser])
+    
+    aortic_calcium.add_argument(
+        "--threshold", default="adaptive", type=str
+    )
+    
     contrast_phase_parser = subparsers.add_parser(
         "contrast_phase", parents=[base_parser]
     )

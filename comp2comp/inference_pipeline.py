@@ -14,8 +14,9 @@ import nibabel as nib
 class InferencePipeline(InferenceClass):
     """Inference pipeline."""
 
-    def __init__(self, inference_classes: List = None, config: Dict = None):
+    def __init__(self, inference_classes: List = None, config: Dict = None, args: Dict = None):
         self.config = config
+        self.args = args
         # assign values from config to attributes
         if self.config is not None:
             for key, value in self.config.items():

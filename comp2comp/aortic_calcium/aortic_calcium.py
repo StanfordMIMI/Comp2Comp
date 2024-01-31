@@ -126,7 +126,8 @@ class AorticCalciumSegmentation(InferenceClass):
         spine_mask = inference_pipeline.spine_segmentation.get_fdata() > 0
              
         calcification_results = self.detectCalcifications(
-            ct, aorta_mask, exclude_mask=spine_mask, remove_size=3, return_dilated_mask=True
+            ct, aorta_mask, exclude_mask=spine_mask, remove_size=3, return_dilated_mask=True,
+            threshold=inference_pipeline.args.threshold
         )
         
         inference_pipeline.calc_mask = calcification_results['calc_mask']
@@ -182,6 +183,7 @@ class AorticCalciumSegmentation(InferenceClass):
         exclude_center_aorta=True,
         return_eroded_aorta=False,
         aorta_erode_iteration=6,
+        threshold = 'adaptive',
     ):
         """
         Function that takes in a CT image and aorta segmentation (and optionally volumes to use
@@ -222,6 +224,9 @@ class AorticCalciumSegmentation(InferenceClass):
                 Return the eroded center aorta. Defaults to False.
             aorta_erode_iteration (int, optional):
                 Number of iterations for the strcturing element. Defaults to 6.
+            threshold: (str, int):
+                Can either be 'adaptive', 'agatson', or int. Choosing 'agatson' 
+                Will mean a threshold of 130 HU.
 
         Returns:
             results: array of only the mask is returned, or dict if other volumes are also returned.
@@ -268,16 +273,25 @@ class AorticCalciumSegmentation(InferenceClass):
 
             biggest_idx = np.argmax(aorta_vols) + 1
             aorta_mask[labelled_aorta != biggest_idx] = 0
-
-        # Get aortic CT point to set adaptive threshold
-        aorta_ct_points = ct[aorta_mask == 1]
-
-        # equal to one standard deviation to the left of the curve
-        quant = 0.158
-        quantile_median_dist = np.median(aorta_ct_points) - np.quantile(
-            aorta_ct_points, q=quant
-        )
-        calc_thres = np.median(aorta_ct_points) + quantile_median_dist * num_std
+        
+        ### Choose the threshold ###
+        if threshold == 'adaptive':
+            # Get aortic CT point to set adaptive threshold
+            aorta_ct_points = ct[aorta_mask == 1]
+    
+            # equal to one standard deviation to the left of the curve
+            quant = 0.158
+            quantile_median_dist = np.median(aorta_ct_points) - np.quantile(
+                aorta_ct_points, q=quant
+            )
+            calc_thres = np.median(aorta_ct_points) + quantile_median_dist * num_std
+        elif threshold == 'agatson':
+            calc_thres = 130
+        elif isinstance(threshold, int):
+            calc_thres = threshold
+        else:
+            raise ValueError('Error in threshold value for aortic calcium segmentaiton. \
+                             Should be \'adaptive\', \'agatson\' or int, but got: ' + str(threshold))
 
         t0 = time.time()
 
@@ -448,15 +462,17 @@ class AorticCalciumMetrics(InferenceClass):
         
         ct_full = inference_pipeline.medical_volume.get_fdata()
 
-        for i in range(2): 
+        for i in range(len(region_names)): 
             # count statistics for individual calcifications
             if i == 0:
-                labelled_calc, num_lesions = ndimage.label(calc_mask[:,:,:sep_plane])
+                calc_mask_region = calc_mask[:,:,:sep_plane]
                 ct = ct_full[:,:,:sep_plane]
             elif i == 1:
-                labelled_calc, num_lesions = ndimage.label(calc_mask[:,:,sep_plane:])
+                calc_mask_region = calc_mask[:,:,sep_plane:]
                 ct = ct_full[:,:,sep_plane:]
                         
+            labelled_calc, num_lesions = ndimage.label(calc_mask_region)
+
             metrics = {
                 "volume": [],
                 "mean_hu": [],
@@ -481,9 +497,42 @@ class AorticCalciumMetrics(InferenceClass):
             metrics["volume_total"] = calc_vol
     
             metrics["num_calc"] = len(metrics["volume"])
-    
+
+            if inference_pipeline.args.threshold == 'agatson':
+                metrics["agatson_score"] = self.CalculateAgatsonScore(calc_mask_region, ct, inference_pipeline.pix_dims) 
+                
             all_regions[region_names[i]] = metrics
     
         inference_pipeline.metrics = all_regions
 
         return {}
+    
+    def CalculateAgatsonScore(self, calc_mask_region, ct, pix_dims):
+        def get_hu_factor(max_hu):
+            # if max_hu ><
+            if max_hu < 200:
+                factor = 1
+            elif 200 <= max_hu < 300:
+                factor = 2
+            elif 300 <= max_hu < 400:
+                factor = 3
+            elif max_hu > 400:
+                factor = 4
+            
+            return factor
+        
+        # dims are in mm here
+        area_per_pixel = pix_dims[0] * pix_dims[1]
+        agatson = 0
+        
+        for i in range(calc_mask_region.shape[2]):            
+            tmp_slice = calc_mask_region[:,:,i]
+            tmp_ct_slice = ct[:,:,i]
+            
+            labelled_calc, num_lesions = ndimage.label(tmp_slice)
+            
+            for j in range(1, num_lesions + 1):
+                tmp_mask = labelled_calc == j
+                agatson +=  tmp_mask.sum() * area_per_pixel * get_hu_factor(tmp_ct_slice[tmp_mask].max())
+        
+        return agatson
