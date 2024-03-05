@@ -184,6 +184,7 @@ class AorticCalciumSegmentation(InferenceClass):
         return_eroded_aorta=False,
         aorta_erode_iteration=6,
         threshold = 'adaptive',
+        agatson_failsafe = 100,
     ):
         """
         Function that takes in a CT image and aorta segmentation (and optionally volumes to use
@@ -227,6 +228,9 @@ class AorticCalciumSegmentation(InferenceClass):
             threshold: (str, int):
                 Can either be 'adaptive', 'agatson', or int. Choosing 'agatson' 
                 Will mean a threshold of 130 HU.
+            agatson_failsafe: (int):
+                A fail-safe raising an error if the mean HU of the aorta is too high
+                to reliably be using the agatson threshold of 130  
 
         Returns:
             results: array of only the mask is returned, or dict if other volumes are also returned.
@@ -287,11 +291,15 @@ class AorticCalciumSegmentation(InferenceClass):
             calc_thres = np.median(aorta_ct_points) + quantile_median_dist * num_std
         elif threshold == 'agatson':
             calc_thres = 130
-        elif isinstance(threshold, int):
-            calc_thres = threshold
+            # needed for surpressing noise and detecting if theres
+            # Contrast in the aorta 
+            exclude_center_aorta = True
         else:
-            raise ValueError('Error in threshold value for aortic calcium segmentaiton. \
-                             Should be \'adaptive\', \'agatson\' or int, but got: ' + str(threshold))
+            try:
+                calc_thres = int(threshold)
+            except:
+                raise ValueError('Error in threshold value for aortic calcium segmentaiton. \
+                    Should be \'adaptive\', \'agatson\' or int, but got: ' + str(threshold))
 
         t0 = time.time()
 
@@ -326,6 +334,13 @@ class AorticCalciumSegmentation(InferenceClass):
                 num_iteration=aorta_erode_iteration,
                 operation="erode",
             )
+            
+            # Perform the fail-safe check if the method is agatson
+            if threshold == 'agatson' and ct[aorta_eroded].mean() > agatson_failsafe:
+                raise ValueError('The mean HU in the center aorta is {:.0f}, and the Agatson method will provide unreliable results (fail-safe threshold is {})'.format(
+                                     ct[aorta_eroded].mean(), agatson_failsafe
+                                 ))
+                 
             calc_mask = calc_mask * (aorta_eroded == 0)
             if show_time:
                 print("exclude center aorta time: {:.2f} sec".format(time.time() - t0))
