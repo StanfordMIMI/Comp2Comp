@@ -10,7 +10,8 @@ from comp2comp.liver_spleen_pancreas.visualization_utils import (
     generate_liver_spleen_pancreas_report,
     generate_slice_images,
 )
-
+import nibabel as nib
+import numpy as np
 
 class LiverSpleenPancreasVisualizer(InferenceClass):
     def __init__(self):
@@ -22,19 +23,40 @@ class LiverSpleenPancreasVisualizer(InferenceClass):
             "Median": "HU",
         }
 
-        self.class_nums = [1, 5, 10]
+        # self.class_nums = [1, 5, 10]
+        self.class_nums = [5, 1, 7]
         self.organ_names = ["liver", "spleen", "pancreas"]
 
     def __call__(self, inference_pipeline):
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_images_organs = os.path.join(self.output_dir, "images/")
-        inference_pipeline.output_dir_images_organs_organs_organs = (
+        inference_pipeline.output_dir_images_organs = (
             self.output_dir_images_organs
         )
 
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
-
+        
+        # make folder for volumes
+        self.output_dir_volumes = os.path.join(self.output_dir, "volumes/")
+        if not os.path.exists(self.output_dir_volumes):
+            os.makedirs(self.output_dir_volumes)
+        
+        # save the volume to disk in nifti format    
+        nib.save(inference_pipeline.medical_volume, os.path.join(self.output_dir_volumes, 'ct.nii.gz'))
+        
+        segmentation_subset = np.zeros(inference_pipeline.medical_volume.shape, dtype=np.int8)
+        tmp_seg = inference_pipeline.segmentation.get_fdata().astype(np.int8)
+        
+        for i, c in enumerate(self.class_nums, start=1):
+            segmentation_subset[tmp_seg == c] = i
+        
+        inference_pipeline.saveArrToNifti(
+            segmentation_subset,
+            os.path.join(self.output_dir_volumes, 
+                         "liver_spleen_pancreas_mask.nii.gz")
+            )
+        
         inference_pipeline.medical_volume_arr = np.flip(
             inference_pipeline.medical_volume.get_fdata(), axis=1
         )
@@ -61,7 +83,7 @@ class LiverSpleenPancreasVisualizer(InferenceClass):
         )
 
         inference_pipeline.organ_metrics = self.organ_metrics
-
+        
         generate_liver_spleen_pancreas_report(
             self.output_dir_images_organs, self.organ_names
         )

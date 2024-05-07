@@ -523,6 +523,10 @@ class AorticCalciumMetrics(InferenceClass):
         return {}
     
     def CalculateAgatsonScore(self, calc_mask_region, ct, pix_dims):
+        '''
+        Original Agatson papers says need to be >= 1mm^2, other papers
+        use at least 3 face-linked pixels.
+        '''
         def get_hu_factor(max_hu):
             # if max_hu ><
             if max_hu < 200:
@@ -548,6 +552,12 @@ class AorticCalciumMetrics(InferenceClass):
             
             for j in range(1, num_lesions + 1):
                 tmp_mask = labelled_calc == j
-                agatson +=  tmp_mask.sum() * area_per_pixel * get_hu_factor(tmp_ct_slice[tmp_mask].max())
+                
+                tmp_area = tmp_mask.sum() * area_per_pixel
+                # exclude if less than 1 mm^2
+                if tmp_area <= 1:
+                    continue
+                else:
+                    agatson += tmp_area * get_hu_factor(tmp_ct_slice[tmp_mask].max())
         
         return agatson

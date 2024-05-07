@@ -47,18 +47,20 @@ def get_dicom_or_nifti_paths_and_num(path):
     Returns:
         list: List of paths.
     """
-    if path.endswith(".nii") or path.endswith(".nii.gz"):
-        return [(path, 1)]
     dicom_nifti_paths = []
-    for root, dirs, files in os.walk(path):
-        if len(files) > 0:
-            # if all(file.endswith(".dcm") or file.endswith(".dicom") for file in files):
-            dicom_nifti_paths.append((root, len(files)))
-            # else:
-            #     for file in files:
-            #         if file.endswith(".nii") or file.endswith(".nii.gz"):
-            #             num_slices = 450
-            #             dicom_nifti_paths.append((os.path.join(root, file), num_slices))
+    
+    if path.endswith(".nii") or path.endswith(".nii.gz"):
+        dicom_nifti_paths.append([(path, 1)])
+    elif path.endswith('.txt'):
+        dicom_nifti_paths = []
+        with open(path, 'r') as f:
+            for dicom_folder_path in f:
+                 dicom_nifti_paths.append( (dicom_folder_path.strip(), len(os.listdir(dicom_folder_path.strip()))) )
+    else:    
+        for root, dirs, files in os.walk(path):
+            if len(files) > 0:
+                # if all(file.endswith(".dcm") or file.endswith(".dicom") for file in files):
+                dicom_nifti_paths.append((root, len(files)))
 
     return dicom_nifti_paths
 

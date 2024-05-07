@@ -32,7 +32,7 @@ class InferencePipeline(InferenceClass):
             print(f"({i + 1}) {inference_class.__repr__()}")
         print("")
 
-        print("Starting inference pipeline.\n")
+        print("Starting inference pipeline for:\n")
 
         if inference_pipeline:
             for key, value in kwargs.items():

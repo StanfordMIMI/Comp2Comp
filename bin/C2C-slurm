@@ -22,25 +22,25 @@ def python_submit(command, node=None):
 
     try:
         if node is None:
-            command = "sbatch --ntasks=1 --cpus-per-task=1 --output ./slurm/slurm-%j.out \
-                --mem-per-cpu=8G -p gpu --gpus 1 --time=1:00:00 slurm.sh"
+            command = "sbatch --ntasks=1 --cpus-per-task=8 --output ./slurm/slurm-%j.out \
+                --mem-per-cpu=3G -p gpu --gpus 1 --time=1:00:00 slurm.sh"
             submit_command(command)
             print(f'Submitted the command --- "{command}" --- to slurm.')
         else:
-            command = f"sbatch --ntasks=1 --cpus-per-task=1 --output ./slurm/slurm-%j.out \
-                --nodelist={node} --mem-per-cpu=8G -p gpu --gpus 1 --time=1:00:00 slurm.sh"
+            command = f"sbatch --ntasks=1 --cpus-per-task=8 --output ./slurm/slurm-%j.out \
+                --nodelist={node} --mem-per-cpu=3G -p gpu --gpus 1 --time=1:00:00 slurm.sh"
             submit_command(command)
             print(f'Submitted the command --- "{command}" --- to slurm.')
     except subprocess.CalledProcessError:
         if node == None:
-            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --mem=128000 --time=100-00:00:00 slurm.sh "
+            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --mem=50gb --time=100-00:00:00 slurm.sh "
             submit_command(command)
             print(f'Submitted the command --- "{command}" --- to slurm.')
         else:
-            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --nodelist={node} --mem=128000 --time=100-00:00:00 slurm.sh"
+            command = f"sbatch -c 8 --gres=gpu:1 --output ./slurm/slurm-%j.out --nodelist={node} --mem=50gb --time=100-00:00:00 slurm.sh"
             submit_command(command)
             print(f'Submitted the command --- "{command}" --- to slurm.')
     os.remove("./slurm.sh")
 
 
-python_submit(command)
+python_submit(command, node='siena')

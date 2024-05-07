@@ -10,6 +10,7 @@ from typing import Dict, Union
 import dosma as dm
 import pydicom
 import SimpleITK as sitk
+import nibabel as nib
 
 from comp2comp.inference_class_base import InferenceClass
 
@@ -113,6 +114,8 @@ class DicomToNifti(InferenceClass):
                 os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"),
             )
 
+        inference_pipeline.medical_volume = nib.load(os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"))
+        
         return {}
 
 
