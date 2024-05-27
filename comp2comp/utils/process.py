@@ -150,5 +150,3 @@ def process_3d(args, pipeline_builder):
             if len(os.listdir(os.path.dirname(output_dir))) == 0:
                 shutil.rmtree(os.path.dirname(output_dir))
             continue
-
-

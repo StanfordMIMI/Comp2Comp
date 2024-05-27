@@ -8,7 +8,6 @@ from pathlib import Path
 exec_file = sys.argv[0].split("-")[0]
 command = exec_file + " " + " ".join([pipes.quote(s) for s in sys.argv[1:]])
 
-
 def submit_command(command):
     subprocess.run(command.split(" "), check=True, capture_output=False)
 
@@ -43,4 +42,7 @@ def python_submit(command, node=None):
     os.remove("./slurm.sh")
 
 
-python_submit(command, node='siena')
+python_submit(command, node='roma')
+
+
+
