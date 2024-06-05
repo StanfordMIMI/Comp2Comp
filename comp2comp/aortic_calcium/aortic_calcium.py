@@ -9,17 +9,17 @@ import os
 import time
 from pathlib import Path
 from typing import Union
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
+
 # from totalsegmentator.libs import (
 #     download_pretrained_weights,
 #     nostdout,
 #     setup_nnunet,
 # )
 from totalsegmentatorv2.python_api import totalsegmentator
-
 
 from comp2comp.inference_class_base import InferenceClass
 
@@ -69,18 +69,18 @@ class AortaSegmentation(InferenceClass):
         print("Segmenting aorta...")
         st = time.time()
         os.environ["SCRATCH"] = self.model_dir
- 
+
         seg = totalsegmentator(
-            input = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
-            output = os.path.join(self.output_dir_segmentations, "segmentation.nii"),
-            task_ids = [293],
-            ml = True,
-            nr_thr_resamp = 1,
-            nr_thr_saving = 6,
-            fast = False,
-            nora_tag = "None",
-            preview = False,
-            task = "total",
+            input=os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+            output=os.path.join(self.output_dir_segmentations, "segmentation.nii"),
+            task_ids=[293],
+            ml=True,
+            nr_thr_resamp=1,
+            nr_thr_saving=6,
+            fast=False,
+            nora_tag="None",
+            preview=False,
+            task="total",
             # roi_subset = [
             #     "vertebrae_T12",
             #     "vertebrae_L1",
@@ -89,24 +89,24 @@ class AortaSegmentation(InferenceClass):
             #     "vertebrae_L4",
             #     "vertebrae_L5",
             # ],
-            roi_subset = None,
-            statistics = False,
-            radiomics = False,
-            crop_path = None,
-            body_seg = False,
-            force_split = False,
-            output_type = "nifti",
-            quiet = False,
-            verbose = False,
-            test = 0,
-            skip_saving = True,
-            device = "gpu",
-            license_number = None,
-            statistics_exclude_masks_at_border = True,
-            no_derived_masks = False,
-            v1_order = False,
+            roi_subset=None,
+            statistics=False,
+            radiomics=False,
+            crop_path=None,
+            body_seg=False,
+            force_split=False,
+            output_type="nifti",
+            quiet=False,
+            verbose=False,
+            test=0,
+            skip_saving=True,
+            device="gpu",
+            license_number=None,
+            statistics_exclude_masks_at_border=True,
+            no_derived_masks=False,
+            v1_order=False,
         )
-        
+
         end = time.time()
 
         # Log total time for spine segmentation
@@ -126,8 +126,12 @@ class AorticCalciumSegmentation(InferenceClass):
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_images_organs = os.path.join(self.output_dir, "images/")
         inference_pipeline.output_dir_images_organs = self.output_dir_images_organs
-        self.output_dir_segmentation_masks = os.path.join(self.output_dir, "segmentation_masks/")
-        inference_pipeline.output_dir_segmentation_masks = self.output_dir_segmentation_masks
+        self.output_dir_segmentation_masks = os.path.join(
+            self.output_dir, "segmentation_masks/"
+        )
+        inference_pipeline.output_dir_segmentation_masks = (
+            self.output_dir_segmentation_masks
+        )
 
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
@@ -135,60 +139,64 @@ class AorticCalciumSegmentation(InferenceClass):
             os.makedirs(self.output_dir_segmentation_masks)
         if not os.path.exists(os.path.join(self.output_dir, "metrics/")):
             os.makedirs(os.path.join(self.output_dir, "metrics/"))
-        
+
         ct = inference_pipeline.medical_volume.get_fdata()
         aorta_mask = inference_pipeline.segmentation.get_fdata().astype(np.int8) == 52
         spine_mask = inference_pipeline.spine_segmentation.get_fdata() > 0
-        
-        # Determine the target number of pixels 
+
+        # Determine the target number of pixels
         pix_size = np.array(inference_pipeline.medical_volume.header.get_zooms())
         # target: 1 mm
-        target_aorta_dil = round(1/pix_size[0])
+        target_aorta_dil = round(1 / pix_size[0])
         # target: 3 mm
-        target_exclude_dil = round(3/pix_size[0])
+        target_exclude_dil = round(3 / pix_size[0])
         # target: 7 mm
-        target_aorta_erode  = round(7/pix_size[0])
-        
-        # Run calcification detection pipeline         
+        target_aorta_erode = round(7 / pix_size[0])
+
+        # Run calcification detection pipeline
         calcification_results = self.detectCalcifications(
-            ct, 
-            aorta_mask, 
-            exclude_mask=spine_mask, 
-            remove_size=3, 
+            ct,
+            aorta_mask,
+            exclude_mask=spine_mask,
+            remove_size=3,
             return_dilated_mask=True,
             threshold=inference_pipeline.args.threshold,
-            dilation_iteration = target_aorta_dil,
-            dilation_iteration_exclude = target_exclude_dil,
-            aorta_erode_iteration = target_aorta_erode,
+            dilation_iteration=target_aorta_dil,
+            dilation_iteration_exclude=target_exclude_dil,
+            aorta_erode_iteration=target_aorta_erode,
         )
-        
-        inference_pipeline.calc_mask = calcification_results['calc_mask']
-        inference_pipeline.calcium_threshold = calcification_results['threshold']
-        
+
+        inference_pipeline.calc_mask = calcification_results["calc_mask"]
+        inference_pipeline.calcium_threshold = calcification_results["threshold"]
+
         # save masks
         inference_pipeline.saveArrToNifti(
             inference_pipeline.calc_mask,
-            os.path.join(inference_pipeline.output_dir_segmentation_masks, 
-                         "calcium_segmentations.nii.gz")
-            )
+            os.path.join(
+                inference_pipeline.output_dir_segmentation_masks,
+                "calcium_segmentations.nii.gz",
+            ),
+        )
         inference_pipeline.saveArrToNifti(
-            calcification_results['dilated_mask'],
-            os.path.join(inference_pipeline.output_dir_segmentation_masks, 
-                         "dilated_aorta_mask.nii.gz")
-            )
+            calcification_results["dilated_mask"],
+            os.path.join(
+                inference_pipeline.output_dir_segmentation_masks,
+                "dilated_aorta_mask.nii.gz",
+            ),
+        )
         inference_pipeline.saveArrToNifti(
             aorta_mask,
-            os.path.join(inference_pipeline.output_dir_segmentation_masks, 
-                         "aorta_mask.nii.gz")
-            )
+            os.path.join(
+                inference_pipeline.output_dir_segmentation_masks, "aorta_mask.nii.gz"
+            ),
+        )
         inference_pipeline.saveArrToNifti(
             ct,
-            os.path.join(inference_pipeline.output_dir_segmentation_masks, 
-                         "ct.nii.gz")
-            )
+            os.path.join(inference_pipeline.output_dir_segmentation_masks, "ct.nii.gz"),
+        )
 
         return {}
-        
+
     def detectCalcifications(
         self,
         ct,
@@ -207,9 +215,9 @@ class AorticCalciumSegmentation(InferenceClass):
         exclude_center_aorta=True,
         return_eroded_aorta=False,
         aorta_erode_iteration=6,
-        threshold = 'adaptive',
-        agatson_failsafe = 100,
-        generate_plots = True,
+        threshold="adaptive",
+        agatson_failsafe=100,
+        generate_plots=True,
     ):
         """
         Function that takes in a CT image and aorta segmentation (and optionally volumes to use
@@ -251,7 +259,7 @@ class AorticCalciumSegmentation(InferenceClass):
             aorta_erode_iteration (int, optional):
                 Number of iterations for the strcturing element. Defaults to 6.
             threshold: (str, int):
-                Can either be 'adaptive', 'agatson', or int. Choosing 'agatson' 
+                Can either be 'adaptive', 'agatson', or int. Choosing 'agatson'
                 Will mean a threshold of 130 HU.
             agatson_failsafe: (int):
                 A fail-safe raising an error if the mean HU of the aorta is too high
@@ -261,10 +269,10 @@ class AorticCalciumSegmentation(InferenceClass):
             results: array of only the mask is returned, or dict if other volumes are also returned.
 
         """
-        
-        '''
+
+        """
         Remove the ascending aorta if present
-        '''
+        """
         # remove parts that are not the abdominal aorta
         labelled_aorta, num_classes = ndimage.label(aorta_mask)
         if num_classes > 1:
@@ -279,10 +287,9 @@ class AorticCalciumSegmentation(InferenceClass):
             biggest_idx = np.argmax(aorta_vols) + 1
             aorta_mask[labelled_aorta != biggest_idx] = 0
 
-        
-        '''
+        """
         Erode the center aorta to get statistics from the blood pool
-        '''        
+        """
         t0 = time.time()
 
         struct = ndimage.generate_binary_structure(3, 1)
@@ -294,80 +301,95 @@ class AorticCalciumSegmentation(InferenceClass):
             num_iteration=aorta_erode_iteration,
             operation="erode",
         )
-        
-        eroded_ct_points = ct[aorta_eroded==1]
+
+        eroded_ct_points = ct[aorta_eroded == 1]
         eroded_ct_points_mean = eroded_ct_points.mean()
         eroded_ct_points_std = eroded_ct_points.std()
-        
+
         if generate_plots:
             # save the statistics of the eroded aorta for reference
-            with open(os.path.join(self.output_dir, 'metrics/eroded_aorta_statistics.csv'), 'w') as f:
-                f.write('metric,value\n')
-                f.write('mean,{:.1f}\n'.format(eroded_ct_points_mean))
-                f.write('std,{:.1f}\n'.format(eroded_ct_points_std))
-            
+            with open(
+                os.path.join(self.output_dir, "metrics/eroded_aorta_statistics.csv"),
+                "w",
+            ) as f:
+                f.write("metric,value\n")
+                f.write("mean,{:.1f}\n".format(eroded_ct_points_mean))
+                f.write("std,{:.1f}\n".format(eroded_ct_points_std))
+
             # save a histogram:
             fig, axx = plt.subplots(1)
             axx.hist(eroded_ct_points, bins=100)
-            axx.set_ylabel('Counts')
-            axx.set_xlabel('HU')
-            axx.set_title('Histogram of eroded aorta')
+            axx.set_ylabel("Counts")
+            axx.set_xlabel("HU")
+            axx.set_title("Histogram of eroded aorta")
             axx.grid()
             plt.tight_layout()
-            fig.savefig(os.path.join(self.output_dir, 'images/histogram_eroded_aorta.png'))
-            
+            fig.savefig(
+                os.path.join(self.output_dir, "images/histogram_eroded_aorta.png")
+            )
+
         # Perform the fail-safe check if the method is agatson
-        if threshold == 'agatson' and eroded_ct_points_mean > agatson_failsafe:
-            raise ValueError('The mean HU in the center aorta is {:.0f}, and the Agatson method will provide unreliable results (fail-safe threshold is {})'.format(
-                                    eroded_ct_points_mean, agatson_failsafe
-                                ))
-                
+        if threshold == "agatson" and eroded_ct_points_mean > agatson_failsafe:
+            raise ValueError(
+                "The mean HU in the center aorta is {:.0f}, and the Agatson method will provide unreliable results (fail-safe threshold is {})".format(
+                    eroded_ct_points_mean, agatson_failsafe
+                )
+            )
+
         # calc_mask = calc_mask * (aorta_eroded == 0)
         if show_time:
             print("exclude center aorta time: {:.2f} sec".format(time.time() - t0))
-        
-        '''
+
+        """
         Choose threshold
-        '''
-        
-        if threshold == 'adaptive':
+        """
+
+        if threshold == "adaptive":
             # calc_thres = eroded_ct_points.max()
 
             # Get aortic CT point to set adaptive threshold
             aorta_ct_points = ct[aorta_mask == 1]
-            
+
             # equal to one standard deviation to the left of the curve
             quant = 0.158
             quantile_median_dist = np.median(aorta_ct_points) - np.quantile(
                 aorta_ct_points, q=quant
             )
             calc_thres = np.median(aorta_ct_points) + quantile_median_dist * num_std
-            
-        elif threshold == 'agatson':
+
+        elif threshold == "agatson":
             calc_thres = 130
-            
+
             counter = self.slicedSizeCount(aorta_eroded, ct, remove_size, calc_thres)
 
             # if num_features >= 10:
             #     raise ValueError('Too many pixels above 130 in blood pool, found: {}'.format(num_features))
 
             if verbose:
-                print('{} calc over threshold of {}'.format(counter, remove_size))
-            
+                print("{} calc over threshold of {}".format(counter, remove_size))
+
             if generate_plots:
                 # save the statistics of the eroded aorta for reference
-                with open(os.path.join(self.output_dir, 'metrics/eroded_aorta_statistics.csv'), 'a') as f:
-                    f.write('num calcification blood pool,{}\n'.format(counter))
+                with open(
+                    os.path.join(
+                        self.output_dir, "metrics/eroded_aorta_statistics.csv"
+                    ),
+                    "a",
+                ) as f:
+                    f.write("num calcification blood pool,{}\n".format(counter))
         else:
             try:
                 calc_thres = int(threshold)
             except:
-                raise ValueError('Error in threshold value for aortic calcium segmentaiton. \
-                    Should be \'adaptive\', \'agatson\' or int, but got: ' + str(threshold))
+                raise ValueError(
+                    "Error in threshold value for aortic calcium segmentaiton. \
+                    Should be 'adaptive', 'agatson' or int, but got: "
+                    + str(threshold)
+                )
 
-        '''
+        """
         Dilate aorta before using threshold to segment calcifications
-        '''
+        """
         t0 = time.time()
         if dilation is not None:
             struct = ndimage.generate_binary_structure(*dilation)
@@ -382,7 +404,7 @@ class AorticCalciumSegmentation(InferenceClass):
 
             if show_time:
                 print("dilation mask time: {:.2f}".format(time.time() - t0))
-        
+
         t0 = time.time()
         # make threshold
         calc_mask = np.logical_and(aorta_dilated == 1, ct >= calc_thres)
@@ -412,7 +434,7 @@ class AorticCalciumSegmentation(InferenceClass):
                 print("exclude dilation time: {:.2f}".format(time.time() - t0))
 
             t0 = time.time()
-            calc_mask = calc_mask * (exclude_mask == 0) 
+            calc_mask = calc_mask * (exclude_mask == 0)
             if show_time:
                 print("exclude time: {:.2f}".format(time.time() - t0))
 
@@ -421,22 +443,21 @@ class AorticCalciumSegmentation(InferenceClass):
                 print("Excluding calcifications under {} pixels".format(remove_size))
 
             t0 = time.time()
-            
+
             if calc_mask.sum() != 0:
                 # perform the exclusion on a slice for speed
-                arr_slices = self.getSmallestArraySlice(calc_mask, margin = 1)
+                arr_slices = self.getSmallestArraySlice(calc_mask, margin=1)
                 labels, num_features = ndimage.label(calc_mask[arr_slices])
-                
+
                 counter = 0
                 for n in range(1, num_features + 1):
                     idx_tmp = labels == n
                     if idx_tmp.sum() <= remove_size:
                         labels[idx_tmp] = 0
                         counter += 1
-                        
+
                 calc_mask[arr_slices] = labels > 0
-            
-            
+
             if show_time:
                 print("Size exclusion time: {:.1f} sec".format(time.time() - t0))
 
@@ -456,30 +477,33 @@ class AorticCalciumSegmentation(InferenceClass):
 
             return results
 
-    
     def slicedDilationOrErosion(self, input_mask, struct, num_iteration, operation):
         """
         Perform the dilation on the smallest slice that will fit the
         segmentation
         """
-        
+
         if num_iteration < 1:
             return input_mask
-        
+
         margin = 2 if num_iteration is None else num_iteration + 1
 
         x_idx = np.where(input_mask.sum(axis=(1, 2)))[0]
         if len(x_idx) > 0:
-            x_start, x_end = max(x_idx[0] - margin, 0), min(x_idx[-1] + margin, input_mask.shape[0])
-        
+            x_start, x_end = max(x_idx[0] - margin, 0), min(
+                x_idx[-1] + margin, input_mask.shape[0]
+            )
+
         y_idx = np.where(input_mask.sum(axis=(0, 2)))[0]
         if len(y_idx) > 0:
-            y_start, y_end = max(y_idx[0] - margin, 0), min(y_idx[-1] + margin, input_mask.shape[1])
-             
-        # Don't dilate the aorta at the bifurcation 
+            y_start, y_end = max(y_idx[0] - margin, 0), min(
+                y_idx[-1] + margin, input_mask.shape[1]
+            )
+
+        # Don't dilate the aorta at the bifurcation
         z_idx = np.where(input_mask.sum(axis=(0, 1)))[0]
         z_start, z_end = z_idx[0], z_idx[-1]
-        
+
         if operation == "dilate":
             mask_slice = ndimage.binary_dilation(
                 input_mask[x_start:x_end, y_start:y_end, :], structure=struct
@@ -493,54 +517,56 @@ class AorticCalciumSegmentation(InferenceClass):
         output_mask = input_mask.copy()
 
         # insert dilated mask, but restrain to undilated z_start
-        output_mask[x_start:x_end, y_start:y_end, z_start:] = mask_slice[:,:,z_start:]
+        output_mask[x_start:x_end, y_start:y_end, z_start:] = mask_slice[:, :, z_start:]
 
         return output_mask
 
     def slicedSizeCount(self, aorta_eroded, ct, remove_size, calc_thres):
-        '''
+        """
         Counts the number of calcifications over the size threshold in the eroded
         aorta on the smallest slice that fits the aorta.
-        '''
+        """
         eroded_calc_mask = np.logical_and(aorta_eroded == 1, ct >= calc_thres)
-        
+
         if eroded_calc_mask.sum() != 0:
             # Perfom the counts on a slice of the aorta for speed
-            arr_slices = self.getSmallestArraySlice(eroded_calc_mask, margin = 1)
+            arr_slices = self.getSmallestArraySlice(eroded_calc_mask, margin=1)
             labels, num_features = ndimage.label(eroded_calc_mask[arr_slices])
             counter = 0
             for n in range(1, num_features + 1):
                 idx_tmp = labels == n
                 if idx_tmp.sum() > remove_size:
                     counter += 1
-            
+
             return counter
         else:
             return 0
 
-
-    def getSmallestArraySlice(self, input_mask, margin = 0):
-        '''
+    def getSmallestArraySlice(self, input_mask, margin=0):
+        """
         Generated the smallest slice that will fit the mask plus the given margin
-        and return a touple of slice objects 
-        '''
-        
+        and return a touple of slice objects
+        """
+
         x_idx = np.where(input_mask.sum(axis=(1, 2)))[0]
         if len(x_idx) > 0:
-            x_start, x_end = max(x_idx[0] - margin, 0), min(x_idx[-1] + margin, input_mask.shape[0])
-            
+            x_start, x_end = max(x_idx[0] - margin, 0), min(
+                x_idx[-1] + margin, input_mask.shape[0]
+            )
+
         y_idx = np.where(input_mask.sum(axis=(0, 2)))[0]
         if len(y_idx) > 0:
-            y_start, y_end = max(y_idx[0] - margin, 0), min(y_idx[-1] + margin, input_mask.shape[1])
-        
+            y_start, y_end = max(y_idx[0] - margin, 0), min(
+                y_idx[-1] + margin, input_mask.shape[1]
+            )
+
         z_idx = np.where(input_mask.sum(axis=(0, 1)))[0]
         if len(z_idx) > 0:
-            z_start, z_end = max(z_idx[0] - margin, 0), min(z_idx[-1] + margin, input_mask.shape[2])
-        
-        
+            z_start, z_end = max(z_idx[0] - margin, 0), min(
+                z_idx[-1] + margin, input_mask.shape[2]
+            )
+
         return (slice(x_start, x_end), slice(y_start, y_end), slice(z_start, z_end))
-
-
 
 
 class AorticCalciumMetrics(InferenceClass):
@@ -551,8 +577,8 @@ class AorticCalciumMetrics(InferenceClass):
 
     def __call__(self, inference_pipeline):
         calc_mask = inference_pipeline.calc_mask
-        spine_mask = inference_pipeline.spine_segmentation.get_fdata().astype(np.int8) 
-        '''     26: "vertebrae_S1",
+        spine_mask = inference_pipeline.spine_segmentation.get_fdata().astype(np.int8)
+        """     26: "vertebrae_S1",
                 27: "vertebrae_L5",
                 28: "vertebrae_L4",
                 29: "vertebrae_L3",
@@ -576,54 +602,54 @@ class AorticCalciumMetrics(InferenceClass):
                 47: "vertebrae_C4",
                 48: "vertebrae_C3",
                 49: "vertebrae_C2",
-                50: "vertebrae_C1",'''
-        
-        t12_level = np.where((spine_mask == 32).sum(axis=(0,1)))[0]
-        l1_level = np.where((spine_mask == 31).sum(axis=(0,1)))[0]
-        
-        
+                50: "vertebrae_C1","""
+
+        t12_level = np.where((spine_mask == 32).sum(axis=(0, 1)))[0]
+        l1_level = np.where((spine_mask == 31).sum(axis=(0, 1)))[0]
+
         if len(t12_level) != 0 and len(l1_level) != 0:
             sep_plane = round(np.mean([t12_level[0], l1_level[-1]]))
         elif len(t12_level) == 0 and len(l1_level) != 0:
-            print('WARNNG: could not locate T12, using L1 only..')
+            print("WARNNG: could not locate T12, using L1 only..")
             sep_plane = l1_level[-1]
         elif len(t12_level) != 0 and len(l1_level) == 0:
-            print('WARNNG: could not locate L1, using T12 only..')
+            print("WARNNG: could not locate L1, using T12 only..")
             sep_plane = t12_level[0]
-        else: 
-            raise ValueError('Could not locate either T12 or L1, aborting..')
-            
+        else:
+            raise ValueError("Could not locate either T12 or L1, aborting..")
+
         planes = np.zeros_like(spine_mask, dtype=np.int8)
-        planes[:,:,sep_plane] = 1
+        planes[:, :, sep_plane] = 1
         planes[spine_mask == 32] = 2
         planes[spine_mask == 31] = 3
-        
+
         inference_pipeline.saveArrToNifti(
             planes,
-            os.path.join(inference_pipeline.output_dir_segmentation_masks, 
-                          "t12_plane.nii.gz")
-            )        
-        
+            os.path.join(
+                inference_pipeline.output_dir_segmentation_masks, "t12_plane.nii.gz"
+            ),
+        )
+
         inference_pipeline.pix_dims = inference_pipeline.medical_volume.header[
             "pixdim"
         ][1:4]
         # divided with 10 to get in cm
         inference_pipeline.vol_per_pixel = np.prod(inference_pipeline.pix_dims / 10)
-        
+
         all_regions = {}
-        region_names = ['Abdominal', 'Thoracic']
-        
+        region_names = ["Abdominal", "Thoracic"]
+
         ct_full = inference_pipeline.medical_volume.get_fdata()
 
-        for i in range(len(region_names)): 
+        for i in range(len(region_names)):
             # count statistics for individual calcifications
             if i == 0:
-                calc_mask_region = calc_mask[:,:,:sep_plane]
-                ct = ct_full[:,:,:sep_plane]
+                calc_mask_region = calc_mask[:, :, :sep_plane]
+                ct = ct_full[:, :, :sep_plane]
             elif i == 1:
-                calc_mask_region = calc_mask[:,:,sep_plane:]
-                ct = ct_full[:,:,sep_plane:]
-                        
+                calc_mask_region = calc_mask[:, :, sep_plane:]
+                ct = ct_full[:, :, sep_plane:]
+
             labelled_calc, num_lesions = ndimage.label(calc_mask_region)
 
             metrics = {
@@ -632,7 +658,7 @@ class AorticCalciumMetrics(InferenceClass):
                 "median_hu": [],
                 "max_hu": [],
             }
-            
+
             if num_lesions == 0:
                 metrics["volume"].append(0)
                 metrics["mean_hu"].append(0)
@@ -641,39 +667,42 @@ class AorticCalciumMetrics(InferenceClass):
             else:
                 for j in range(1, num_lesions + 1):
                     tmp_mask = labelled_calc == j
-        
+
                     tmp_ct_vals = ct[tmp_mask]
-        
+
                     metrics["volume"].append(
                         len(tmp_ct_vals) * inference_pipeline.vol_per_pixel
                     )
                     metrics["mean_hu"].append(np.mean(tmp_ct_vals))
                     metrics["median_hu"].append(np.median(tmp_ct_vals))
                     metrics["max_hu"].append(np.max(tmp_ct_vals))
-    
+
             # Volume of calcificaitons
             calc_vol = np.sum(metrics["volume"])
             metrics["volume_total"] = calc_vol
-    
+
             metrics["num_calc"] = num_lesions
 
-            if inference_pipeline.args.threshold == 'agatson':
+            if inference_pipeline.args.threshold == "agatson":
                 if num_lesions == 0:
                     metrics["agatson_score"] = 0
                 else:
-                    metrics["agatson_score"] = self.CalculateAgatsonScore(calc_mask_region, ct, inference_pipeline.pix_dims) 
-                
+                    metrics["agatson_score"] = self.CalculateAgatsonScore(
+                        calc_mask_region, ct, inference_pipeline.pix_dims
+                    )
+
             all_regions[region_names[i]] = metrics
-    
+
         inference_pipeline.metrics = all_regions
 
         return {}
-    
+
     def CalculateAgatsonScore(self, calc_mask_region, ct, pix_dims):
-        '''
+        """
         Original Agatson papers says need to be >= 1mm^2, other papers
         use at least 3 face-linked pixels.
-        '''
+        """
+
         def get_hu_factor(max_hu):
             # if max_hu ><
             if max_hu < 200:
@@ -685,28 +714,30 @@ class AorticCalciumMetrics(InferenceClass):
             elif max_hu >= 400:
                 factor = 4
             else:
-                raise ValueError('Could determine factor, got: ' + str(max_hu))
-            
+                raise ValueError("Could determine factor, got: " + str(max_hu))
+
             return factor
-        
+
         # dims are in mm here
         area_per_pixel = pix_dims[0] * pix_dims[1]
         agatson = 0
-        
-        for i in range(calc_mask_region.shape[2]):            
-            tmp_slice = calc_mask_region[:,:,i]
-            tmp_ct_slice = ct[:,:,i]
-            
+
+        for i in range(calc_mask_region.shape[2]):
+            tmp_slice = calc_mask_region[:, :, i]
+            tmp_ct_slice = ct[:, :, i]
+
             labelled_calc, num_lesions = ndimage.label(tmp_slice)
-            
+
             for j in range(1, num_lesions + 1):
                 tmp_mask = labelled_calc == j
-                
+
                 tmp_area = tmp_mask.sum() * area_per_pixel
                 # exclude if less than 1 mm^2
                 if tmp_area <= 1:
                     continue
                 else:
-                    agatson += tmp_area * get_hu_factor(int(tmp_ct_slice[tmp_mask].max()))
-        
+                    agatson += tmp_area * get_hu_factor(
+                        int(tmp_ct_slice[tmp_mask].max())
+                    )
+
         return agatson

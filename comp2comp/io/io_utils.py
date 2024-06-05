@@ -1,8 +1,10 @@
 """
 @author: louisblankemeier
 """
+
 import csv
 import os
+
 import nibabel as nib
 import pydicom
 
@@ -48,18 +50,30 @@ def get_dicom_or_nifti_paths_and_num(path):
         list: List of paths.
     """
     dicom_nifti_paths = []
-    
+
     if path.endswith(".nii") or path.endswith(".nii.gz"):
-        dicom_nifti_paths.append( (path, getNumSlicesNifti(path)) )
-    elif path.endswith('.txt'):
+        dicom_nifti_paths.append((path, getNumSlicesNifti(path)))
+    elif path.endswith(".txt"):
         dicom_nifti_paths = []
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             for dicom_folder_path in f:
-                if dicom_folder_path.endswith(".nii") or path.dicom_folder_path(".nii.gz"):    
-                    dicom_nifti_paths.append( (dicom_folder_path.strip(), getNumSlicesNifti(dicom_folder_path.strip()))) 
+                if dicom_folder_path.endswith(".nii") or path.dicom_folder_path(
+                    ".nii.gz"
+                ):
+                    dicom_nifti_paths.append(
+                        (
+                            dicom_folder_path.strip(),
+                            getNumSlicesNifti(dicom_folder_path.strip()),
+                        )
+                    )
                 else:
-                    dicom_nifti_paths.append( (dicom_folder_path.strip(), len(os.listdir(dicom_folder_path.strip()))))
-    else:    
+                    dicom_nifti_paths.append(
+                        (
+                            dicom_folder_path.strip(),
+                            len(os.listdir(dicom_folder_path.strip())),
+                        )
+                    )
+    else:
         for root, dirs, files in os.walk(path):
             if len(files) > 0:
                 # if all(file.endswith(".dcm") or file.endswith(".dicom") for file in files):
@@ -80,9 +94,9 @@ def write_dicom_metadata_to_csv(ds, csv_filename):
                 continue
             value = str(element.value)
             csvwriter.writerow([tag, keyword, value])
-            
+
+
 def getNumSlicesNifti(path):
     img = nib.load(path)
     img = nib.as_closest_canonical(img)
     return img.shape[2]
-    

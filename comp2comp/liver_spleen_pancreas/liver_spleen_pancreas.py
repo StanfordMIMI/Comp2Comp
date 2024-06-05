@@ -3,12 +3,8 @@ from pathlib import Path
 from time import time
 from typing import Union
 
-from totalsegmentator.libs import (
-    download_pretrained_weights,
-    nostdout,
-    setup_nnunet,
-)
 from totalsegmentatorv2.python_api import totalsegmentator
+
 from comp2comp.inference_class_base import InferenceClass
 
 
@@ -25,17 +21,17 @@ class LiverSpleenPancreasSegmentation(InferenceClass):
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
         if not os.path.exists(self.output_dir_segmentations):
             os.makedirs(self.output_dir_segmentations)
-        
+
         self.model_dir = inference_pipeline.model_dir
-        
+
         seg = self.organ_seg(
             os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
             self.output_dir_segmentations + "organs.nii.gz",
             inference_pipeline.model_dir,
         )
-        
+
         inference_pipeline.segmentation = seg
-       
+
         return {}
 
     def organ_seg(
@@ -53,18 +49,18 @@ class LiverSpleenPancreasSegmentation(InferenceClass):
         os.environ["SCRATCH"] = self.model_dir
 
         seg = totalsegmentator(
-            input = input_path,
-            output = output_path,
+            input=input_path,
+            output=output_path,
             # input = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
             # output = os.path.join(self.output_dir_segmentations, "segmentation.nii"),
-            task_ids = [291],
-            ml = True,
-            nr_thr_resamp = 1,
-            nr_thr_saving = 6,
-            fast = False,
-            nora_tag = "None",
-            preview = False,
-            task = "total",
+            task_ids=[291],
+            ml=True,
+            nr_thr_resamp=1,
+            nr_thr_saving=6,
+            fast=False,
+            nora_tag="None",
+            preview=False,
+            task="total",
             # roi_subset = [
             #     "vertebrae_T12",
             #     "vertebrae_L1",
@@ -73,22 +69,22 @@ class LiverSpleenPancreasSegmentation(InferenceClass):
             #     "vertebrae_L4",
             #     "vertebrae_L5",
             # ],
-            roi_subset = None,
-            statistics = False,
-            radiomics = False,
-            crop_path = None,
-            body_seg = False,
-            force_split = False,
-            output_type = "nifti",
-            quiet = False,
-            verbose = False,
-            test = 0,
-            skip_saving = True,
-            device = "gpu",
-            license_number = None,
-            statistics_exclude_masks_at_border = True,
-            no_derived_masks = False,
-            v1_order = False,
+            roi_subset=None,
+            statistics=False,
+            radiomics=False,
+            crop_path=None,
+            body_seg=False,
+            force_split=False,
+            output_type="nifti",
+            quiet=False,
+            verbose=False,
+            test=0,
+            skip_saving=True,
+            device="gpu",
+            license_number=None,
+            statistics_exclude_masks_at_border=True,
+            no_derived_masks=False,
+            v1_order=False,
         )
 
         # Setup nnunet
@@ -100,7 +96,7 @@ class LiverSpleenPancreasSegmentation(InferenceClass):
 
         # setup_nnunet()
         # download_pretrained_weights(task_id[0])
-        
+
         # from totalsegmentator.nnunet import nnUNet_predict_image
 
         # with nostdout():

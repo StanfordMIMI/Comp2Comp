@@ -6,15 +6,18 @@ import inspect
 import os
 from typing import Dict, List
 
+import nibabel as nib
+
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.io.io import DicomLoader, NiftiSaver
-import nibabel as nib
 
 
 class InferencePipeline(InferenceClass):
     """Inference pipeline."""
 
-    def __init__(self, inference_classes: List = None, config: Dict = None, args: Dict = None):
+    def __init__(
+        self, inference_classes: List = None, config: Dict = None, args: Dict = None
+    ):
         self.config = config
         self.args = args
         # assign values from config to attributes
@@ -81,11 +84,8 @@ class InferencePipeline(InferenceClass):
 
         return output
 
-    def saveArrToNifti(
-            self,
-            arr,
-            path):
-        '''
+    def saveArrToNifti(self, arr, path):
+        """
         Saves an array to nifti using the CT as reference
 
         Args:
@@ -95,11 +95,11 @@ class InferencePipeline(InferenceClass):
         Returns:
             None.
 
-        '''
-        img = nib.Nifti1Image(arr, 
-                                  self.medical_volume.affine,
-                                  self.medical_volume.header)        
-        nib.save(img, path)    
+        """
+        img = nib.Nifti1Image(
+            arr, self.medical_volume.affine, self.medical_volume.header
+        )
+        nib.save(img, path)
 
 
 if __name__ == "__main__":
