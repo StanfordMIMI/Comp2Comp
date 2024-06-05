@@ -5,14 +5,14 @@
 import logging
 import math
 import os
+import time
 from typing import Dict, List
 
 import cv2
 import nibabel as nib
 import numpy as np
-from scipy.ndimage import zoom
 import scipy
-import time
+from scipy.ndimage import zoom
 
 from comp2comp.spine import spine_visualization
 
@@ -229,7 +229,7 @@ def roi_from_mask(img, centroid: np.ndarray, seg: np.ndarray, slice: np.ndarray)
         lower_z_idx = updated_z_center - ((length_k * 1.5) // 2)
         upper_z_idx = updated_z_center + ((length_k * 1.5) // 2)
         for idx in range(int(lower_z_idx), int(upper_z_idx) + 1):
-            # take multiple to increase robustness  
+            # take multiple to increase robustness
             posterior_anterior_lines = [
                 slice[:, idx],
                 slice[:, idx + 1],

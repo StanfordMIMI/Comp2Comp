@@ -83,10 +83,11 @@ bin/C2C spine -i <path/to/input/folder>
 
 ### Usage
 ```bash
-bin/C2C aortic_calcium -i <path/to/input/folder>
+bin/C2C aortic_calcium -i <path/to/input/folder> -o <path/to/input/folder> --threshold
 ```
-- input_path should contain a DICOM series or subfolders that contain DICOM series, or a nifti file.
-- Aortic calcifications are detected through an adaptive threshold in a dilated aorta mask
+- The input path should contain a DICOM series or subfolders that contain DICOM series, or a nifti file.
+- The threshold can be controlled with --threshold and be either an integer HU threshold, "adataptive" or "agatson".
+  - If "agatson" is used, agatson score is calculated and the a threshold of 130 HU is used 
 - Aortic calcifications are divided into abdominal and thoracic at the T12 level
 - Segmentation masks for aortic calcium, the dilated aorta mask and the T12 seperation plane are saved in ./segmentation_masks/
 - Metrics on an aggregated and individual level for the calcifications are written to .csv files in ./metrics/

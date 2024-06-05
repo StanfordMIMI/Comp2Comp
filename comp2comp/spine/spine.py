@@ -15,22 +15,18 @@ import numpy as np
 import pandas as pd
 import wget
 from PIL import Image
-
 from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
 from comp2comp.visualization.dicom import to_dicom
-from comp2comp.io import io_utils
 
 # from totalsegmentator.libs import (
 #     download_pretrained_weights,
 #     nostdout,
 #     setup_nnunet,
 # )
-
-
 
 
 class SpineSegmentation(InferenceClass):
@@ -314,10 +310,12 @@ class SpineComputeROIs(InferenceClass):
         # Compute ROIs
         inference_pipeline.spine_model_type = self.spine_model_type
 
-        (spine_hus, rois, segmentation_hus, centroids_3d, spine_masks) = spine_utils.compute_rois(
-            inference_pipeline.segmentation,
-            inference_pipeline.medical_volume,
-            self.spine_model_type,
+        (spine_hus, rois, segmentation_hus, centroids_3d, spine_masks) = (
+            spine_utils.compute_rois(
+                inference_pipeline.segmentation,
+                inference_pipeline.medical_volume,
+                self.spine_model_type,
+            )
         )
 
         inference_pipeline.spine_hus = spine_hus

@@ -1,6 +1,7 @@
 """
 @author: louisblankemeier
 """
+
 import os
 import shutil
 from pathlib import Path
@@ -8,9 +9,9 @@ from typing import Dict, Union
 
 # import dicom2nifti
 import dosma as dm
+import nibabel as nib
 import pydicom
 import SimpleITK as sitk
-import nibabel as nib
 
 from comp2comp.inference_class_base import InferenceClass
 
@@ -114,8 +115,10 @@ class DicomToNifti(InferenceClass):
                 os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"),
             )
 
-        inference_pipeline.medical_volume = nib.load(os.path.join(segmentations_output_dir, "converted_dcm.nii.gz"))
-        
+        inference_pipeline.medical_volume = nib.load(
+            os.path.join(segmentations_output_dir, "converted_dcm.nii.gz")
+        )
+
         return {}
 
 
@@ -130,7 +133,9 @@ def series_selector(dicom_path, pipeline_name=None):
         if ds.ImageOrientationPatient != [1, 0, 0, 0, 1, 0]:
             raise ValueError("Image orientation is not axial")
     else:
-        print(f"Skipping primary, original, and orientation image type check for the {pipeline_name} pipeline.")
+        print(
+            f"Skipping primary, original, and orientation image type check for the {pipeline_name} pipeline."
+        )
     # if any("gsi" in s.lower() for s in image_type_list):
     #     raise ValueError("GSI image type")
     return ds
