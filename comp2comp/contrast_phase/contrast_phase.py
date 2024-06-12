@@ -8,6 +8,7 @@ from totalsegmentator.libs import (
     nostdout,
     setup_nnunet,
 )
+# from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.contrast_phase.contrast_inf import predict_phase
 from comp2comp.inference_class_base import InferenceClass
@@ -93,11 +94,41 @@ class ContrastPhaseDetection(InferenceClass):
                 verbose=False,
                 test=0,
             )
+        
+        #  seg = totalsegmentator(
+        #     input = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+        #     output = os.path.join(self.output_dir_segmentations, "segmentation.nii"),
+        #     task_ids = [293],
+        #     ml = True,
+        #     nr_thr_resamp = 1,
+        #     nr_thr_saving = 6,
+        #     fast = False,
+        #     nora_tag = "None",
+        #     preview = False,
+        #     task = "total",
+        #     roi_subset = None,
+        #     statistics = False,
+        #     radiomics = False,
+        #     crop_path = None,
+        #     body_seg = False,
+        #     force_split = False,
+        #     output_type = "nifti",
+        #     quiet = False,
+        #     verbose = False,
+        #     test = 0,
+        #     skip_saving = True,
+        #     device = "gpu",
+        #     license_number = None,
+        #     statistics_exclude_masks_at_border = True,
+        #     no_derived_masks = False,
+        #     v1_order = False,
+        # )
         end = time()
 
         # Log total time for spine segmentation
         print(f"Total time for segmentation: {end-st:.2f}s.")
 
+        # return seg, img
         return seg, img
 
     def convertNibToNumpy(self, TSNib, ImageNib):

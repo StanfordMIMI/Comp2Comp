@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 import SimpleITK as sitk
 from scipy import ndimage as ndi
-
+# import xgboost
 
 def loadNiiToArray(path):
     NiImg = nib.load(path)
@@ -176,6 +176,14 @@ def getFeatures(TSArray, scanArray):
     kidneyLMask = getClassBinaryMask(TSArray, 3)
     kidneyRMask = getClassBinaryMask(TSArray, 2)
     adRMask = getClassBinaryMask(TSArray, 11)
+    
+    # aortaMask = getClassBinaryMask(TSArray, 52)
+    # IVCMask = getClassBinaryMask(TSArray, 63)
+    # portalMask = getClassBinaryMask(TSArray, 64)
+    # atriumMask = getClassBinaryMask(TSArray, 51)
+    # kidneyLMask = getClassBinaryMask(TSArray, 3)
+    # kidneyRMask = getClassBinaryMask(TSArray, 2)
+    # adRMask = getClassBinaryMask(TSArray,8)
 
     # Remove toraccic aorta adn IVC from aorta and IVC masks
     anteriorAtriumMask = getMaskAnteriorAtrium(atriumMask)
@@ -413,8 +421,10 @@ def predict_phase(TS_path, scan_path, outputPath=None, save_sample=False):
     model = loadModel()
     # TS_array, image_array = loadNiftis(TS_output_nifti_path, image_nifti_path)
     featureArray, kidneyLMask, adRMask = getFeatures(TS_array, image_array)
-    y_pred = model.predict([featureArray])
-
+    
+    y_pred_proba = model.predict_proba([featureArray])[0]
+    y_pred = np.argmax(y_pred_proba)
+    
     if y_pred == 0:
         pred_phase = "non-contrast"
     if y_pred == 1:
@@ -428,9 +438,12 @@ def predict_phase(TS_path, scan_path, outputPath=None, save_sample=False):
     if not os.path.exists(output_path_metrics):
         os.makedirs(output_path_metrics)
     outputTxt = os.path.join(output_path_metrics, "phase_prediction.txt")
+    
     with open(outputTxt, "w") as text_file:
-        text_file.write(pred_phase)
-    print(pred_phase)
+        text_file.write('phase,'+pred_phase + '\n')
+        text_file.write('probability,{:.3f}'.format(y_pred_proba[y_pred]))
+    print('Predicted phase: ' + pred_phase)
+    print('Probability: {:.3f}'.format(y_pred_proba[y_pred]))
 
     output_path_images = os.path.join(outputPath, "images")
     if not os.path.exists(output_path_images):

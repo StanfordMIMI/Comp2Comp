@@ -198,10 +198,12 @@ def argument_parser():
         "--spine_model", default="ts_spine", type=str
     )
 
+    # Liver spleen pancreas
     liver_spleen_pancreas = subparsers.add_parser(
         "liver_spleen_pancreas", parents=[base_parser]
     )
 
+    # Aortic calcium
     aortic_calcium = subparsers.add_parser(
         "aortic_calcium", parents=[base_parser])
     
@@ -209,6 +211,7 @@ def argument_parser():
         "--threshold", default="adaptive", type=str
     )
     
+    # Contrast phase
     contrast_phase_parser = subparsers.add_parser(
         "contrast_phase", parents=[base_parser]
     )

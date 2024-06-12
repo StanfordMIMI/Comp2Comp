@@ -55,10 +55,11 @@ def get_dicom_or_nifti_paths_and_num(path):
         dicom_nifti_paths = []
         with open(path, 'r') as f:
             for dicom_folder_path in f:
-                if dicom_folder_path.endswith(".nii") or path.dicom_folder_path(".nii.gz"):    
-                    dicom_nifti_paths.append( (dicom_folder_path.strip(), getNumSlicesNifti(dicom_folder_path.strip()))) 
+                dicom_folder_path = dicom_folder_path.strip()
+                if dicom_folder_path.endswith(".nii") or dicom_folder_path.endswith(".nii.gz"):    
+                    dicom_nifti_paths.append( (dicom_folder_path, getNumSlicesNifti(dicom_folder_path))) 
                 else:
-                    dicom_nifti_paths.append( (dicom_folder_path.strip(), len(os.listdir(dicom_folder_path.strip()))))
+                    dicom_nifti_paths.append( (dicom_folder_path, len(os.listdir(dicom_folder_path))))
     else:    
         for root, dirs, files in os.walk(path):
             if len(files) > 0:

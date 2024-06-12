@@ -42,7 +42,7 @@ def python_submit(command, node=None):
     os.remove("./slurm.sh")
 
 
-python_submit(command, node='roma')
+python_submit(command, node='siena')
 
 
 
