@@ -9,19 +9,22 @@ import time
 import traceback
 from datetime import datetime
 from pathlib import Path
+
 from comp2comp.io import io_utils
 
+
 def find_common_root(paths):
-    paths_with_sep = [path if path.endswith('/') else path + '/' for path in paths]
+    paths_with_sep = [path if path.endswith("/") else path + "/" for path in paths]
 
     # Find common prefix, ensuring it ends with a directory separator
     common_root = os.path.commonprefix(paths_with_sep)
     common_root
-    if not common_root.endswith('/'):
+    if not common_root.endswith("/"):
         # Find the last separator to correctly identify the common root directory
-        common_root = common_root[:common_root.rfind('/')+1]
-        
-    return common_root 
+        common_root = common_root[: common_root.rfind("/") + 1]
+
+    return common_root
+
 
 def process_2d(args, pipeline_builder):
     output_dir = Path(
@@ -60,15 +63,14 @@ def process_3d(args, pipeline_builder):
         output_path = os.path.join(output_path, date_time)
 
     path_and_num = io_utils.get_dicom_or_nifti_paths_and_num(args.input_path)
-    
+
     # in case input is a .txt file we need to find the common root of the files
-    if args.input_path.endswith('.txt'):
+    if args.input_path.endswith(".txt"):
         all_paths = [p[0] for p in path_and_num]
         common_root = find_common_root(all_paths)
-        
-    
+
     for path, num in path_and_num:
-             
+
         try:
             st = time.time()
 
@@ -103,13 +105,11 @@ def process_3d(args, pipeline_builder):
                 )
 
             else:
-                if args.input_path.endswith('.txt'):
+                if args.input_path.endswith(".txt"):
                     output_dir = Path(
                         os.path.join(
                             output_path,
-                            os.path.relpath(
-                                os.path.normpath(path), common_root
-                            ),
+                            os.path.relpath(os.path.normpath(path), common_root),
                         )
                     )
                 else:
@@ -118,16 +118,17 @@ def process_3d(args, pipeline_builder):
                             output_path,
                             Path(os.path.basename(os.path.normpath(args.input_path))),
                             os.path.relpath(
-                                os.path.normpath(path), os.path.normpath(args.input_path)
+                                os.path.normpath(path),
+                                os.path.normpath(args.input_path),
                             ),
                         )
                     )
 
             if not os.path.exists(output_dir):
                 output_dir.mkdir(parents=True)
-                
+
             pipeline = pipeline_builder(path, args)
-            
+
             pipeline(output_dir=output_dir, model_dir=model_dir)
 
             if not args.save_segmentations:
@@ -137,9 +138,8 @@ def process_3d(args, pipeline_builder):
                     shutil.rmtree(segmentations_dir)
 
             print(f"Finished processing {path} in {time.time() - st:.1f} seconds\n")
-            print('Output was saved to:')
+            print("Output was saved to:")
             print(output_dir)
-
 
         except Exception:
             print(f"ERROR PROCESSING {path}\n")
