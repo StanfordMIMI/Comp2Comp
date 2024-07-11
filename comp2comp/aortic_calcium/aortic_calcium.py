@@ -13,6 +13,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
+import pydicom 
 
 # from totalsegmentator.libs import (
 #     download_pretrained_weights,
@@ -32,6 +33,10 @@ class AortaSegmentation(InferenceClass):
         # self.input_path = input_path
 
     def __call__(self, inference_pipeline):
+        # check if kernels are allowed if agatson is used
+        if inference_pipeline.args.threshold == 'agatson':
+            self.reconKernelChecker(inference_pipeline.dcm)
+            
         # inference_pipeline.dicom_series_path = self.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
@@ -114,6 +119,31 @@ class AortaSegmentation(InferenceClass):
 
         return seg
 
+    def reconKernelChecker(self, dcm):
+        ge_kernels = ["standard", "md stnd"]
+        philips_kernels = ["a", "b", "c", "sa", "sb"]
+        canon_kernels = ["fc08", "fc18"]
+        siemens_kernels = ["b20s", "b20f", "b30f", "b31s", "b31f", "br34f", "b35f", "bf37f", "br38f", "b41f", 
+                        "qr40", "qr40d", "br36f", "br40", "b40f", "br40d", "i30f", "i31f", "i26f", "i31s", 
+                        "i40f", "b30s", "br36d", "bf39f", "b41s", "br40f"]
+        toshiba_kernels = ["fc01", "fc02", "fc07", "fc08", "fc13", "fc18"]
+
+        all_kernels = ge_kernels+philips_kernels+canon_kernels+siemens_kernels+toshiba_kernels
+        
+        conv_kernel_raw = dcm['ConvolutionKernel'].value
+        
+        if isinstance(conv_kernel_raw, pydicom.multival.MultiValue):
+            conv_kernel = conv_kernel_raw[0].lower()
+            recon_kernel_extra = str(conv_kernel_raw)
+        else:
+            conv_kernel = conv_kernel_raw.lower()
+            recon_kernel_extra = 'n/a'
+            
+        if conv_kernel in all_kernels:
+            return True
+        else:          
+            raise ValueError('Reconstruction kernel not allowed, found: ' + conv_kernel +'\n'
+                             + 'Allowed kernels are: ' + str(all_kernels))
 
 class AorticCalciumSegmentation(InferenceClass):
     """Segmentaiton of aortic calcium"""
@@ -122,6 +152,7 @@ class AorticCalciumSegmentation(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
+
         # Set output dirs
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_images_organs = os.path.join(self.output_dir, "images/")
@@ -567,7 +598,7 @@ class AorticCalciumSegmentation(InferenceClass):
             )
 
         return (slice(x_start, x_end), slice(y_start, y_end), slice(z_start, z_end))
-
+    
 
 class AorticCalciumMetrics(InferenceClass):
     """Calculate metrics for the aortic calcifications"""

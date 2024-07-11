@@ -76,7 +76,6 @@ def process_3d(args, pipeline_builder):
 
             if path.endswith(".nii") or path.endswith(".nii.gz"):
                 print("Processing: ", path)
-
             else:
                 print("Processing: ", path, " with ", num, " slices")
                 min_slices = 30
