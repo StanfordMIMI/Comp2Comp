@@ -33,8 +33,8 @@ class AortaSegmentation(InferenceClass):
         # self.input_path = input_path
 
     def __call__(self, inference_pipeline):
-        # check if kernels are allowed if agatson is used
-        if inference_pipeline.args.threshold == 'agatson':
+        # check if kernels are allowed if agatston is used
+        if inference_pipeline.args.threshold == 'agatston':
             self.reconKernelChecker(inference_pipeline.dcm)
             
         # inference_pipeline.dicom_series_path = self.input_path
@@ -191,6 +191,7 @@ class AorticCalciumSegmentation(InferenceClass):
             exclude_mask=spine_mask,
             remove_size=3,
             return_dilated_mask=True,
+            return_eroded_aorta=True,
             threshold=inference_pipeline.args.threshold,
             dilation_iteration=target_aorta_dil,
             dilation_iteration_exclude=target_exclude_dil,
@@ -208,6 +209,7 @@ class AorticCalciumSegmentation(InferenceClass):
                 "calcium_segmentations.nii.gz",
             ),
         )
+        
         inference_pipeline.saveArrToNifti(
             calcification_results["dilated_mask"],
             os.path.join(
@@ -215,12 +217,29 @@ class AorticCalciumSegmentation(InferenceClass):
                 "dilated_aorta_mask.nii.gz",
             ),
         )
+        
+        inference_pipeline.saveArrToNifti(
+            calcification_results["aorta_eroded"],
+            os.path.join(
+                inference_pipeline.output_dir_segmentation_masks,
+                "eroded_aorta_mask.nii.gz",
+            ),
+        )
+
+        inference_pipeline.saveArrToNifti(
+            spine_mask,
+            os.path.join(
+                inference_pipeline.output_dir_segmentation_masks, "spine_mask.nii.gz"
+            ),
+        )
+        
         inference_pipeline.saveArrToNifti(
             aorta_mask,
             os.path.join(
                 inference_pipeline.output_dir_segmentation_masks, "aorta_mask.nii.gz"
             ),
         )
+
         inference_pipeline.saveArrToNifti(
             ct,
             os.path.join(inference_pipeline.output_dir_segmentation_masks, "ct.nii.gz"),
@@ -247,7 +266,7 @@ class AorticCalciumSegmentation(InferenceClass):
         return_eroded_aorta=False,
         aorta_erode_iteration=6,
         threshold="adaptive",
-        agatson_failsafe=100,
+        agatston_failsafe=100,
         generate_plots=True,
     ):
         """
@@ -290,11 +309,11 @@ class AorticCalciumSegmentation(InferenceClass):
             aorta_erode_iteration (int, optional):
                 Number of iterations for the strcturing element. Defaults to 6.
             threshold: (str, int):
-                Can either be 'adaptive', 'agatson', or int. Choosing 'agatson'
+                Can either be 'adaptive', 'agatston', or int. Choosing 'agatston'
                 Will mean a threshold of 130 HU.
-            agatson_failsafe: (int):
+            agatston_failsafe: (int):
                 A fail-safe raising an error if the mean HU of the aorta is too high
-                to reliably be using the agatson threshold of 130. Defaults to 100 HU.
+                to reliably be using the agatston threshold of 130. Defaults to 100 HU.
 
         Returns:
             results: array of only the mask is returned, or dict if other volumes are also returned.
@@ -359,11 +378,11 @@ class AorticCalciumSegmentation(InferenceClass):
                 os.path.join(self.output_dir, "images/histogram_eroded_aorta.png")
             )
 
-        # Perform the fail-safe check if the method is agatson
-        if threshold == "agatson" and eroded_ct_points_mean > agatson_failsafe:
+        # Perform the fail-safe check if the method is agatston
+        if threshold == "agatston" and eroded_ct_points_mean > agatston_failsafe:
             raise ValueError(
-                "The mean HU in the center aorta is {:.0f}, and the Agatson method will provide unreliable results (fail-safe threshold is {})".format(
-                    eroded_ct_points_mean, agatson_failsafe
+                "The mean HU in the center aorta is {:.0f}, and the agatston method will provide unreliable results (fail-safe threshold is {})".format(
+                    eroded_ct_points_mean, agatston_failsafe
                 )
             )
 
@@ -388,7 +407,7 @@ class AorticCalciumSegmentation(InferenceClass):
             )
             calc_thres = np.median(aorta_ct_points) + quantile_median_dist * num_std
 
-        elif threshold == "agatson":
+        elif threshold == "agatston":
             calc_thres = 130
 
             counter = self.slicedSizeCount(aorta_eroded, ct, remove_size, calc_thres)
@@ -414,7 +433,7 @@ class AorticCalciumSegmentation(InferenceClass):
             except:
                 raise ValueError(
                     "Error in threshold value for aortic calcium segmentaiton. \
-                    Should be 'adaptive', 'agatson' or int, but got: "
+                    Should be 'adaptive', 'agatston' or int, but got: "
                     + str(threshold)
                 )
 
@@ -714,11 +733,11 @@ class AorticCalciumMetrics(InferenceClass):
 
             metrics["num_calc"] = num_lesions
 
-            if inference_pipeline.args.threshold == "agatson":
+            if inference_pipeline.args.threshold == "agatston":
                 if num_lesions == 0:
-                    metrics["agatson_score"] = 0
+                    metrics["agatston_score"] = 0
                 else:
-                    metrics["agatson_score"] = self.CalculateAgatsonScore(
+                    metrics["agatston_score"] = self.CalculateAgatstonScore(
                         calc_mask_region, ct, inference_pipeline.pix_dims
                     )
 
@@ -728,9 +747,9 @@ class AorticCalciumMetrics(InferenceClass):
 
         return {}
 
-    def CalculateAgatsonScore(self, calc_mask_region, ct, pix_dims):
+    def CalculateAgatstonScore(self, calc_mask_region, ct, pix_dims):
         """
-        Original Agatson papers says need to be >= 1mm^2, other papers
+        Original Agatston papers says need to be >= 1mm^2, other papers
         use at least 3 face-linked pixels.
         """
 
@@ -751,7 +770,7 @@ class AorticCalciumMetrics(InferenceClass):
 
         # dims are in mm here
         area_per_pixel = pix_dims[0] * pix_dims[1]
-        agatson = 0
+        agatston = 0
 
         for i in range(calc_mask_region.shape[2]):
             tmp_slice = calc_mask_region[:, :, i]
@@ -767,8 +786,8 @@ class AorticCalciumMetrics(InferenceClass):
                 if tmp_area <= 1:
                     continue
                 else:
-                    agatson += tmp_area * get_hu_factor(
+                    agatston += tmp_area * get_hu_factor(
                         int(tmp_ct_slice[tmp_mask].max())
                     )
 
-        return agatson
+        return agatston

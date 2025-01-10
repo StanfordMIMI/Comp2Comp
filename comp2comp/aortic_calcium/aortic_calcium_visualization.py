@@ -114,8 +114,8 @@ class AorticCalciumPrinter(InferenceClass):
                     "{},{:.3f}\n".format("Min volume (cm³):", np.min(metrics["volume"]))
                 )
 
-                if inference_pipeline.args.threshold == "agatson":
-                    f.write("Agatson score,{:.1f}\n".format(metrics["agatson_score"]))
+                if inference_pipeline.args.threshold == "agatston":
+                    f.write("Agatston score,{:.1f}\n".format(metrics["agatston_score"]))
 
         distance = 25
         print("\n")
@@ -187,10 +187,10 @@ class AorticCalciumPrinter(InferenceClass):
                         inference_pipeline.calcium_threshold,
                     )
                 )
-                if inference_pipeline.args.threshold == "agatson":
+                if inference_pipeline.args.threshold == "agatston":
                     print(
                         "{:<{}}{:.1f}".format(
-                            "Agatson score:", distance, metrics["agatson_score"]
+                            "Agatston score:", distance, metrics["agatston_score"]
                         )
                     )
 

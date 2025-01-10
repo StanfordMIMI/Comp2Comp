@@ -425,14 +425,23 @@ def predict_phase(TS_path, scan_path, outputPath=None, save_sample=False):
     y_pred_proba = model.predict_proba([featureArray])[0]
     y_pred = np.argmax(y_pred_proba)
     
-    if y_pred == 0:
-        pred_phase = "non-contrast"
-    if y_pred == 1:
-        pred_phase = "arterial"
-    if y_pred == 2:
-        pred_phase = "venous"
-    if y_pred == 3:
-        pred_phase = "delayed"
+    phase_dict = {
+        0: "non-contrast",
+        1: "arterial",
+        2: "venous",
+        3: "delayed"
+    }
+
+    pred_phase = phase_dict[y_pred]
+
+    # if y_pred == 0:
+    #     pred_phase = "non-contrast"
+    # if y_pred == 1:
+    #     pred_phase = "arterial"
+    # if y_pred == 2:
+    #     pred_phase = "venous"
+    # if y_pred == 3:
+    #     pred_phase = "delayed"
 
     output_path_metrics = os.path.join(outputPath, "metrics")
     if not os.path.exists(output_path_metrics):
@@ -441,9 +450,12 @@ def predict_phase(TS_path, scan_path, outputPath=None, save_sample=False):
     
     with open(outputTxt, "w") as text_file:
         text_file.write('phase,'+pred_phase + '\n')
-        text_file.write('probability,{:.3f}'.format(y_pred_proba[y_pred]))
+        for i in range(len(y_pred_proba)):
+            text_file.write('{},{:.3f}\n'.format(phase_dict[i], y_pred_proba[i]))
+
     print('Predicted phase: ' + pred_phase)
-    print('Probability: {:.3f}'.format(y_pred_proba[y_pred]))
+    for i in range(len(y_pred_proba)):
+        print('{},{:.3f}'.format(phase_dict[i], y_pred_proba[i]))
 
     output_path_images = os.path.join(outputPath, "images")
     if not os.path.exists(output_path_images):

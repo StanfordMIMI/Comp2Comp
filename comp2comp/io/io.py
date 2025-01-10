@@ -80,8 +80,6 @@ class DicomToNifti(InferenceClass):
         self.pipeline_name = pipeline_name
 
     def __call__(self, inference_pipeline):
-        dcm_files = [d for d in os.listdir(self.input_path) if d.endswith('.dcm')]
-        inference_pipeline.dcm = pydicom.read_file(os.path.join(self.input_path, dcm_files[0]))
         if os.path.exists(
             os.path.join(
                 inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
@@ -96,6 +94,10 @@ class DicomToNifti(InferenceClass):
 
         # if self.input_path is a folder
         if self.input_path.is_dir():
+            # store a dcm object for retrieving dicom tags
+            dcm_files = [d for d in os.listdir(self.input_path) if d.endswith('.dcm')]
+            inference_pipeline.dcm = pydicom.read_file(os.path.join(self.input_path, dcm_files[0]))
+
             ds = dicom_series_to_nifti(
                 self.input_path,
                 output_file=os.path.join(
