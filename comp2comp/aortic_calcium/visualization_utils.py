@@ -136,8 +136,9 @@ def createMipPlot(
         report_text.append('{:<{}}{:<{}}{:.3f}'.format('',indent,'% Volume calcified:', spacing, 
                                                     np.mean(region_metrics["perc_calcified"])))
         
-        report_text.append('{:<{}}{:<{}}{:.0f}'.format('',indent,'Agatston:', spacing, region_metrics['agatston_score']))
-        report_text.append('\n')
+        if 'agatston_score' in region_metrics:
+            report_text.append('{:<{}}{:<{}}{:.0f}'.format('',indent,'Agatston:', spacing, region_metrics['agatston_score']))
+            report_text.append('\n')
         
     report_text.append('{:<{}}{:<{}}{}'.format('',indent, 'Threshold (HU):', spacing, HU_val))
 
