@@ -86,14 +86,6 @@ class AortaSegmentation(InferenceClass):
             nora_tag="None",
             preview=False,
             task="total",
-            # roi_subset = [
-            #     "vertebrae_T12",
-            #     "vertebrae_L1",
-            #     "vertebrae_L2",
-            #     "vertebrae_L3",
-            #     "vertebrae_L4",
-            #     "vertebrae_L5",
-            # ],
             roi_subset=None,
             statistics=False,
             radiomics=False,
@@ -150,6 +142,36 @@ class AorticCalciumSegmentation(InferenceClass):
 
     def __init__(self):
         super().__init__()
+        # Label number for each vertebra
+        self.vertebrae_num = {
+            26: "vertebrae_S1",
+            27: "vertebrae_L5",
+            28: "vertebrae_L4",
+            29: "vertebrae_L3",
+            30: "vertebrae_L2",
+            31: "vertebrae_L1",
+            32: "vertebrae_T12",
+            33: "vertebrae_T11",
+            34: "vertebrae_T10",
+            35: "vertebrae_T9",
+            36: "vertebrae_T8",
+            37: "vertebrae_T7",
+            38: "vertebrae_T6",
+            39: "vertebrae_T5",
+            40: "vertebrae_T4",
+            41: "vertebrae_T3",
+            42: "vertebrae_T2",
+            43: "vertebrae_T1",
+            44: "vertebrae_C7",
+            45: "vertebrae_C6",
+            46: "vertebrae_C5",
+            47: "vertebrae_C4",
+            48: "vertebrae_C3",
+            49: "vertebrae_C2",
+            50: "vertebrae_C1"}
+        
+        self.vertebrae_name = {v: k for k, v in self.vertebrae_num.items()}
+
 
     def __call__(self, inference_pipeline):
 
@@ -171,9 +193,17 @@ class AorticCalciumSegmentation(InferenceClass):
         if not os.path.exists(os.path.join(self.output_dir, "metrics/")):
             os.makedirs(os.path.join(self.output_dir, "metrics/"))
 
-        ct = inference_pipeline.medical_volume.get_fdata()
-        aorta_mask = inference_pipeline.segmentation.get_fdata().astype(np.int8) == 52
-        spine_mask = inference_pipeline.spine_segmentation.get_fdata() > 0
+        inference_pipeline.ct = inference_pipeline.medical_volume.get_fdata()
+        inference_pipeline.aorta_mask = (inference_pipeline.segmentation.get_fdata().round().astype(np.int8) == 52)
+        inference_pipeline.spine_mask = inference_pipeline.spine_segmentation.get_fdata().round().astype(np.uint8)
+        
+        # convert to the index of TotalSegmentator
+        if inference_pipeline.spine_model_name == 'stanford_spine_v0.0.1':
+            tmp_mask = inference_pipeline.spine_mask > 0
+            inference_pipeline.spine_mask[tmp_mask] = inference_pipeline.spine_mask[tmp_mask] + 11
+            del tmp_mask
+        
+        spine_mask_bin = inference_pipeline.spine_mask > 0
 
         # Determine the target number of pixels
         pix_size = np.array(inference_pipeline.medical_volume.header.get_zooms())
@@ -186,11 +216,11 @@ class AorticCalciumSegmentation(InferenceClass):
 
         # Run calcification detection pipeline
         calcification_results = self.detectCalcifications(
-            ct,
-            aorta_mask,
-            exclude_mask=spine_mask,
+            inference_pipeline.ct,
+            inference_pipeline.aorta_mask,
+            exclude_mask=spine_mask_bin,
             remove_size=3,
-            return_dilated_mask=True,
+            return_dilated_mask=True,   
             return_eroded_aorta=True,
             threshold=inference_pipeline.args.threshold,
             dilation_iteration=target_aorta_dil,
@@ -200,6 +230,7 @@ class AorticCalciumSegmentation(InferenceClass):
 
         inference_pipeline.calc_mask = calcification_results["calc_mask"]
         inference_pipeline.calcium_threshold = calcification_results["threshold"]
+        inference_pipeline.dilated_aorta_mask = calcification_results["dilated_mask"]
 
         # save masks
         inference_pipeline.saveArrToNifti(
@@ -227,21 +258,21 @@ class AorticCalciumSegmentation(InferenceClass):
         )
 
         inference_pipeline.saveArrToNifti(
-            spine_mask,
+            inference_pipeline.spine_mask,
             os.path.join(
                 inference_pipeline.output_dir_segmentation_masks, "spine_mask.nii.gz"
             ),
         )
         
         inference_pipeline.saveArrToNifti(
-            aorta_mask,
+            inference_pipeline.aorta_mask,
             os.path.join(
                 inference_pipeline.output_dir_segmentation_masks, "aorta_mask.nii.gz"
             ),
         )
 
         inference_pipeline.saveArrToNifti(
-            ct,
+            inference_pipeline.ct,
             os.path.join(inference_pipeline.output_dir_segmentation_masks, "ct.nii.gz"),
         )
 
@@ -393,7 +424,6 @@ class AorticCalciumSegmentation(InferenceClass):
         """
         Choose threshold
         """
-
         if threshold == "adaptive":
             # calc_thres = eroded_ct_points.max()
 
@@ -450,7 +480,7 @@ class AorticCalciumSegmentation(InferenceClass):
                 struct=struct,
                 num_iteration=dilation_iteration,
                 operation="dilate",
-            )
+            ).astype(np.int8)
 
             if show_time:
                 print("dilation mask time: {:.2f}".format(time.time() - t0))
@@ -627,33 +657,9 @@ class AorticCalciumMetrics(InferenceClass):
 
     def __call__(self, inference_pipeline):
         calc_mask = inference_pipeline.calc_mask
-        spine_mask = inference_pipeline.spine_segmentation.get_fdata().astype(np.int8)
-        """     26: "vertebrae_S1",
-                27: "vertebrae_L5",
-                28: "vertebrae_L4",
-                29: "vertebrae_L3",
-                30: "vertebrae_L2",
-                31: "vertebrae_L1",
-                32: "vertebrae_T12",
-                33: "vertebrae_T11",
-                34: "vertebrae_T10",
-                35: "vertebrae_T9",
-                36: "vertebrae_T8",
-                37: "vertebrae_T7",
-                38: "vertebrae_T6",
-                39: "vertebrae_T5",
-                40: "vertebrae_T4",
-                41: "vertebrae_T3",
-                42: "vertebrae_T2",
-                43: "vertebrae_T1",
-                44: "vertebrae_C7",
-                45: "vertebrae_C6",
-                46: "vertebrae_C5",
-                47: "vertebrae_C4",
-                48: "vertebrae_C3",
-                49: "vertebrae_C2",
-                50: "vertebrae_C1","""
-
+        spine_mask = inference_pipeline.spine_mask
+        aorta_mask = inference_pipeline.aorta_mask
+        
         t12_level = np.where((spine_mask == 32).sum(axis=(0, 1)))[0]
         l1_level = np.where((spine_mask == 31).sum(axis=(0, 1)))[0]
 
@@ -666,7 +672,7 @@ class AorticCalciumMetrics(InferenceClass):
             print("WARNNG: could not locate L1, using T12 only..")
             sep_plane = t12_level[0]
         else:
-            raise ValueError("Could not locate either T12 or L1, aborting..")
+            raise ValueError("Could not locate T12 and L1, aborting..")
 
         planes = np.zeros_like(spine_mask, dtype=np.int8)
         planes[:, :, sep_plane] = 1
@@ -679,7 +685,8 @@ class AorticCalciumMetrics(InferenceClass):
                 inference_pipeline.output_dir_segmentation_masks, "t12_plane.nii.gz"
             ),
         )
-
+        inference_pipeline.t12_plane = planes
+        
         inference_pipeline.pix_dims = inference_pipeline.medical_volume.header[
             "pixdim"
         ][1:4]
@@ -696,9 +703,11 @@ class AorticCalciumMetrics(InferenceClass):
             if i == 0:
                 calc_mask_region = calc_mask[:, :, :sep_plane]
                 ct = ct_full[:, :, :sep_plane]
+                aorta_mask_region = aorta_mask[:, :, :sep_plane]
             elif i == 1:
                 calc_mask_region = calc_mask[:, :, sep_plane:]
                 ct = ct_full[:, :, sep_plane:]
+                aorta_mask_region = aorta_mask[:, :, sep_plane:]
 
             labelled_calc, num_lesions = ndimage.label(calc_mask_region)
 
@@ -732,6 +741,10 @@ class AorticCalciumMetrics(InferenceClass):
             metrics["volume_total"] = calc_vol
 
             metrics["num_calc"] = num_lesions
+            
+            # percent of the aorta calcificed
+            metrics['perc_calcified'] = (calc_mask_region.sum() / aorta_mask_region.sum()) * 100
+            
 
             if inference_pipeline.args.threshold == "agatston":
                 if num_lesions == 0:
