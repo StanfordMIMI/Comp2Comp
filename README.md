@@ -95,37 +95,40 @@ bin/C2C aortic_calcium -i <path/to/input/folder> -o <path/to/input/folder> --thr
   - The mosaic will default shows all slices with califications but a subset at each vertebra level can be used instead with `--mosaic-type vertebrae` 
 
 <p align="center">
-  <img src="figures/aortic_aneurysm_example.png" height="300">
+  <img src="figures/aortic_calcium_overview.png" height="520">
 </p>
 
 ### Example Output
 ```
 Statistics on aortic calcifications:
 Abdominal:
-Total number:            10
-Total volume (cm³):      0.161
-Mean HU:                 383.3+/-66.4
-Median HU:               366.5+/-62.9
-Max HU:                  571.9+/-190.6
-Mean volume (cm³):       0.016+/-0.020
-Median volume (cm³):     0.011
-Max volume (cm³):        0.074
+Total number:            21
+Total volume (cm³):      1.042
+Mean HU:                 218.6+/-91.4
+Median HU:               195.6+/-65.8
+Max HU:                  449.4+/-368.6
+Mean volume (cm³):       0.050+/-0.100
+Median volume (cm³):     0.006
+Max volume (cm³):        0.425
 Min volume (cm³):        0.002
-Threshold (HU):          266.000
+Threshold (HU):          130.000
+% Calcified aorta        3.429
+Agatston score:          4224.7
 
 
 Thoracic:
-Total number:            1
-Total volume (cm³):      0.030
-Mean HU:                 378.1+/-0.0
-Median HU:               376.0+/-0.0
-Max HU:                  538.0+/-0.0
-Mean volume (cm³):       0.030+/-0.000
-Median volume (cm³):     0.030
-Max volume (cm³):        0.030
-Min volume (cm³):        0.030
-Threshold (HU):          266.000
-
+Total number:            5
+Total volume (cm³):      0.012
+Mean HU:                 171.6+/-41.0
+Median HU:               168.5+/-42.7
+Max HU:                  215.8+/-87.1
+Mean volume (cm³):       0.002+/-0.001
+Median volume (cm³):     0.002
+Max volume (cm³):        0.004
+Min volume (cm³):        0.002
+Threshold (HU):          130.000
+% Calcified aorta        0.026
+Agatston score:          21.1
 ```
 
 ## AAA Segmentation and Maximum Diameter Measurement
