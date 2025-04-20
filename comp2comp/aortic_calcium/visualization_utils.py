@@ -1,3 +1,4 @@
+import io
 import os
 
 import matplotlib.patches as patches
@@ -26,9 +27,14 @@ def createMipPlot(
     ) -> None:
     '''
     Create a MIP projection in the frontal and side plane with
-    the calcication overlayed 
+    the calcication overlayed. The text box is generated seperately 
+    and then resampled to the MIP
     '''
 
+    
+    '''
+    Generate MIP image 
+    '''
     # Create transparent hot cmap
     hot = plt.get_cmap('hot', 256)
     hot_colors = hot(np.linspace(0, 1, 256))
@@ -87,38 +93,24 @@ def createMipPlot(
     axx.set_ylabel('Slice number', color='white', fontsize=10)
     axx.tick_params(axis='y', colors='white', labelsize=10)
 
-    # colorbar
-    # cbar = fig.colorbar(calc_im, ax=axx, fraction=0.026, pad=0.01, orientation='horizontal')
-    # cbar.set_label('Calcified Pixels')  # Optional label
-
     # extend black background 
-    axx.set_xlim(0, ct_proj_all.shape[1] + round(ct_proj_all.shape[1]*1/3))
+    axx.set_xlim(0, ct_proj_all.shape[1])
 
-    rect = patches.Rectangle(
-        (ct_proj_all.shape[1], 0),
-        width=round(ct_proj_all.shape[1]*1/3),
-        height=ct_proj_all.shape[0],
-        linewidth=1,
-        edgecolor="black",
-        facecolor="black",
-        # zorder=text_obj.get_zorder() - 1,
-    )
-    axx.add_patch(rect)
+    # wrap plot in Image
+    tight_bbox = fig.get_tightbbox(fig.canvas.get_renderer())
+    # Create a new bounding box with padding only on the left
+    # The bbox coordinates are [left, bottom, right, top]
+    custom_bbox = Bbox([[tight_bbox.x0 - 0.05, tight_bbox.y0-0.07],  # Add 0.5 inches to the left only
+                        [tight_bbox.x1, tight_bbox.y1]])
+    buf_mip = io.BytesIO()
+    fig.savefig(buf_mip, bbox_inches=custom_bbox, pad_inches=0, dpi=300, format='png')
+    plt.close(fig)
+    buf_mip.seek(0)
+    image_mip = Image.open(buf_mip)
 
-    axx.set_ylim(ct_proj_all.shape[0] + 7, 0)
-
-    rect_y = patches.Rectangle(
-        (0, ct_proj_all.shape[0]),
-        width=ct_proj_all.shape[1] + round(ct_proj_all.shape[1]*1/3),
-        height=7,
-        linewidth=1,
-        edgecolor="black",
-        facecolor="black",
-        # zorder=text_obj.get_zorder() - 1,
-    )
-    axx.add_patch(rect)
-
-    # Report printing on the plot
+    '''
+    Generate the text box 
+    '''
     spacing = 23
     indent = 1
     text_box_x_offset = 20
@@ -142,36 +134,59 @@ def createMipPlot(
         
     report_text.append('{:<{}}{:<{}}{}'.format('',indent, 'Threshold (HU):', spacing, HU_val))
 
+    fig_t, axx_t = plt.subplots(figsize=(5.85,5.85), dpi=300)
+    fig_t.patch.set_facecolor('black')
+    axx_t.set_facecolor('black')
+
+    axx_t.imshow(np.ones((100,65)), cmap='gray')
     bbox_props = dict(boxstyle="round", facecolor="gray", alpha=0.5)
 
-    text_obj = axx.text(
-        x=ct_proj_all.shape[1] + text_box_x_offset,
-        y=10,
+    text_obj = axx_t.text(
+        x=0.3,
+        y=1,
         s='\n'.join(report_text),
         color="white",
-        fontsize=8,
+        # fontsize=12.12 * font_scale,
+        fontsize=15.7,
         family="monospace",
         bbox=bbox_props,
         va="top",
         ha="left",
     )
 
+    axx_t.set_aspect(0.69) 
+    axx_t.axis('off')
+    fig.canvas.draw_idle()
     plt.tight_layout()
-
-    tight_bbox = fig.get_tightbbox(fig.canvas.get_renderer())
-
-    # Create a new bounding box with padding only on the left
-    # The bbox coordinates are [left, bottom, right, top]
-    custom_bbox = Bbox([[tight_bbox.x0 - 0.05, tight_bbox.y0],  # Add 0.5 inches to the left only
-                        [tight_bbox.x1, tight_bbox.y1]])
     
+    # wrap text box in Image
+    tight_bbox_text = fig_t.get_tightbbox(fig_t.canvas.get_renderer())
+    custom_bbox_text = Bbox([[tight_bbox_text.x0 - 0.05, tight_bbox_text.y0-0.14],  # Add 0.5 inches to the left only
+                        [tight_bbox_text.x1+0.15, tight_bbox_text.y1+0.05]])
+    buf_text = io.BytesIO()
+    fig_t.savefig(buf_text, bbox_inches=custom_bbox_text, pad_inches=0, dpi=300, format='png')
+    plt.close(fig_t)
+    buf_text.seek(0)
+    image_text = Image.open(buf_text)
+
+    # Match the width to the projection image
+    aspect_ratio = image_text.height / image_text.width
+    adjusted_width = int(image_mip.height / aspect_ratio)
+
+    image_text_resample = image_text.resize([adjusted_width, image_mip.height], Image.LANCZOS)
     
+    # Merge into one image
+    result = Image.new("RGB", (image_mip.width + image_text_resample.width, image_mip.height))
+    result.paste(im=image_mip, box=(0, 0))
+    result.paste(im=image_text_resample, box=(image_mip.width, 0))
+    
+    # create path and save
     path = os.path.join(save_root, 'sub_figures')
     os.makedirs(path, exist_ok=True)
-    # Save with the custom bounding box
-    fig.savefig(os.path.join(path,'projection.png'), bbox_inches=custom_bbox, pad_inches=0, dpi=300)
+    result.save(os.path.join(path,'projection.png'), dpi=(300, 300))
+    
+    
 
-    plt.close(fig)
 
 def createCalciumMosaic(
     ct: NDArray,
@@ -444,7 +459,7 @@ def createCalciumMosaicVertebrae(
     for i, name in enumerate(vertebra_names):
         x_ = crop_size*(i % per_row) + 4 #  crop_size//2
         y_ = crop_size*(i // per_row) + 4
-        axx.text(x_, y_, s=name, color = 'white', fontsize=10, va='top', ha='left',
+        axx.text(x_, y_, s=name, color = 'white', fontsize=18, va='top', ha='left',
                 bbox=dict(facecolor='black', edgecolor='black', boxstyle='round,pad=0.1'))
 
     axx.set_xticks([])
