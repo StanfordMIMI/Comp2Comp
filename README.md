@@ -83,19 +83,20 @@ bin/C2C spine -i <path/to/input/folder>
 
 ### Usage
 ```bash
-bin/C2C aortic_calcium -i <path/to/input/folder> -o <path/to/input/folder> --threshold
+bin/C2C aortic_calcium -i <path/to/input/folder> -o <path/to/input/folder> --threshold --mosaic-type
 ```
-- The input path should contain a DICOM series or subfolders that contain DICOM series, or a nifti file.
+The input path should contain a DICOM series or subfolders that contain DICOM series or a nifty file.
 - The threshold can be controlled with `--threshold` and be either an integer HU threshold, "adataptive" or "agatson".
-  - If "agatson" is used, agatson score is calculated and the a threshold of 130 HU is used 
+  - If "agatson" is used, agatson score is calculated and a threshold of 130 HU is used 
 - Aortic calcifications are divided into abdominal and thoracic at the end of the T12 level
-- Segmentation masks for aortic calcium, the dilated aorta mask and the T12 seperation plane are saved in ./segmentation_masks/
+- Segmentation masks for the aortic calcium, the dilated aorta mask, and the T12 seperation plane are saved in ./segmentation_masks/
 - Metrics on an aggregated and individual level for the calcifications are written to .csv files in ./metrics/
 - Visualizations are saved to ./images/
-  - The mosaic will default shows all slices with califications but a subset at each vertebra level can be used instead with `--mosaic-type vertebrae` 
+  - The visualization presents coronal and sagittal MIP projections with the aorta overlay, featuring a heat map of calcifications alongside extracted calcification metrics. Below is a mosaic of each aortic slice with calcifications.  
+  - The mosaic will default show all slices with califications but a subset at each vertebra level can be used instead with `--mosaic-type vertebrae` 
 
 <p align="center">
-  <img src="figures/aortic_calcium_overview.png" height="520">
+  <img src="figures/aortic_calcium_overview.png" height="500">
 </p>
 
 ### Example Output
