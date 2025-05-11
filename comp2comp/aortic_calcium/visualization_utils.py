@@ -1,5 +1,6 @@
 import io
 import os
+import shutil
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -53,7 +54,8 @@ def createMipPlot(
 
     calc_mask_proj = np.flip(np.transpose(calc_mask.sum(axis=1)), axis=0)
     # normalize both views for the heat map
-    calc_mask_proj = calc_mask_proj/calc_mask_proj.max()
+    if not calc_mask_proj.max() == 0:
+        calc_mask_proj = calc_mask_proj/calc_mask_proj.max()
 
     aorta_mask_proj = np.flip(np.transpose(aorta_mask.max(axis=1)), axis=0)*2
     plane_mask_proj = np.where(np.flip(np.transpose( (plane_mask == 1).max(axis=(0,1))), axis=0))[0][0]
@@ -64,7 +66,9 @@ def createMipPlot(
 
     calc_mask_proj_side = np.flip(np.transpose(calc_mask.sum(axis=0)), axis=0)
     # normalize both views for the heat map
-    calc_mask_proj_side = calc_mask_proj_side/calc_mask_proj_side.max()
+    if not calc_mask_proj_side.max() == 0:
+        calc_mask_proj_side = calc_mask_proj_side/calc_mask_proj_side.max()
+        
     aorta_mask_proj_side = np.flip(np.transpose(aorta_mask.max(axis=0)), axis=0)*2
 
     # Concatenate together
@@ -130,7 +134,8 @@ def createMipPlot(
         
         if 'agatston_score' in region_metrics:
             report_text.append('{:<{}}{:<{}}{:.0f}'.format('',indent,'Agatston:', spacing, region_metrics['agatston_score']))
-            report_text.append('\n')
+        
+        report_text.append('\n')
         
     report_text.append('{:<{}}{:<{}}{}'.format('',indent, 'Threshold (HU):', spacing, HU_val))
 
@@ -168,6 +173,8 @@ def createMipPlot(
     plt.close(fig_t)
     buf_text.seek(0)
     image_text = Image.open(buf_text)
+    # Ensure the same boarder on the text box
+    image_text = crop_and_pad_image(image_text, pad_percent=0.015)
 
     # Match the width to the projection image
     aspect_ratio = image_text.height / image_text.width
@@ -179,13 +186,36 @@ def createMipPlot(
     result = Image.new("RGB", (image_mip.width + image_text_resample.width, image_mip.height))
     result.paste(im=image_mip, box=(0, 0))
     result.paste(im=image_text_resample, box=(image_mip.width, 0))
-    
+
     # create path and save
     path = os.path.join(save_root, 'sub_figures')
     os.makedirs(path, exist_ok=True)
     result.save(os.path.join(path,'projection.png'), dpi=(300, 300))
     
+
+def crop_and_pad_image(image, pad_percent=0.025, pad_color=(0, 0, 0, 255)):
+    # Ensure image has alpha channel
+    image = image.convert('RGBA')
     
+    # Create a binary mask: 255 for non-black, 0 for black
+    mask = image.convert('RGB').point(lambda p: 255 if p != 0 else 0).convert('L')
+    bbox = mask.getbbox()
+
+    if not bbox:
+        return image  # No content found; return original
+    
+    # Crop the image
+    cropped = image.crop(bbox)
+
+    # Calculate padding
+    width, height = cropped.size
+    pad = int(width * pad_percent)
+
+    # Add padding
+    padded = Image.new('RGBA', (width + pad * 2, height + pad * 2), pad_color)
+    padded.paste(cropped, (pad, pad))
+
+    return padded
 
 
 def createCalciumMosaic(
@@ -478,18 +508,23 @@ def mergeMipAndMosaic(save_root: str) -> None:
     This function loads the MIP and mosaic images and merges them into
     a single final image.
     '''
-    img_proj = Image.open(os.path.join(save_root, 'sub_figures/projection.png'))
-    img_mosaic = Image.open(os.path.join(save_root, 'sub_figures/mosaic.png'))
     
-    # Match the width to the projection image
-    aspect_ratio = img_mosaic.height / img_mosaic.width
-    new_height = int(img_proj.width * aspect_ratio)
+    if os.path.isfile(os.path.join(save_root, 'sub_figures/mosaic.png')):
+        img_proj = Image.open(os.path.join(save_root, 'sub_figures/projection.png'))
+        img_mosaic = Image.open(os.path.join(save_root, 'sub_figures/mosaic.png'))
+        
+        # Match the width to the projection image
+        aspect_ratio = img_mosaic.height / img_mosaic.width
+        new_height = int(img_proj.width * aspect_ratio)
 
-    img_mosaic_resample = img_mosaic.resize([img_proj.width, new_height], Image.LANCZOS)
+        img_mosaic_resample = img_mosaic.resize([img_proj.width, new_height], Image.LANCZOS)
 
-    result = Image.new("RGB", (img_proj.width, img_proj.height + img_mosaic_resample.height))
+        result = Image.new("RGB", (img_proj.width, img_proj.height + img_mosaic_resample.height))
 
-    result.paste(im=img_proj, box=(0, 0))
-    result.paste(im=img_mosaic_resample, box=(0, img_proj.height))
+        result.paste(im=img_proj, box=(0, 0))
+        result.paste(im=img_mosaic_resample, box=(0, img_proj.height))
 
-    result.save(os.path.join(save_root,'overview.png'), dpi=(300, 300))
+        result.save(os.path.join(save_root,'overview.png'), dpi=(300, 300))
+    else:
+        shutil.copy2(os.path.join(save_root, 'sub_figures/projection.png'), os.path.join(save_root,'overview.png'))
+        

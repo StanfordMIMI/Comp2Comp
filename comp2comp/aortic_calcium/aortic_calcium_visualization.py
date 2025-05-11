@@ -28,17 +28,20 @@ class AorticCalciumVisualizer(InferenceClass):
             inference_pipeline.metrics,
             self.output_dir_images_organs,
         )
-         
+        
+        ab_num = inference_pipeline.metrics['Abdominal']['num_calc'] 
+        th_num = inference_pipeline.metrics['Thoracic']['num_calc'] 
         # Create mosaic part of the overview plot
-        createCalciumMosaic(
-            inference_pipeline.ct, 
-            inference_pipeline.calc_mask,
-            inference_pipeline.dilated_aorta_mask, # the dilated mask is used here
-            inference_pipeline.spine_mask,
-            inference_pipeline.pix_dims,
-            self.output_dir_images_organs,
-            inference_pipeline.args.mosaic_type,
-        )
+        if not (ab_num == 0 and th_num == 0):      
+            createCalciumMosaic(
+                inference_pipeline.ct, 
+                inference_pipeline.calc_mask,
+                inference_pipeline.dilated_aorta_mask, # the dilated mask is used here
+                inference_pipeline.spine_mask,
+                inference_pipeline.pix_dims,
+                self.output_dir_images_organs,
+                inference_pipeline.args.mosaic_type,
+            )
         
         # Merge the two images created above for the final report 
         mergeMipAndMosaic(
