@@ -12,8 +12,8 @@ from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pydicom
 from scipy import ndimage
-import pydicom 
 
 # from totalsegmentator.libs import (
 #     download_pretrained_weights,
@@ -34,9 +34,9 @@ class AortaSegmentation(InferenceClass):
 
     def __call__(self, inference_pipeline):
         # check if kernels are allowed if agatston is used
-        if inference_pipeline.args.threshold == 'agatston':
+        if inference_pipeline.args.threshold == "agatston":
             self.reconKernelChecker(inference_pipeline.dcm)
-            
+
         # inference_pipeline.dicom_series_path = self.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
@@ -115,27 +115,63 @@ class AortaSegmentation(InferenceClass):
         ge_kernels = ["standard", "md stnd"]
         philips_kernels = ["a", "b", "c", "sa", "sb"]
         canon_kernels = ["fc08", "fc18"]
-        siemens_kernels = ["b20s", "b20f", "b30f", "b31s", "b31f", "br34f", "b35f", "bf37f", "br38f", "b41f", 
-                        "qr40", "qr40d", "br36f", "br40", "b40f", "br40d", "i30f", "i31f", "i26f", "i31s", 
-                        "i40f", "b30s", "br36d", "bf39f", "b41s", "br40f"]
+        siemens_kernels = [
+            "b20s",
+            "b20f",
+            "b30f",
+            "b31s",
+            "b31f",
+            "br34f",
+            "b35f",
+            "bf37f",
+            "br38f",
+            "b41f",
+            "qr40",
+            "qr40d",
+            "br36f",
+            "br40",
+            "b40f",
+            "br40d",
+            "i30f",
+            "i31f",
+            "i26f",
+            "i31s",
+            "i40f",
+            "b30s",
+            "br36d",
+            "bf39f",
+            "b41s",
+            "br40f",
+        ]
         toshiba_kernels = ["fc01", "fc02", "fc07", "fc08", "fc13", "fc18"]
 
-        all_kernels = ge_kernels+philips_kernels+canon_kernels+siemens_kernels+toshiba_kernels
-        
-        conv_kernel_raw = dcm['ConvolutionKernel'].value
-        
+        all_kernels = (
+            ge_kernels
+            + philips_kernels
+            + canon_kernels
+            + siemens_kernels
+            + toshiba_kernels
+        )
+
+        conv_kernel_raw = dcm["ConvolutionKernel"].value
+
         if isinstance(conv_kernel_raw, pydicom.multival.MultiValue):
             conv_kernel = conv_kernel_raw[0].lower()
-            recon_kernel_extra = str(conv_kernel_raw)
+            str(conv_kernel_raw)
         else:
             conv_kernel = conv_kernel_raw.lower()
-            recon_kernel_extra = 'n/a'
-            
+
         if conv_kernel in all_kernels:
             return True
-        else:          
-            raise ValueError('Reconstruction kernel not allowed, found: ' + conv_kernel +'\n'
-                             + 'Allowed kernels are: ' + str(all_kernels))
+        else:
+            raise ValueError(
+                "Reconstruction kernel not allowed, found: "
+                + conv_kernel
+                + "\n"
+                + "Allowed kernels are: "
+                + str(all_kernels)
+            )
+
 
 class AorticCalciumSegmentation(InferenceClass):
     """Segmentaiton of aortic calcium"""
@@ -168,10 +204,10 @@ class AorticCalciumSegmentation(InferenceClass):
             47: "vertebrae_C4",
             48: "vertebrae_C3",
             49: "vertebrae_C2",
-            50: "vertebrae_C1"}
-        
-        self.vertebrae_name = {v: k for k, v in self.vertebrae_num.items()}
+            50: "vertebrae_C1",
+        }
 
+        self.vertebrae_name = {v: k for k, v in self.vertebrae_num.items()}
 
     def __call__(self, inference_pipeline):
 
@@ -194,15 +230,21 @@ class AorticCalciumSegmentation(InferenceClass):
             os.makedirs(os.path.join(self.output_dir, "metrics/"))
 
         inference_pipeline.ct = inference_pipeline.medical_volume.get_fdata()
-        inference_pipeline.aorta_mask = (inference_pipeline.segmentation.get_fdata().round().astype(np.int8) == 52)
-        inference_pipeline.spine_mask = inference_pipeline.spine_segmentation.get_fdata().round().astype(np.uint8)
-        
+        inference_pipeline.aorta_mask = (
+            inference_pipeline.segmentation.get_fdata().round().astype(np.int8) == 52
+        )
+        inference_pipeline.spine_mask = (
+            inference_pipeline.spine_segmentation.get_fdata().round().astype(np.uint8)
+        )
+
         # convert to the index of TotalSegmentator
-        if inference_pipeline.spine_model_name == 'stanford_spine_v0.0.1':
+        if inference_pipeline.spine_model_name == "stanford_spine_v0.0.1":
             tmp_mask = inference_pipeline.spine_mask > 0
-            inference_pipeline.spine_mask[tmp_mask] = inference_pipeline.spine_mask[tmp_mask] + 11
+            inference_pipeline.spine_mask[tmp_mask] = (
+                inference_pipeline.spine_mask[tmp_mask] + 11
+            )
             del tmp_mask
-        
+
         spine_mask_bin = inference_pipeline.spine_mask > 0
 
         # Determine the target number of pixels
@@ -220,7 +262,7 @@ class AorticCalciumSegmentation(InferenceClass):
             inference_pipeline.aorta_mask,
             exclude_mask=spine_mask_bin,
             remove_size=3,
-            return_dilated_mask=True,   
+            return_dilated_mask=True,
             return_eroded_aorta=True,
             threshold=inference_pipeline.args.threshold,
             dilation_iteration=target_aorta_dil,
@@ -240,7 +282,7 @@ class AorticCalciumSegmentation(InferenceClass):
                 "calcium_segmentations.nii.gz",
             ),
         )
-        
+
         inference_pipeline.saveArrToNifti(
             calcification_results["dilated_mask"],
             os.path.join(
@@ -248,7 +290,7 @@ class AorticCalciumSegmentation(InferenceClass):
                 "dilated_aorta_mask.nii.gz",
             ),
         )
-        
+
         inference_pipeline.saveArrToNifti(
             calcification_results["aorta_eroded"],
             os.path.join(
@@ -263,7 +305,7 @@ class AorticCalciumSegmentation(InferenceClass):
                 inference_pipeline.output_dir_segmentation_masks, "spine_mask.nii.gz"
             ),
         )
-        
+
         inference_pipeline.saveArrToNifti(
             inference_pipeline.aorta_mask,
             os.path.join(
@@ -647,7 +689,7 @@ class AorticCalciumSegmentation(InferenceClass):
             )
 
         return (slice(x_start, x_end), slice(y_start, y_end), slice(z_start, z_end))
-    
+
 
 class AorticCalciumMetrics(InferenceClass):
     """Calculate metrics for the aortic calcifications"""
@@ -659,7 +701,7 @@ class AorticCalciumMetrics(InferenceClass):
         calc_mask = inference_pipeline.calc_mask
         spine_mask = inference_pipeline.spine_mask
         aorta_mask = inference_pipeline.aorta_mask
-        
+
         t12_level = np.where((spine_mask == 32).sum(axis=(0, 1)))[0]
         l1_level = np.where((spine_mask == 31).sum(axis=(0, 1)))[0]
 
@@ -686,7 +728,7 @@ class AorticCalciumMetrics(InferenceClass):
             ),
         )
         inference_pipeline.t12_plane = planes
-        
+
         inference_pipeline.pix_dims = inference_pipeline.medical_volume.header[
             "pixdim"
         ][1:4]
@@ -741,10 +783,11 @@ class AorticCalciumMetrics(InferenceClass):
             metrics["volume_total"] = calc_vol
 
             metrics["num_calc"] = num_lesions
-            
+
             # percent of the aorta calcificed
-            metrics['perc_calcified'] = (calc_mask_region.sum() / aorta_mask_region.sum()) * 100
-            
+            metrics["perc_calcified"] = (
+                calc_mask_region.sum() / aorta_mask_region.sum()
+            ) * 100
 
             if inference_pipeline.args.threshold == "agatston":
                 if num_lesions == 0:
