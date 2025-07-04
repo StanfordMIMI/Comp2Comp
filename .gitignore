@@ -23,6 +23,7 @@ docs/_build
 **/test_data
 **/testing_data
 **/sample_data
+**/ct_scan_paths
 **/test_results
 
 # Ignore images

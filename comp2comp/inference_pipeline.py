@@ -27,7 +27,7 @@ class InferencePipeline(InferenceClass):
 
         self.inference_classes = inference_classes
 
-    def __call__(self, inference_pipeline=None, **kwargs):
+    def __call__(self, inference_pipeline=None, input_path: str = None, **kwargs):
         # print out the class names for each inference class
         print("")
         print("Inference pipeline:")
@@ -37,12 +37,16 @@ class InferencePipeline(InferenceClass):
 
         print("Starting inference pipeline for:\n")
 
-        if inference_pipeline:
-            for key, value in kwargs.items():
-                setattr(inference_pipeline, key, value)
-        else:
-            for key, value in kwargs.items():
-                setattr(self, key, value)
+        # pick whether we’re writing onto self or the wrapped pipeline
+        target = inference_pipeline or self
+
+        # 1) stash input_path if provided
+        if input_path is not None:
+            target.input_path = input_path
+
+        # 2) stash everything else (output_dir, model_dir, etc.)
+        for key, value in kwargs.items():
+            setattr(target, key, value)
 
         output = {}
         for inference_class in self.inference_classes:

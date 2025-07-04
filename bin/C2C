@@ -31,15 +31,15 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 ### AAA Pipeline
 
 def AAAPipelineBuilder(path, args):
-    pipeline = InferencePipeline(
-      [
-        AxialCropperPipelineBuilder(path, args),
+    # build the “crop” pipeline and pull out its step‐classes
+    crop_pipeline = AxialCropperPipelineBuilder(path, args)
+    # now concatenate its classes with the AAA steps
+    classes = crop_pipeline.inference_classes + [
         aaa.AortaSegmentation(),
         aaa.AortaDiameter(),
-        aaa.AortaMetricsSaver()
-      ]
-    )
-    return pipeline
+        aaa.AortaMetricsSaver(),
+    ]
+    return InferencePipeline(classes)
 
 def MuscleAdiposeTissuePipelineBuilder(args):
     pipeline = InferencePipeline(
