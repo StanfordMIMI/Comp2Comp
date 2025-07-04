@@ -29,7 +29,8 @@ class AortaSegmentation(InferenceClass):
         self.save_segmentations = save
 
     def __call__(self, inference_pipeline):
-        # inference_pipeline.dicom_series_path = self.input_path
+        print("DICOM series path is:", inference_pipeline.input_path)
+        inference_pipeline.dicom_series_path = inference_pipeline.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
         if not os.path.exists(self.output_dir_segmentations):
@@ -205,19 +206,29 @@ class AortaDiameter(InferenceClass):
             os.makedirs(output_dir_summary)
 
         DICOM_PATH = inference_pipeline.dicom_series_path
-        dicom = pydicom.dcmread(DICOM_PATH + "/" + os.listdir(DICOM_PATH)[0])
+        if os.path.isdir(DICOM_PATH):
+            # classic DICOM‐series folder
+            first_file = sorted(os.listdir(DICOM_PATH))[0]
+            dicom = pydicom.dcmread(os.path.join(DICOM_PATH, first_file))
+            dicom.PhotometricInterpretation = "YBR_FULL"
+            pixel_conversion = dicom.PixelSpacing
+            print("Pixel conversion:", pixel_conversion)
+            RATIO_PIXEL_TO_MM = pixel_conversion[0]
 
-        dicom.PhotometricInterpretation = "YBR_FULL"
-        pixel_conversion = dicom.PixelSpacing
-        print("Pixel conversion: " + str(pixel_conversion))
-        RATIO_PIXEL_TO_MM = pixel_conversion[0]
+            # get slice count from the DICOM metadata
+            SLICE_COUNT = dicom.InstanceNumber
+            print("Slice count from DICOM header:", SLICE_COUNT)
+        else:
+            # NIfTI file → grab spacing from the header
+            nii = nib.load(DICOM_PATH)
+            zooms = nii.header.get_zooms()  # e.g. (0.7, 0.7, 1.0)
+            RATIO_PIXEL_TO_MM = float(zooms[0])
 
-        SLICE_COUNT = dicom["InstanceNumber"].value
-        print(SLICE_COUNT)
+            # get slice count from the loaded volume
+            SLICE_COUNT = len(ct_img)
+            print("Slice count from NIfTI shape:", SLICE_COUNT)
 
-        SLICE_COUNT = len(ct_img)
         diameterDict = {}
-
         for i in range(len(ct_img)):
             mask = axial_masks[i].astype("uint8")
 

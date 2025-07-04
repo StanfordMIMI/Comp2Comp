@@ -2,6 +2,7 @@
 @author: louisblankemeier
 """
 
+import os
 import math
 import os
 import shutil
@@ -283,20 +284,24 @@ class AxialCropper(InferenceClass):
         inference_pipeline.medical_volume = medical_volume
 
         if self.save:
-            nib.save(
-                segmentation,
-                os.path.join(
-                    inference_pipeline.output_dir, "segmentations", "spine.nii.gz"
-                ),
+            # Save spine segmentation
+            seg_path = os.path.join(
+                inference_pipeline.output_dir, "segmentations", "spine.nii.gz"
             )
-            nib.save(
-                medical_volume,
-                os.path.join(
-                    inference_pipeline.output_dir,
-                    "segmentations",
-                    "converted_dcm.nii.gz",
-                ),
+            # remove stale file & ensure directory exists
+            if os.path.exists(seg_path):
+                os.remove(seg_path)
+            os.makedirs(os.path.dirname(seg_path), exist_ok=True)
+            nib.save(segmentation, seg_path)
+
+            # Save converted DICOM volume
+            converted_path = os.path.join(
+                inference_pipeline.output_dir, "segmentations", "converted_dcm.nii.gz"
             )
+            if os.path.exists(converted_path):
+                os.remove(converted_path)
+            os.makedirs(os.path.dirname(converted_path), exist_ok=True)
+            nib.save(medical_volume, converted_path)
         return {}
 
 

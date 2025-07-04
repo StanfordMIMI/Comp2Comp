@@ -22,7 +22,7 @@ docs/_build
 # Ignore test_data
 **/test_data
 **/testing_data
-**/sample_data
+**/ct_scan_paths
 **/test_results
 
 # Ignore images

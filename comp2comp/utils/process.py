@@ -128,7 +128,11 @@ def process_3d(args, pipeline_builder):
 
             pipeline = pipeline_builder(path, args)
 
-            pipeline(output_dir=output_dir, model_dir=model_dir)
+            pipeline(
+                input_path=path,
+                output_dir=output_dir,
+                model_dir=model_dir
+            )
 
             if not args.save_segmentations:
                 # remove the segmentations folder
