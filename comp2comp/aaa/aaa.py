@@ -27,9 +27,92 @@ class AortaSegmentation(InferenceClass):
         super().__init__()
         self.model_name = "totalsegmentator"
         self.save_segmentations = save
+    
+    def _infer_raw_geometry(self, input_path: Union[str, Path]):
+        """
+        Return (raw_shape, raw_affine) for the *raw* CT space.
+        - If input_path is a DICOM folder: build affine from DICOM headers.
+        - If input_path is a NIfTI file (.nii/.nii.gz): load with nibabel.
+        """
+        if os.path.isdir(input_path):
+            # --- DICOM series case ---
+            files = [os.path.join(input_path, f) for f in os.listdir(input_path) if not f.startswith('.')]
+            ds_list = []
+            for fp in files:
+                try:
+                    ds = pydicom.dcmread(fp, stop_before_pixels=True)
+                    ds_list.append(ds)
+                except Exception:
+                    pass
+            if not ds_list:
+                raise RuntimeError(f"No readable DICOM slices found in: {input_path}")
+
+            ds0 = ds_list[0]
+            rows = int(ds0.Rows)
+            cols = int(ds0.Columns)
+
+            # Direction cosines
+            iop = [float(x) for x in ds0.ImageOrientationPatient]  # 6 values
+            row_cos = np.array(iop[:3], dtype=float)
+            col_cos = np.array(iop[3:], dtype=float)
+            normal  = np.cross(row_cos, col_cos)
+
+            # Pixel spacing (mm)
+            ps = [float(x) for x in ds0.PixelSpacing]  # [row_spacing, col_spacing]
+            row_spacing = ps[0]
+            col_spacing = ps[1]
+
+            # Sort slices along the normal using ImagePositionPatient or InstanceNumber
+            def ipp_dot(d):
+                if hasattr(d, "ImagePositionPatient"):
+                    ipp = np.array([float(x) for x in d.ImagePositionPatient], dtype=float)
+                    return float(np.dot(ipp, normal))
+                return 0.0
+
+            if all(hasattr(d, "ImagePositionPatient") for d in ds_list):
+                ds_list.sort(key=ipp_dot)
+            elif all(hasattr(d, "InstanceNumber") for d in ds_list):
+                ds_list.sort(key=lambda d: int(d.InstanceNumber))
+            else:
+                # fallback: filename order
+                ds_list.sort(key=lambda d: getattr(d, "SOPInstanceUID", ""))
+
+            # Slice spacing (use IPP difference if possible)
+            if len(ds_list) > 1 and hasattr(ds_list[0], "ImagePositionPatient") and hasattr(ds_list[1], "ImagePositionPatient"):
+                ipp0 = np.array([float(x) for x in ds_list[0].ImagePositionPatient], dtype=float)
+                ipp1 = np.array([float(x) for x in ds_list[1].ImagePositionPatient], dtype=float)
+                slice_step = abs(np.dot((ipp1 - ipp0), normal))
+                if slice_step == 0:
+                    slice_step = float(getattr(ds0, "SpacingBetweenSlices", getattr(ds0, "SliceThickness", 1.0)))
+            else:
+                slice_step = float(getattr(ds0, "SpacingBetweenSlices", getattr(ds0, "SliceThickness", 1.0)))
+
+            # Origin = IPP of first slice
+            if hasattr(ds_list[0], "ImagePositionPatient"):
+                origin = np.array([float(x) for x in ds_list[0].ImagePositionPatient], dtype=float)
+            else:
+                origin = np.zeros(3, dtype=float)
+
+            # Build affine (voxel indices i,j,k -> world x,y,z)
+            # i: columns (x), j: rows (y), k: slices (z)
+            aff = np.eye(4, dtype=float)
+            aff[0:3, 0] = col_cos * col_spacing
+            aff[0:3, 1] = row_cos * row_spacing
+            aff[0:3, 2] = normal  * slice_step
+            aff[0:3, 3] = origin
+
+            raw_shape = (rows, cols, len(ds_list))
+            raw_affine = aff
+            return raw_shape, raw_affine
+
+        else:
+            # --- NIfTI case ---
+            nii = nib.load(str(input_path))
+            return tuple(nii.shape), np.array(nii.affine, dtype=float)
+
 
     def __call__(self, inference_pipeline):
-        print("DICOM series path is:", inference_pipeline.input_path)
+        print("TRY NEW: DICOM series path is:", inference_pipeline.input_path)
         inference_pipeline.dicom_series_path = inference_pipeline.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
@@ -38,11 +121,27 @@ class AortaSegmentation(InferenceClass):
 
         self.model_dir = inference_pipeline.model_dir
 
+        # keep the path to the *raw* NIfTI you feed into the model
+        raw_nii_path = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
+
         seg, mv = self.spine_seg(
-            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+            raw_nii_path,
             self.output_dir_segmentations + "spine.nii.gz",
             inference_pipeline.model_dir,
         )
+
+        # NEW: derive raw geometry from the *input* CT (DICOM folder or NIfTI)
+        raw_shape, raw_affine = self._infer_raw_geometry(inference_pipeline.input_path)
+        inference_pipeline.raw_shape  = raw_shape
+        inference_pipeline.raw_affine = raw_affine
+
+        # Keep processed-space metadata for pixel→mm conversion & mapping
+        inference_pipeline.proc_affine = mv.affine
+        inference_pipeline.proc_zooms  = mv.header.get_zooms()
+        inference_pipeline.proc_shape  = mv.shape
+
+        print("DEBUG raw_shape:", inference_pipeline.raw_shape)
+        print("DEBUG proc_shape:", inference_pipeline.proc_shape)
 
         seg = seg.get_fdata()
         medical_volume = mv.get_fdata()
@@ -178,234 +277,156 @@ class AortaDiameter(InferenceClass):
         super().__init__()
 
     def normalize_img(self, img: np.ndarray) -> np.ndarray:
-        """Normalize the image.
-        Args:
-            img (np.ndarray): Input image.
-        Returns:
-            np.ndarray: Normalized image.
-        """
         return (img - img.min()) / (img.max() - img.min())
 
     def __call__(self, inference_pipeline):
-        axial_masks = (
-            inference_pipeline.axial_masks
-        )  # list of 2D numpy arrays of shape (512, 512)
-        ct_img = (
-            inference_pipeline.ct_image
-        )  # 3D numpy array of shape (512, 512, num_axial_slices)
+        axial_masks = inference_pipeline.axial_masks      # list of 2D masks (processed space)
+        ct_img      = inference_pipeline.ct_image         # list/array of slices (processed space)
 
-        # image output directory
+        # output dirs
         output_dir = inference_pipeline.output_dir
-        output_dir_slices = os.path.join(output_dir, "images/slices/")
-        if not os.path.exists(output_dir_slices):
-            os.makedirs(output_dir_slices)
-
-        output_dir = inference_pipeline.output_dir
+        output_dir_slices  = os.path.join(output_dir, "images/slices/")
         output_dir_summary = os.path.join(output_dir, "images/summary/")
-        if not os.path.exists(output_dir_summary):
-            os.makedirs(output_dir_summary)
+        os.makedirs(output_dir_slices, exist_ok=True)
+        os.makedirs(output_dir_summary, exist_ok=True)
 
-        DICOM_PATH = inference_pipeline.dicom_series_path
-        if os.path.isdir(DICOM_PATH):
-            # classic DICOM‐series folder
-            first_file = sorted(os.listdir(DICOM_PATH))[0]
-            dicom = pydicom.dcmread(os.path.join(DICOM_PATH, first_file))
-            dicom.PhotometricInterpretation = "YBR_FULL"
-            pixel_conversion = dicom.PixelSpacing
-            print("Pixel conversion:", pixel_conversion)
-            RATIO_PIXEL_TO_MM = pixel_conversion[0]
+        # --- Affine-based mapping: processed -> raw ---
+        # processed image metadata (where we actually measure pixels)
+        proc_affine = np.array(inference_pipeline.proc_affine)
+        proc_zooms  = tuple(inference_pipeline.proc_zooms)
+        proc_shape  = tuple(inference_pipeline.proc_shape)   # (H, W, Z_proc)
+        Hp, Wp, Zp  = proc_shape
 
-            # get slice count from the DICOM metadata
-            SLICE_COUNT = dicom.InstanceNumber
-            print("Slice count from DICOM header:", SLICE_COUNT)
-        else:
-            # NIfTI file → grab spacing from the header
-            nii = nib.load(DICOM_PATH)
-            zooms = nii.header.get_zooms()  # e.g. (0.7, 0.7, 1.0)
-            RATIO_PIXEL_TO_MM = float(zooms[0])
+        # raw CT reference space (target indexing for CSV)
+        raw_shape = tuple(inference_pipeline.raw_shape)         # e.g., (512, 512, 480)
+        raw_aff   = np.array(inference_pipeline.raw_affine)     # 4x4
+        Z_raw     = raw_shape[2]
 
-            # get slice count from the loaded volume
-            SLICE_COUNT = len(ct_img)
-            print("Slice count from NIfTI shape:", SLICE_COUNT)
 
-        diameterDict = {}
-        for i in range(len(ct_img)):
-            mask = axial_masks[i].astype("uint8")
+        print(f"[DEBUG] raw_shape={raw_shape} -> Z_raw={Z_raw}")
+        print(f"[DEBUG] proc_shape={proc_shape} -> Zp={Zp}")
 
+        
+        # precompute inverse affine for raw (do this once)
+        inv_raw_aff = np.linalg.inv(raw_aff)
+
+        # use in-plane mm-per-pixel from the processed image (safer if x!=y)
+        RATIO_PIXEL_TO_MM = float((proc_zooms[0] + proc_zooms[1]) / 2.0)
+
+        # pick the center of the processed image in XY to define the slice plane
+        cx = (Wp - 1) / 2.0
+        cy = (Hp - 1) / 2.0
+
+        print("Processed shape (H,W,Z):", proc_shape)
+        print("Raw shape (H,W,Z):", raw_shape)
+
+        # maps RAW index -> diameter (cm)
+        diameter_cm_by_raw_index = {}
+
+        for i in range(Zp):  # i is processed-space slice index
+            # ensure binary mask
+            mask = (axial_masks[i] > 0).astype("uint8")
+            if mask.max() == 0:
+                continue  # no aorta on this processed slice
+
+            # ---- map processed slice i to raw slice index k_raw ----
+            proc_voxel = np.array([cx, cy, i, 1.0])                 # center of slice
+            world_xyz1 = proc_affine @ proc_voxel                   # world coord
+            raw_ijk1   = inv_raw_aff @ world_xyz1                   # raw voxel coord
+            k_raw      = int(round(raw_ijk1[2]))                    # raw z-index
+
+            # clamp into valid range
+            if k_raw < 0 or k_raw >= Z_raw:
+                continue
+
+            # ---- measure diameter on the processed slice ----
             img = ct_img[i]
-
             img = np.clip(img, -300, 1800)
             img = self.normalize_img(img) * 255.0
             img = img.reshape((img.shape[0], img.shape[1], 1))
             img = np.tile(img, (1, 1, 3))
 
             contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+            if not contours:
+                continue
 
-            if len(contours) != 0:
-                areas = [cv2.contourArea(c) for c in contours]
-                sorted_areas = np.sort(areas)
+            # largest component
+            areas = [cv2.contourArea(c) for c in contours]
+            contours = contours[int(np.argmax(areas))]
 
-                areas = [cv2.contourArea(c) for c in contours]
-                sorted_areas = np.sort(areas)
-                contours = contours[areas.index(sorted_areas[-1])]
+            # overlay (cosmetic)
+            back = img.copy()
+            cv2.drawContours(back, [contours], 0, (0, 255, 0), -1)
+            img = cv2.addWeighted(img, 0.75, back, 0.25, 0)
 
-                img.copy()
+            ellipse = cv2.fitEllipse(contours)
+            (xc, yc), (d1, d2), angle = ellipse
+            cv2.ellipse(img, ellipse, (0, 255, 0), 1)
+            cv2.circle(img, (int(xc), int(yc)), 5, (0, 0, 255), -1)
 
-                back = img.copy()
-                cv2.drawContours(back, [contours], 0, (0, 255, 0), -1)
+            rmajor = max(d1, d2) / 2.0
+            rminor = min(d1, d2) / 2.0
 
-                alpha = 0.25
-                img = cv2.addWeighted(img, 1 - alpha, back, alpha, 0)
+            # diameter from minor axis
+            pixel_length = rminor * 2.0
+            diameter_mm  = round(pixel_length * RATIO_PIXEL_TO_MM)
+            diameter_cm  = diameter_mm / 10.0
 
-                ellipse = cv2.fitEllipse(contours)
-                (xc, yc), (d1, d2), angle = ellipse
+            # if multiple processed slices map to the same raw index (rare), keep the max
+            prev = diameter_cm_by_raw_index.get(k_raw)
+            if (prev is None) or (diameter_cm > prev):
+                diameter_cm_by_raw_index[k_raw] = diameter_cm
 
-                cv2.ellipse(img, ellipse, (0, 255, 0), 1)
+            # Save an image for quick QC (tagged with RAW index)
+            img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            h, w, _ = img.shape
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            fontScale = min(w, h) / (25 / 0.03)
+            cv2.putText(img, f"CT raw slice index: {k_raw}", (10, 40), font, fontScale, (0, 255, 0), 2)
+            cv2.putText(img, f"Diameter (cm): {diameter_cm}", (10, 70), font, fontScale, (0, 255, 0), 2)
+            cv2.imwrite(os.path.join(output_dir_slices, f"slice_raw_{k_raw}.png"), img)
 
-                xc, yc = ellipse[0]
-                cv2.circle(img, (int(xc), int(yc)), 5, (0, 0, 255), -1)
+        # --- Summary plot vs RAW index ---
+        if diameter_cm_by_raw_index:
+            xs = sorted(diameter_cm_by_raw_index.keys())
+            ys = [diameter_cm_by_raw_index[k] for k in xs]
+            plt.bar(xs, ys)
+            plt.title(r"$\bf{Diameter}$" + " " + r"$\bf{Progression}$")
+            plt.xlabel("CT raw slice index (0-based)")
+            plt.ylabel("Diameter (cm)")
+            plt.savefig(os.path.join(output_dir_summary, "diameter_graph.png"), dpi=500)
+            plt.close()
 
-                rmajor = max(d1, d2) / 2
-                rminor = min(d1, d2) / 2
+        # --- Max diameter (by RAW index) ---
+        if diameter_cm_by_raw_index:
+            max_raw_idx = max(diameter_cm_by_raw_index.items(), key=operator.itemgetter(1))[0]
+            print("Max raw index:", max_raw_idx, "diameter_cm:", diameter_cm_by_raw_index[max_raw_idx])
+            inference_pipeline.max_diameter = diameter_cm_by_raw_index[max_raw_idx]
+        else:
+            max_raw_idx = None
+            inference_pipeline.max_diameter = float("nan")
 
-                ### Draw major axes
-
-                if angle > 90:
-                    angle = angle - 90
-                else:
-                    angle = angle + 90
-                print(angle)
-                xtop = xc + math.cos(math.radians(angle)) * rmajor
-                ytop = yc + math.sin(math.radians(angle)) * rmajor
-                xbot = xc + math.cos(math.radians(angle + 180)) * rmajor
-                ybot = yc + math.sin(math.radians(angle + 180)) * rmajor
-                cv2.line(
-                    img, (int(xtop), int(ytop)), (int(xbot), int(ybot)), (0, 0, 255), 3
-                )
-
-                ### Draw minor axes
-
-                if angle > 90:
-                    angle = angle - 90
-                else:
-                    angle = angle + 90
-                print(angle)
-                x1 = xc + math.cos(math.radians(angle)) * rminor
-                y1 = yc + math.sin(math.radians(angle)) * rminor
-                x2 = xc + math.cos(math.radians(angle + 180)) * rminor
-                y2 = yc + math.sin(math.radians(angle + 180)) * rminor
-                cv2.line(img, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 0), 3)
-
-                # pixel_length = math.sqrt( (x1-x2)**2 + (y1-y2)**2 )
-                pixel_length = rminor * 2
-
-                print("Pixel_length_minor: " + str(pixel_length))
-
-                area_px = cv2.contourArea(contours)
-                area_mm = round(area_px * RATIO_PIXEL_TO_MM)
-                area_cm = area_mm / 10
-
-                diameter_mm = round((pixel_length) * RATIO_PIXEL_TO_MM)
-                diameter_cm = diameter_mm / 10
-
-                diameterDict[(SLICE_COUNT - (i))] = diameter_cm
-
-                img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
-                h, w, c = img.shape
-                lbls = [
-                    "Area (mm): " + str(area_mm) + "mm",
-                    "Area (cm): " + str(area_cm) + "cm",
-                    "Diameter (mm): " + str(diameter_mm) + "mm",
-                    "Diameter (cm): " + str(diameter_cm) + "cm",
-                    "Slice: " + str(SLICE_COUNT - (i)),
-                ]
-                font = cv2.FONT_HERSHEY_SIMPLEX
-
-                scale = 0.03
-                fontScale = min(w, h) / (25 / scale)
-
-                cv2.putText(img, lbls[0], (10, 40), font, fontScale, (0, 255, 0), 2)
-
-                cv2.putText(img, lbls[1], (10, 70), font, fontScale, (0, 255, 0), 2)
-
-                cv2.putText(img, lbls[2], (10, 100), font, fontScale, (0, 255, 0), 2)
-
-                cv2.putText(img, lbls[3], (10, 130), font, fontScale, (0, 255, 0), 2)
-
-                cv2.putText(img, lbls[4], (10, 160), font, fontScale, (0, 255, 0), 2)
-
-                cv2.imwrite(
-                    output_dir_slices + "slice" + str(SLICE_COUNT - (i)) + ".png", img
-                )
-
-        plt.bar(list(diameterDict.keys()), diameterDict.values(), color="b")
-
-        plt.title(r"$\bf{Diameter}$" + " " + r"$\bf{Progression}$")
-
-        plt.xlabel("Slice Number")
-
-        plt.ylabel("Diameter Measurement (cm)")
-        plt.savefig(output_dir_summary + "diameter_graph.png", dpi=500)
-
-        print(diameterDict)
-        print(max(diameterDict.items(), key=operator.itemgetter(1))[0])
-        print(diameterDict[max(diameterDict.items(), key=operator.itemgetter(1))[0]])
-
-        inference_pipeline.max_diameter = diameterDict[
-            max(diameterDict.items(), key=operator.itemgetter(1))[0]
-        ]
-
-        img = ct_img[
-            SLICE_COUNT - (max(diameterDict.items(), key=operator.itemgetter(1))[0])
-        ]
-        img = np.clip(img, -300, 1800)
-        img = self.normalize_img(img) * 255.0
-        img = img.reshape((img.shape[0], img.shape[1], 1))
-        img2 = np.tile(img, (1, 1, 3))
-        img2 = cv2.rotate(img2, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
-        img1 = cv2.imread(
-            output_dir_slices
-            + "slice"
-            + str(max(diameterDict.items(), key=operator.itemgetter(1))[0])
-            + ".png"
-        )
-
-        border_size = 3
-        img1 = cv2.copyMakeBorder(
-            img1,
-            top=border_size,
-            bottom=border_size,
-            left=border_size,
-            right=border_size,
-            borderType=cv2.BORDER_CONSTANT,
-            value=[0, 244, 0],
-        )
-        img2 = cv2.copyMakeBorder(
-            img2,
-            top=border_size,
-            bottom=border_size,
-            left=border_size,
-            right=border_size,
-            borderType=cv2.BORDER_CONSTANT,
-            value=[244, 0, 0],
-        )
-
-        vis = np.concatenate((img2, img1), axis=1)
-        cv2.imwrite(output_dir_summary + "out.png", vis)
-
-        image_folder = output_dir_slices
-        fps = 20
+        # --- MP4 (frames may be fewer than Z_raw; only saved slices with aorta) ---
         image_files = [
-            os.path.join(image_folder, img)
-            for img in Tcl().call("lsort", "-dict", os.listdir(image_folder))
-            if img.endswith(".png")
+            os.path.join(output_dir_slices, f)
+            for f in Tcl().call("lsort", "-dict", os.listdir(output_dir_slices))
+            if f.endswith(".png")
         ]
-        clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(
-            image_files, fps=fps
-        )
-        clip.write_videofile(output_dir_summary + "aaa.mp4")
+        if image_files:
+            clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(image_files, fps=20)
+            clip.write_videofile(os.path.join(output_dir_summary, "aaa.mp4"))
+
+        # --- CSV over ALL raw slices: 0..Z_raw-1 (NaN where no aorta) ---
+        metrics_dir = os.path.join(inference_pipeline.output_dir, "metrics")
+        os.makedirs(metrics_dir, exist_ok=True)
+
+        rows = []
+        for k in range(Z_raw):
+            d_cm = diameter_cm_by_raw_index.get(k, np.nan)
+            rows.append({"ct_slice": k, "diameter_cm": d_cm,
+                        "diameter_mm": (d_cm * 10.0) if not np.isnan(d_cm) else np.nan})
+        df = pd.DataFrame(rows, columns=["ct_slice", "diameter_cm", "diameter_mm"])
+        df.to_csv(os.path.join(metrics_dir, "aorta_diameters.csv"), index=False)
 
         return {}
 
