@@ -1,4 +1,3 @@
-import math
 import operator
 import os
 import zipfile
@@ -27,7 +26,7 @@ class AortaSegmentation(InferenceClass):
         super().__init__()
         self.model_name = "totalsegmentator"
         self.save_segmentations = save
-    
+
     def _infer_raw_geometry(self, input_path: Union[str, Path]):
         """
         Return (raw_shape, raw_affine) for the *raw* CT space.
@@ -36,7 +35,11 @@ class AortaSegmentation(InferenceClass):
         """
         if os.path.isdir(input_path):
             # --- DICOM series case ---
-            files = [os.path.join(input_path, f) for f in os.listdir(input_path) if not f.startswith('.')]
+            files = [
+                os.path.join(input_path, f)
+                for f in os.listdir(input_path)
+                if not f.startswith(".")
+            ]
             ds_list = []
             for fp in files:
                 try:
@@ -55,7 +58,7 @@ class AortaSegmentation(InferenceClass):
             iop = [float(x) for x in ds0.ImageOrientationPatient]  # 6 values
             row_cos = np.array(iop[:3], dtype=float)
             col_cos = np.array(iop[3:], dtype=float)
-            normal  = np.cross(row_cos, col_cos)
+            normal = np.cross(row_cos, col_cos)
 
             # Pixel spacing (mm)
             ps = [float(x) for x in ds0.PixelSpacing]  # [row_spacing, col_spacing]
@@ -65,7 +68,9 @@ class AortaSegmentation(InferenceClass):
             # Sort slices along the normal using ImagePositionPatient or InstanceNumber
             def ipp_dot(d):
                 if hasattr(d, "ImagePositionPatient"):
-                    ipp = np.array([float(x) for x in d.ImagePositionPatient], dtype=float)
+                    ipp = np.array(
+                        [float(x) for x in d.ImagePositionPatient], dtype=float
+                    )
                     return float(np.dot(ipp, normal))
                 return 0.0
 
@@ -78,18 +83,38 @@ class AortaSegmentation(InferenceClass):
                 ds_list.sort(key=lambda d: getattr(d, "SOPInstanceUID", ""))
 
             # Slice spacing (use IPP difference if possible)
-            if len(ds_list) > 1 and hasattr(ds_list[0], "ImagePositionPatient") and hasattr(ds_list[1], "ImagePositionPatient"):
-                ipp0 = np.array([float(x) for x in ds_list[0].ImagePositionPatient], dtype=float)
-                ipp1 = np.array([float(x) for x in ds_list[1].ImagePositionPatient], dtype=float)
+            if (
+                len(ds_list) > 1
+                and hasattr(ds_list[0], "ImagePositionPatient")
+                and hasattr(ds_list[1], "ImagePositionPatient")
+            ):
+                ipp0 = np.array(
+                    [float(x) for x in ds_list[0].ImagePositionPatient], dtype=float
+                )
+                ipp1 = np.array(
+                    [float(x) for x in ds_list[1].ImagePositionPatient], dtype=float
+                )
                 slice_step = abs(np.dot((ipp1 - ipp0), normal))
                 if slice_step == 0:
-                    slice_step = float(getattr(ds0, "SpacingBetweenSlices", getattr(ds0, "SliceThickness", 1.0)))
+                    slice_step = float(
+                        getattr(
+                            ds0,
+                            "SpacingBetweenSlices",
+                            getattr(ds0, "SliceThickness", 1.0),
+                        )
+                    )
             else:
-                slice_step = float(getattr(ds0, "SpacingBetweenSlices", getattr(ds0, "SliceThickness", 1.0)))
+                slice_step = float(
+                    getattr(
+                        ds0, "SpacingBetweenSlices", getattr(ds0, "SliceThickness", 1.0)
+                    )
+                )
 
             # Origin = IPP of first slice
             if hasattr(ds_list[0], "ImagePositionPatient"):
-                origin = np.array([float(x) for x in ds_list[0].ImagePositionPatient], dtype=float)
+                origin = np.array(
+                    [float(x) for x in ds_list[0].ImagePositionPatient], dtype=float
+                )
             else:
                 origin = np.zeros(3, dtype=float)
 
@@ -98,7 +123,7 @@ class AortaSegmentation(InferenceClass):
             aff = np.eye(4, dtype=float)
             aff[0:3, 0] = col_cos * col_spacing
             aff[0:3, 1] = row_cos * row_spacing
-            aff[0:3, 2] = normal  * slice_step
+            aff[0:3, 2] = normal * slice_step
             aff[0:3, 3] = origin
 
             raw_shape = (rows, cols, len(ds_list))
@@ -109,7 +134,6 @@ class AortaSegmentation(InferenceClass):
             # --- NIfTI case ---
             nii = nib.load(str(input_path))
             return tuple(nii.shape), np.array(nii.affine, dtype=float)
-
 
     def __call__(self, inference_pipeline):
         print("TRY NEW: DICOM series path is:", inference_pipeline.input_path)
@@ -122,7 +146,9 @@ class AortaSegmentation(InferenceClass):
         self.model_dir = inference_pipeline.model_dir
 
         # keep the path to the *raw* NIfTI you feed into the model
-        raw_nii_path = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
+        raw_nii_path = os.path.join(
+            self.output_dir_segmentations, "converted_dcm.nii.gz"
+        )
 
         seg, mv = self.spine_seg(
             raw_nii_path,
@@ -132,13 +158,13 @@ class AortaSegmentation(InferenceClass):
 
         # NEW: derive raw geometry from the *input* CT (DICOM folder or NIfTI)
         raw_shape, raw_affine = self._infer_raw_geometry(inference_pipeline.input_path)
-        inference_pipeline.raw_shape  = raw_shape
+        inference_pipeline.raw_shape = raw_shape
         inference_pipeline.raw_affine = raw_affine
 
         # Keep processed-space metadata for pixel→mm conversion & mapping
         inference_pipeline.proc_affine = mv.affine
-        inference_pipeline.proc_zooms  = mv.header.get_zooms()
-        inference_pipeline.proc_shape  = mv.shape
+        inference_pipeline.proc_zooms = mv.header.get_zooms()
+        inference_pipeline.proc_shape = mv.shape
 
         print("DEBUG raw_shape:", inference_pipeline.raw_shape)
         print("DEBUG proc_shape:", inference_pipeline.proc_shape)
@@ -280,12 +306,14 @@ class AortaDiameter(InferenceClass):
         return (img - img.min()) / (img.max() - img.min())
 
     def __call__(self, inference_pipeline):
-        axial_masks = inference_pipeline.axial_masks      # list of 2D masks (processed space)
-        ct_img      = inference_pipeline.ct_image         # list/array of slices (processed space)
+        axial_masks = (
+            inference_pipeline.axial_masks
+        )  # list of 2D masks (processed space)
+        ct_img = inference_pipeline.ct_image  # list/array of slices (processed space)
 
         # output dirs
         output_dir = inference_pipeline.output_dir
-        output_dir_slices  = os.path.join(output_dir, "images/slices/")
+        output_dir_slices = os.path.join(output_dir, "images/slices/")
         output_dir_summary = os.path.join(output_dir, "images/summary/")
         os.makedirs(output_dir_slices, exist_ok=True)
         os.makedirs(output_dir_summary, exist_ok=True)
@@ -293,20 +321,18 @@ class AortaDiameter(InferenceClass):
         # --- Affine-based mapping: processed -> raw ---
         # processed image metadata (where we actually measure pixels)
         proc_affine = np.array(inference_pipeline.proc_affine)
-        proc_zooms  = tuple(inference_pipeline.proc_zooms)
-        proc_shape  = tuple(inference_pipeline.proc_shape)   # (H, W, Z_proc)
-        Hp, Wp, Zp  = proc_shape
+        proc_zooms = tuple(inference_pipeline.proc_zooms)
+        proc_shape = tuple(inference_pipeline.proc_shape)  # (H, W, Z_proc)
+        Hp, Wp, Zp = proc_shape
 
         # raw CT reference space (target indexing for CSV)
-        raw_shape = tuple(inference_pipeline.raw_shape)         # e.g., (512, 512, 480)
-        raw_aff   = np.array(inference_pipeline.raw_affine)     # 4x4
-        Z_raw     = raw_shape[2]
-
+        raw_shape = tuple(inference_pipeline.raw_shape)  # e.g., (512, 512, 480)
+        raw_aff = np.array(inference_pipeline.raw_affine)  # 4x4
+        Z_raw = raw_shape[2]
 
         print(f"[DEBUG] raw_shape={raw_shape} -> Z_raw={Z_raw}")
         print(f"[DEBUG] proc_shape={proc_shape} -> Zp={Zp}")
 
-        
         # precompute inverse affine for raw (do this once)
         inv_raw_aff = np.linalg.inv(raw_aff)
 
@@ -330,10 +356,10 @@ class AortaDiameter(InferenceClass):
                 continue  # no aorta on this processed slice
 
             # ---- map processed slice i to raw slice index k_raw ----
-            proc_voxel = np.array([cx, cy, i, 1.0])                 # center of slice
-            world_xyz1 = proc_affine @ proc_voxel                   # world coord
-            raw_ijk1   = inv_raw_aff @ world_xyz1                   # raw voxel coord
-            k_raw      = int(round(raw_ijk1[2]))                    # raw z-index
+            proc_voxel = np.array([cx, cy, i, 1.0])  # center of slice
+            world_xyz1 = proc_affine @ proc_voxel  # world coord
+            raw_ijk1 = inv_raw_aff @ world_xyz1  # raw voxel coord
+            k_raw = int(round(raw_ijk1[2]))  # raw z-index
 
             # clamp into valid range
             if k_raw < 0 or k_raw >= Z_raw:
@@ -364,13 +390,13 @@ class AortaDiameter(InferenceClass):
             cv2.ellipse(img, ellipse, (0, 255, 0), 1)
             cv2.circle(img, (int(xc), int(yc)), 5, (0, 0, 255), -1)
 
-            rmajor = max(d1, d2) / 2.0
+            max(d1, d2) / 2.0
             rminor = min(d1, d2) / 2.0
 
             # diameter from minor axis
             pixel_length = rminor * 2.0
-            diameter_mm  = round(pixel_length * RATIO_PIXEL_TO_MM)
-            diameter_cm  = diameter_mm / 10.0
+            diameter_mm = round(pixel_length * RATIO_PIXEL_TO_MM)
+            diameter_cm = diameter_mm / 10.0
 
             # if multiple processed slices map to the same raw index (rare), keep the max
             prev = diameter_cm_by_raw_index.get(k_raw)
@@ -382,8 +408,24 @@ class AortaDiameter(InferenceClass):
             h, w, _ = img.shape
             font = cv2.FONT_HERSHEY_SIMPLEX
             fontScale = min(w, h) / (25 / 0.03)
-            cv2.putText(img, f"CT raw slice index: {k_raw}", (10, 40), font, fontScale, (0, 255, 0), 2)
-            cv2.putText(img, f"Diameter (cm): {diameter_cm}", (10, 70), font, fontScale, (0, 255, 0), 2)
+            cv2.putText(
+                img,
+                f"CT raw slice index: {k_raw}",
+                (10, 40),
+                font,
+                fontScale,
+                (0, 255, 0),
+                2,
+            )
+            cv2.putText(
+                img,
+                f"Diameter (cm): {diameter_cm}",
+                (10, 70),
+                font,
+                fontScale,
+                (0, 255, 0),
+                2,
+            )
             cv2.imwrite(os.path.join(output_dir_slices, f"slice_raw_{k_raw}.png"), img)
 
         # --- Summary plot vs RAW index ---
@@ -399,8 +441,15 @@ class AortaDiameter(InferenceClass):
 
         # --- Max diameter (by RAW index) ---
         if diameter_cm_by_raw_index:
-            max_raw_idx = max(diameter_cm_by_raw_index.items(), key=operator.itemgetter(1))[0]
-            print("Max raw index:", max_raw_idx, "diameter_cm:", diameter_cm_by_raw_index[max_raw_idx])
+            max_raw_idx = max(
+                diameter_cm_by_raw_index.items(), key=operator.itemgetter(1)
+            )[0]
+            print(
+                "Max raw index:",
+                max_raw_idx,
+                "diameter_cm:",
+                diameter_cm_by_raw_index[max_raw_idx],
+            )
             inference_pipeline.max_diameter = diameter_cm_by_raw_index[max_raw_idx]
         else:
             max_raw_idx = None
@@ -413,7 +462,9 @@ class AortaDiameter(InferenceClass):
             if f.endswith(".png")
         ]
         if image_files:
-            clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(image_files, fps=20)
+            clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(
+                image_files, fps=20
+            )
             clip.write_videofile(os.path.join(output_dir_summary, "aaa.mp4"))
 
         # --- CSV over ALL raw slices: 0..Z_raw-1 (NaN where no aorta) ---
@@ -423,8 +474,13 @@ class AortaDiameter(InferenceClass):
         rows = []
         for k in range(Z_raw):
             d_cm = diameter_cm_by_raw_index.get(k, np.nan)
-            rows.append({"ct_slice": k, "diameter_cm": d_cm,
-                        "diameter_mm": (d_cm * 10.0) if not np.isnan(d_cm) else np.nan})
+            rows.append(
+                {
+                    "ct_slice": k,
+                    "diameter_cm": d_cm,
+                    "diameter_mm": (d_cm * 10.0) if not np.isnan(d_cm) else np.nan,
+                }
+            )
         df = pd.DataFrame(rows, columns=["ct_slice", "diameter_cm", "diameter_mm"])
         df.to_csv(os.path.join(metrics_dir, "aorta_diameters.csv"), index=False)
 

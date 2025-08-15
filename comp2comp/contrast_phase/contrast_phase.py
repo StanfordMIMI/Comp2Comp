@@ -15,7 +15,6 @@ from comp2comp.inference_class_base import InferenceClass
 # from totalsegmentatorv2.python_api import totalsegmentator
 
 
-
 class ContrastPhaseDetection(InferenceClass):
     """Contrast Phase Detection."""
 
