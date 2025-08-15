@@ -83,43 +83,53 @@ bin/C2C spine -i <path/to/input/folder>
 
 ### Usage
 ```bash
-bin/C2C aortic_calcium -i <path/to/input/folder> -o <path/to/input/folder> --threshold
+bin/C2C aortic_calcium -i <path/to/input/folder> -o <path/to/input/folder> --threshold --mosaic-type
 ```
-- The input path should contain a DICOM series or subfolders that contain DICOM series, or a nifti file.
-- The threshold can be controlled with --threshold and be either an integer HU threshold, "adataptive" or "agatson".
-  - If "agatson" is used, agatson score is calculated and the a threshold of 130 HU is used 
-- Aortic calcifications are divided into abdominal and thoracic at the T12 level
-- Segmentation masks for aortic calcium, the dilated aorta mask and the T12 seperation plane are saved in ./segmentation_masks/
+The input path should contain a DICOM series or subfolders that contain DICOM series or a nifty file.
+- The threshold can be controlled with `--threshold` and be either an integer HU threshold, "adataptive" or "agatson".
+  - If "agatson" is used, agatson score is calculated and a threshold of 130 HU is used 
+- Aortic calcifications are divided into abdominal and thoracic at the end of the T12 level
+- Segmentation masks for the aortic calcium, the dilated aorta mask, and the T12 seperation plane are saved in ./segmentation_masks/
 - Metrics on an aggregated and individual level for the calcifications are written to .csv files in ./metrics/
+- Visualizations are saved to ./images/
+  - The visualization presents coronal and sagittal MIP projections with the aorta overlay, featuring a heat map of calcifications alongside extracted calcification metrics. Below is a mosaic of each aortic slice with calcifications.  
+  - The mosaic will default show all slices with califications but a subset at each vertebra level can be used instead with `--mosaic-type vertebrae` 
+
+<p align="center">
+  <img src="figures/aortic_calcium_overview.png" height="500">
+</p>
 
 ### Example Output
 ```
 Statistics on aortic calcifications:
 Abdominal:
-Total number:            10
-Total volume (cm³):      0.161
-Mean HU:                 383.3+/-66.4
-Median HU:               366.5+/-62.9
-Max HU:                  571.9+/-190.6
-Mean volume (cm³):       0.016+/-0.020
-Median volume (cm³):     0.011
-Max volume (cm³):        0.074
+Total number:            21
+Total volume (cm³):      1.042
+Mean HU:                 218.6+/-91.4
+Median HU:               195.6+/-65.8
+Max HU:                  449.4+/-368.6
+Mean volume (cm³):       0.050+/-0.100
+Median volume (cm³):     0.006
+Max volume (cm³):        0.425
 Min volume (cm³):        0.002
-Threshold (HU):          266.000
+Threshold (HU):          130.000
+% Calcified aorta        3.429
+Agatston score:          4224.7
 
 
 Thoracic:
-Total number:            1
-Total volume (cm³):      0.030
-Mean HU:                 378.1+/-0.0
-Median HU:               376.0+/-0.0
-Max HU:                  538.0+/-0.0
-Mean volume (cm³):       0.030+/-0.000
-Median volume (cm³):     0.030
-Max volume (cm³):        0.030
-Min volume (cm³):        0.030
-Threshold (HU):          266.000
-
+Total number:            5
+Total volume (cm³):      0.012
+Mean HU:                 171.6+/-41.0
+Median HU:               168.5+/-42.7
+Max HU:                  215.8+/-87.1
+Mean volume (cm³):       0.002+/-0.001
+Median volume (cm³):     0.002
+Max volume (cm³):        0.004
+Min volume (cm³):        0.002
+Threshold (HU):          130.000
+% Calcified aorta        0.026
+Agatston score:          21.1
 ```
 
 ## AAA Segmentation and Maximum Diameter Measurement

@@ -8,10 +8,12 @@ from totalsegmentator.libs import (
     nostdout,
     setup_nnunet,
 )
-# from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.contrast_phase.contrast_inf import predict_phase
 from comp2comp.inference_class_base import InferenceClass
+
+# from totalsegmentatorv2.python_api import totalsegmentator
+
 
 
 class ContrastPhaseDetection(InferenceClass):
@@ -94,7 +96,7 @@ class ContrastPhaseDetection(InferenceClass):
                 verbose=False,
                 test=0,
             )
-        
+
         #  seg = totalsegmentator(
         #     input = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
         #     output = os.path.join(self.output_dir_segmentations, "segmentation.nii"),

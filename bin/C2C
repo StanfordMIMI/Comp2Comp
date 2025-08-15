@@ -120,7 +120,7 @@ def AorticCalciumPipelineBuilder(path, args):
     pipeline = InferencePipeline(
         [
             io.DicomToNifti(path),
-            spine.SpineSegmentation(model_name="ts_spine"),
+            spine.SpineSegmentation(model_name=args.spine_model),
             orientation.ToCanonical(),
             aortic_calcium.AortaSegmentation(),
             orientation.ToCanonical(),
@@ -209,6 +209,12 @@ def argument_parser():
     
     aortic_calcium.add_argument(
         "--threshold", default="adaptive", type=str
+    )
+    aortic_calcium.add_argument(
+        "--spine-model", default="ts_spine", type=str, help='Chose the model to perfom the spine segmentation'
+    )
+    aortic_calcium.add_argument(
+        "--mosaic-type", default='all', type=str, help='Chose the the type of axial mosaic in the overview image'
     )
     
     # Contrast phase

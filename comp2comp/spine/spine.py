@@ -2,7 +2,6 @@
 @author: louisblankemeier
 """
 
-import os
 import math
 import os
 import shutil
@@ -16,18 +15,17 @@ import numpy as np
 import pandas as pd
 import wget
 from PIL import Image
+from totalsegmentator.libs import (
+    download_pretrained_weights,
+    nostdout,
+    setup_nnunet,
+)
 from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
 from comp2comp.visualization.dicom import to_dicom
-
-# from totalsegmentator.libs import (
-#     download_pretrained_weights,
-#     nostdout,
-#     setup_nnunet,
-# )
 
 
 class SpineSegmentation(InferenceClass):
@@ -47,49 +45,16 @@ class SpineSegmentation(InferenceClass):
 
         self.model_dir = inference_pipeline.model_dir
 
-        # seg, mv = self.spine_seg(
-        #     os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
-        #     self.output_dir_segmentations + "spine.nii.gz",
-        #     inference_pipeline.model_dir,
-        # )
+        inference_pipeline.spine_model_name = self.model_name
+
+        seg, mv = self.spine_seg(
+            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+            self.output_dir_segmentations + "spine.nii.gz",
+            inference_pipeline.model_dir,
+        )
+
         os.environ["TOTALSEG_WEIGHTS_PATH"] = self.model_dir
 
-        seg = totalsegmentator(
-            input=os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
-            output=os.path.join(self.output_dir_segmentations, "segmentation.nii"),
-            task_ids=[292],
-            ml=True,
-            nr_thr_resamp=1,
-            nr_thr_saving=6,
-            fast=False,
-            nora_tag="None",
-            preview=False,
-            task="total",
-            # roi_subset=[
-            #     "vertebrae_T12",
-            #     "vertebrae_L1",
-            #     "vertebrae_L2",
-            #     "vertebrae_L3",
-            #     "vertebrae_L4",
-            #     "vertebrae_L5",
-            # ],
-            roi_subset=None,
-            statistics=False,
-            radiomics=False,
-            crop_path=None,
-            body_seg=False,
-            force_split=False,
-            output_type="nifti",
-            quiet=False,
-            verbose=False,
-            test=0,
-            skip_saving=True,
-            device="gpu",
-            license_number=None,
-            statistics_exclude_masks_at_border=True,
-            no_derived_masks=False,
-            v1_order=False,
-        )
         mv = nib.load(
             os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
         )
@@ -106,6 +71,7 @@ class SpineSegmentation(InferenceClass):
         inference_pipeline.segmentation = seg
         inference_pipeline.medical_volume = mv
         inference_pipeline.save_segmentations = self.save_segmentations
+
         return {}
 
     def setup_nnunet_c2c(self, model_dir: Union[str, Path]):
@@ -170,49 +136,85 @@ class SpineSegmentation(InferenceClass):
         os.environ["SCRATCH"] = self.model_dir
         os.environ["TOTALSEG_WEIGHTS_PATH"] = self.model_dir
 
-        # Setup nnunet
-        model = "3d_fullres"
-        folds = [0]
-        trainer = "nnUNetTrainerV2_ep4000_nomirror"
-        crop_path = None
-        task_id = [252]
-
         if self.model_name == "ts_spine":
-            setup_nnunet()
-            download_pretrained_weights(task_id[0])
-        elif self.model_name == "stanford_spine_v0.0.1":
-            self.setup_nnunet_c2c(model_dir)
-            self.download_spine_model(model_dir)
-        else:
-            raise ValueError("Invalid model name.")
-
-        if not self.save_segmentations:
-            output_path = None
-
-        from totalsegmentator.nnunet import nnUNet_predict_image
-
-        with nostdout():
-            img, seg = nnUNet_predict_image(
-                input_path,
-                output_path,
-                task_id,
-                model=model,
-                folds=folds,
-                trainer=trainer,
-                tta=False,
-                multilabel_image=True,
-                resample=1.5,
-                crop=None,
-                crop_path=crop_path,
-                task_name="total",
+            seg = totalsegmentator(
+                input=os.path.join(
+                    self.output_dir_segmentations, "converted_dcm.nii.gz"
+                ),
+                output=os.path.join(self.output_dir_segmentations, "segmentation.nii"),
+                task_ids=[292],
+                ml=True,
+                nr_thr_resamp=1,
+                nr_thr_saving=6,
+                fast=False,
                 nora_tag="None",
                 preview=False,
-                nr_threads_resampling=1,
-                nr_threads_saving=6,
+                task="total",
+                roi_subset=None,
+                statistics=False,
+                radiomics=False,
+                crop_path=None,
+                body_seg=False,
+                force_split=False,
+                output_type="nifti",
                 quiet=False,
                 verbose=False,
                 test=0,
+                skip_saving=True,
+                device="gpu",
+                license_number=None,
+                statistics_exclude_masks_at_border=True,
+                no_derived_masks=False,
+                v1_order=False,
             )
+
+            img = None
+
+        elif self.model_name == "stanford_spine_v0.0.1":
+            # Setup nnunet
+            model = "3d_fullres"
+            folds = [0]
+            trainer = "nnUNetTrainerV2_ep4000_nomirror"
+            crop_path = None
+            task_id = [252]
+
+            if self.model_name == "ts_spine":
+                setup_nnunet()
+                download_pretrained_weights(task_id[0])
+            elif self.model_name == "stanford_spine_v0.0.1":
+                self.setup_nnunet_c2c(model_dir)
+                self.download_spine_model(model_dir)
+            else:
+                raise ValueError("Invalid model name.")
+
+            if not self.save_segmentations:
+                output_path = None
+
+            from totalsegmentator.nnunet import nnUNet_predict_image
+
+            with nostdout():
+                img, seg = nnUNet_predict_image(
+                    input_path,
+                    output_path,
+                    task_id,
+                    model=model,
+                    folds=folds,
+                    trainer=trainer,
+                    tta=False,
+                    multilabel_image=True,
+                    resample=1.5,
+                    crop=None,
+                    crop_path=crop_path,
+                    task_name="total",
+                    nora_tag="None",
+                    preview=False,
+                    nr_threads_resampling=1,
+                    nr_threads_saving=6,
+                    quiet=False,
+                    verbose=False,
+                    test=0,
+                )
+
         end = time()
 
         # Log total time for spine segmentation

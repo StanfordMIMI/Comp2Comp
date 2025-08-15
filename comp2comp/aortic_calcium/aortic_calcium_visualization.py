@@ -2,6 +2,11 @@ import os
 
 import numpy as np
 
+from comp2comp.aortic_calcium.visualization_utils import (
+    createCalciumMosaic,
+    createMipPlot,
+    mergeMipAndMosaic,
+)
 from comp2comp.inference_class_base import InferenceClass
 
 
@@ -16,6 +21,35 @@ class AorticCalciumVisualizer(InferenceClass):
 
         if not os.path.exists(self.output_dir_images_organs):
             os.makedirs(self.output_dir_images_organs)
+
+        # Create MIP part of the overview plot
+        createMipPlot(
+            inference_pipeline.ct,
+            inference_pipeline.calc_mask,
+            inference_pipeline.aorta_mask,
+            inference_pipeline.t12_plane == 1,
+            inference_pipeline.calcium_threshold,
+            inference_pipeline.pix_dims,
+            inference_pipeline.metrics,
+            self.output_dir_images_organs,
+        )
+
+        ab_num = inference_pipeline.metrics["Abdominal"]["num_calc"]
+        th_num = inference_pipeline.metrics["Thoracic"]["num_calc"]
+        # Create mosaic part of the overview plot
+        if not (ab_num == 0 and th_num == 0):
+            createCalciumMosaic(
+                inference_pipeline.ct,
+                inference_pipeline.calc_mask,
+                inference_pipeline.dilated_aorta_mask,  # the dilated mask is used here
+                inference_pipeline.spine_mask,
+                inference_pipeline.pix_dims,
+                self.output_dir_images_organs,
+                inference_pipeline.args.mosaic_type,
+            )
+
+        # Merge the two images created above for the final report
+        mergeMipAndMosaic(self.output_dir_images_organs)
 
         return {}
 
@@ -113,6 +147,11 @@ class AorticCalciumPrinter(InferenceClass):
                 f.write(
                     "{},{:.3f}\n".format("Min volume (cm³):", np.min(metrics["volume"]))
                 )
+                f.write(
+                    "{},{:.3f}\n".format(
+                        "% Calcified aorta:", metrics["perc_calcified"]
+                    )
+                )
 
                 if inference_pipeline.args.threshold == "agatston":
                     f.write("Agatston score,{:.1f}\n".format(metrics["agatston_score"]))
@@ -187,6 +226,14 @@ class AorticCalciumPrinter(InferenceClass):
                         inference_pipeline.calcium_threshold,
                     )
                 )
+                print(
+                    "{:<{}}{:.3f}".format(
+                        "% Calcified aorta",
+                        distance,
+                        metrics["perc_calcified"],
+                    )
+                )
+
                 if inference_pipeline.args.threshold == "agatston":
                     print(
                         "{:<{}}{:.1f}".format(
