@@ -60,6 +60,11 @@ setup(
         "tensorflow==2.12.0",
         "totalsegmentator @ git+https://github.com/StanfordMIMI/TotalSegmentator.git",
         "totalsegmentatorv2 @ git+https://github.com/StanfordMIMI/TotalSegmentatorV2.git",
+        "blosc2",
+        "acvl-utils==0.2",
+        "dicom2nifti<2.6",
+        "torch==2.5.1",
+        "torchvision==0.20.1",
     ],
     extras_require={
         "all": ["shapely", "psutil"],
