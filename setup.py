@@ -65,6 +65,7 @@ setup(
         "dicom2nifti<2.6",
         "torch==2.5.1",
         "torchvision==0.20.1",
+        "xgboost",
     ],
     extras_require={
         "all": ["shapely", "psutil"],

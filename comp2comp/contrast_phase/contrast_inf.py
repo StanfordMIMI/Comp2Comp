@@ -454,8 +454,9 @@ def predict_phase(TS_path, scan_path, outputPath=None, save_sample=False):
             text_file.write('{},{:.3f}\n'.format(phase_dict[i], y_pred_proba[i]))
 
     print('Predicted phase: ' + pred_phase)
+    print('\nProbabilities:')
     for i in range(len(y_pred_proba)):
-        print('{},{:.3f}'.format(phase_dict[i], y_pred_proba[i]))
+        print('{:<20}{:.3f}'.format(phase_dict[i], y_pred_proba[i]))
 
     output_path_images = os.path.join(outputPath, "images")
     if not os.path.exists(output_path_images):
