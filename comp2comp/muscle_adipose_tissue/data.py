@@ -84,7 +84,7 @@ class Dataset(k_utils.Sequence):
 
     def __getitem__(self, idx):
         files = self._files[idx * self._batch_size : (idx + 1) * self._batch_size]
-        dcms = [pydicom.read_file(f, force=True) for f in files]
+        dcms = [pydicom.dcmread(f, force=True) for f in files]
 
         xs = [(x.pixel_array + int(x.RescaleIntercept)).astype("float32") for x in dcms]
 
