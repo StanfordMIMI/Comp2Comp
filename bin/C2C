@@ -194,7 +194,7 @@ def argument_parser():
         "--muscle_fat_model", default="stanford_v0.0.2", type=str
     )
     spine_muscle_adipose_tissue_parser.add_argument(
-        "--spine_model", default="ts_spine", type=str
+        "--spine_model", default="stanford_spine_v0.0.1", type=str
     )
 
     # Liver spleen pancreas
