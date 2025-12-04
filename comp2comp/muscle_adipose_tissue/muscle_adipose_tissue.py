@@ -1,4 +1,5 @@
 import os
+import re
 import zipfile
 from pathlib import Path
 from time import perf_counter
@@ -9,6 +10,7 @@ import h5py
 import nibabel as nib
 import numpy as np
 import pandas as pd
+import SimpleITK as sitk
 import wget
 from keras import backend as K
 from tqdm import tqdm
@@ -347,6 +349,11 @@ class MuscleAdiposeTissueComputeMetrics(InferenceClass):
         hu_vals = np.nan_to_num(hu_vals)
         csa_vals = np.nan_to_num(csa_vals)
 
+        if mask.shape[-1] != len(categories):
+            # TODO: Handle this properly. This is a hard fix removing the BG class, 
+            # which is added by the abCT_v0.0.1 model in the end. 
+            mask = mask[..., :-1]
+
         assert mask.shape[-1] == len(
             categories
         ), "{} categories found in mask, " "but only {} categories specified".format(
@@ -395,6 +402,62 @@ class MuscleAdiposeTissueH5Saver(InferenceClass):
                 for cat in cats:
                     mask = result[cat]["mask"]
                     f.create_dataset(name=cat, data=np.array(mask, dtype=np.uint8))
+
+
+def natural_sort_key(s):
+    """
+    Create a key for sorting strings in a 'natural' order. e.g., 'slice10' comes after 'slice2'.
+    """
+    return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
+
+
+class MuscleAdiposeTissueNiftiSaver(InferenceClass):
+    """
+    Saves the multi-class muscle and adipose tissue segmentations as a single multi-labeled NIfTI file.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, inference_pipeline, images, results):
+        """Orchestrates the entire saving and assembly process."""
+        self.model_type = inference_pipeline.muscle_adipose_tissue_model_type
+        self.output_dir = inference_pipeline.output_dir
+        self.nifti_output_dir = os.path.join(self.output_dir, "segmentations")
+        self.dicom_file_names = inference_pipeline.dicom_file_names
+        os.makedirs(self.nifti_output_dir, exist_ok=True)
+        self.spacings = getattr(inference_pipeline, 'spacings', None)
+        self.save_results(results)
+        return {"results": results}
+
+    def save_results(self, results):
+        """Saves NIfTI file."""
+        categories = self.model_type.categories
+
+        slices = {}
+        for i, result in enumerate(results):
+            file_name = self.dicom_file_names[i]
+            first_cat_name = list(categories.keys())[0]
+            if first_cat_name not in result:
+                continue
+            mask_shape = result[first_cat_name]["mask"].shape
+            multi_label_slice = np.zeros(mask_shape, dtype=np.uint8)
+            for class_name, label in categories.items():
+                if class_name in result:
+                    class_mask = result[class_name]["mask"]
+                    multi_label_slice[class_mask > 0] = label + 1
+            slices[file_name] = multi_label_slice
+        slices = [slices[fname] for fname in sorted(slices.keys(), key=natural_sort_key)]
+        
+        final_image = sitk.GetImageFromArray(np.stack(slices, axis=0)[::-1, :, :])
+        if self.spacings and len(self.spacings) > 0:
+            # Assumes spacing is (x, y, z)
+            final_spacing = tuple(float(s) for s in self.spacings[0])
+            final_image.SetSpacing(final_spacing)
+        else:
+            final_image.SetSpacing((1.0, 1.0, 1.0))
+        
+        sitk.WriteImage(final_image, os.path.join(self.nifti_output_dir, "muscle_adipose_tissue_seg.nii.gz"))
 
 
 class MuscleAdiposeTissueMetricsSaver(InferenceClass):

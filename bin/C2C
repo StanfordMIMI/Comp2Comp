@@ -50,15 +50,16 @@ def MuscleAdiposeTissuePipelineBuilder(args):
             muscle_adipose_tissue.MuscleAdiposeTissueComputeMetrics(),
             muscle_adipose_tissue_visualization.MuscleAdiposeTissueVisualizer(),
             muscle_adipose_tissue.MuscleAdiposeTissueH5Saver(),
+            muscle_adipose_tissue.MuscleAdiposeTissueNiftiSaver(),
             muscle_adipose_tissue.MuscleAdiposeTissueMetricsSaver(),
         ]
     )
     return pipeline
 
 
-def MuscleAdiposeTissueFullPipelineBuilder(args):
+def MuscleAdiposeTissueFullPipelineBuilder(path, args):
     pipeline = InferencePipeline(
-        [io.DicomFinder(args.input_path), MuscleAdiposeTissuePipelineBuilder(args)]
+        [io.DicomFinder(path), MuscleAdiposeTissuePipelineBuilder(args)]
     )
     return pipeline
 
@@ -268,6 +269,8 @@ def main():
     args = argument_parser().parse_args()
     if args.pipeline == "spine_muscle_adipose_tissue":
         process_3d(args, SpineMuscleAdiposeTissuePipelineBuilder)
+    elif args.pipeline == "muscle_adipose_tissue":
+        process_3d(args, MuscleAdiposeTissueFullPipelineBuilder)
     elif args.pipeline == "spine":
         process_3d(args, SpinePipelineBuilder)
     elif args.pipeline == "contrast_phase":
