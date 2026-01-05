@@ -1,19 +1,20 @@
 import os
+import subprocess
+import zipfile
 from pathlib import Path
 from time import time
 from typing import Union
-import subprocess
-import zipfile
 
-from totalsegmentator.libs import (
-    # download_pretrained_weights,
+from totalsegmentator.libs import (  # download_pretrained_weights,
     nostdout,
     setup_nnunet,
 )
-# from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.contrast_phase.contrast_inf import predict_phase
 from comp2comp.inference_class_base import InferenceClass
+
+# from totalsegmentatorv2.python_api import totalsegmentator
+
 
 
 class ContrastPhaseDetection(InferenceClass):
@@ -74,7 +75,7 @@ class ContrastPhaseDetection(InferenceClass):
 
         # download with weight for id 251
         self.download_pretrained_weights_updated(task_id[0])
-        
+
         from totalsegmentator.nnunet import nnUNet_predict_image
 
         with nostdout():
@@ -99,7 +100,7 @@ class ContrastPhaseDetection(InferenceClass):
                 verbose=False,
                 test=0,
             )
-        
+
         #  seg = totalsegmentator(
         #     input = os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
         #     output = os.path.join(self.output_dir_segmentations, "segmentation.nii"),
@@ -135,40 +136,36 @@ class ContrastPhaseDetection(InferenceClass):
 
         # return seg, img
         return seg, img
-    
+
     def download_pretrained_weights_updated(self, task_id):
-        '''
+        """
         Download the weights with curl to resolve problems
         with downloading from Zenodo
-        '''
+        """
         home_path = Path(os.environ["SCRATCH"])
         config_dir = home_path / ".totalsegmentator/nnunet/results/nnUNet"
         (config_dir / "3d_fullres").mkdir(exist_ok=True, parents=True)
         (config_dir / "2d").mkdir(exist_ok=True, parents=True)
-        
+
         url = "https://zenodo.org/records/6802342/files/Task251_TotalSegmentator_part1_organs_1139subj.zip?download=1"
         config_dir = config_dir / "3d_fullres"
         weights_path = config_dir / "Task251_TotalSegmentator_part1_organs_1139subj"
         tempfile = config_dir / "tmp_download_file.zip"
-        
+
         if not weights_path.exists():
-            print('Downloading weights..')
-            subprocess.run(
-                ["curl", "-L", url, "-o", tempfile],
-                check=True
-            )
-            
-            print('Unzipping..')
-            with zipfile.ZipFile(config_dir / "tmp_download_file.zip", 'r') as zip_f:
+            print("Downloading weights..")
+            subprocess.run(["curl", "-L", url, "-o", tempfile], check=True)
+
+            print("Unzipping..")
+            with zipfile.ZipFile(config_dir / "tmp_download_file.zip", "r") as zip_f:
                 zip_f.extractall(config_dir)
             # print(f"  downloaded in {time.time()-st:.2f}s")
             if tempfile.exists():
                 os.remove(tempfile)
-            print('Done.')
+            print("Done.")
         else:
-            print('Weights are already downloaded')
-            
-                
+            print("Weights are already downloaded")
+
     def convertNibToNumpy(self, TSNib, ImageNib):
         """Convert nifti to numpy array.
 

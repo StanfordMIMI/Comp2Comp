@@ -2,9 +2,7 @@
 @author: louisblankemeier
 """
 
-import math
 import os
-import shutil
 import zipfile
 from pathlib import Path
 from time import time
@@ -14,18 +12,19 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 import wget
-from PIL import Image
-from totalsegmentator.libs import (
-    download_pretrained_weights,
-    nostdout,
-    setup_nnunet,
-)
 from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.inference_class_base import InferenceClass
-from comp2comp.models.models import Models
-from comp2comp.spine import spine_utils
-from comp2comp.visualization.dicom import to_dicom
+
+# from comp2comp.visualization.dicom import to_dicom
+from comp2comp.models.fda_models import Models
+from comp2comp.spine import fda_spine_utils
+
+# from totalsegmentator.libs import (
+#     download_pretrained_weights,
+#     nostdout,
+#     setup_nnunet,
+# )
 
 
 class SpineSegmentation(InferenceClass):
@@ -40,25 +39,54 @@ class SpineSegmentation(InferenceClass):
         # inference_pipeline.dicom_series_path = self.input_path
         self.output_dir = inference_pipeline.output_dir
         self.output_dir_segmentations = os.path.join(self.output_dir, "segmentations/")
-        inference_pipeline.output_dir_masks = os.path.join(self.output_dir, "masks/")
-
         if not os.path.exists(self.output_dir_segmentations):
             os.makedirs(self.output_dir_segmentations)
-        if not os.path.exists(inference_pipeline.output_dir_masks):
-            os.makedirs(inference_pipeline.output_dir_masks)
 
         self.model_dir = inference_pipeline.model_dir
 
-        inference_pipeline.spine_model_name = self.model_name
-
-        seg, mv = self.spine_seg(
-            os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
-            self.output_dir_segmentations + "spine.nii.gz",
-            inference_pipeline.model_dir,
-        )
-
+        # seg, mv = self.spine_seg(
+        #     os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+        #     self.output_dir_segmentations + "spine.nii.gz",
+        #     inference_pipeline.model_dir,
+        # )
         os.environ["TOTALSEG_WEIGHTS_PATH"] = self.model_dir
 
+        seg = totalsegmentator(
+            input=os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+            output=os.path.join(self.output_dir_segmentations, "segmentation.nii"),
+            task_ids=[292],
+            ml=True,
+            nr_thr_resamp=1,
+            nr_thr_saving=6,
+            fast=False,
+            nora_tag="None",
+            preview=False,
+            task="total",
+            # roi_subset=[
+            #     "vertebrae_T12",
+            #     "vertebrae_L1",
+            #     "vertebrae_L2",
+            #     "vertebrae_L3",
+            #     "vertebrae_L4",
+            #     "vertebrae_L5",
+            # ],
+            roi_subset=None,
+            statistics=False,
+            radiomics=False,
+            crop_path=None,
+            body_seg=False,
+            force_split=False,
+            output_type="nifti",
+            quiet=False,
+            verbose=False,
+            test=0,
+            skip_saving=True,
+            device="gpu",
+            license_number=None,
+            statistics_exclude_masks_at_border=True,
+            no_derived_masks=False,
+            v1_order=False,
+        )
         mv = nib.load(
             os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz")
         )
@@ -67,13 +95,6 @@ class SpineSegmentation(InferenceClass):
         nib.save(
             seg,
             os.path.join(self.output_dir_segmentations, "spine_seg.nii.gz"),
-            # os.path.join(inference_pipeline.output_dir_masks, "spine_seg.nii.gz"),
-        )
-
-        nib.save(
-            mv,
-            # os.path.join(self.output_dir_segmentations, "spine_seg.nii.gz"),
-            os.path.join(inference_pipeline.output_dir_masks, "ct.nii.gz"),
         )
 
         # inference_pipeline.segmentation = nib.load(
@@ -82,7 +103,6 @@ class SpineSegmentation(InferenceClass):
         inference_pipeline.segmentation = seg
         inference_pipeline.medical_volume = mv
         inference_pipeline.save_segmentations = self.save_segmentations
-
         return {}
 
     def setup_nnunet_c2c(self, model_dir: Union[str, Path]):
@@ -147,85 +167,49 @@ class SpineSegmentation(InferenceClass):
         os.environ["SCRATCH"] = self.model_dir
         os.environ["TOTALSEG_WEIGHTS_PATH"] = self.model_dir
 
+        # Setup nnunet
+        model = "3d_fullres"
+        folds = [0]
+        trainer = "nnUNetTrainerV2_ep4000_nomirror"
+        crop_path = None
+        task_id = [252]
+
         if self.model_name == "ts_spine":
-            seg = totalsegmentator(
-                input=os.path.join(
-                    self.output_dir_segmentations, "converted_dcm.nii.gz"
-                ),
-                output=os.path.join(self.output_dir_segmentations, "segmentation.nii"),
-                task_ids=[292],
-                ml=True,
-                nr_thr_resamp=1,
-                nr_thr_saving=6,
-                fast=False,
+            setup_nnunet()
+            download_pretrained_weights(task_id[0])
+        elif self.model_name == "stanford_spine_v0.0.1":
+            self.setup_nnunet_c2c(model_dir)
+            self.download_spine_model(model_dir)
+        else:
+            raise ValueError("Invalid model name.")
+
+        if not self.save_segmentations:
+            output_path = None
+
+        from totalsegmentator.nnunet import nnUNet_predict_image
+
+        with nostdout():
+            img, seg = nnUNet_predict_image(
+                input_path,
+                output_path,
+                task_id,
+                model=model,
+                folds=folds,
+                trainer=trainer,
+                tta=False,
+                multilabel_image=True,
+                resample=1.5,
+                crop=None,
+                crop_path=crop_path,
+                task_name="total",
                 nora_tag="None",
                 preview=False,
-                task="total",
-                roi_subset=None,
-                statistics=False,
-                radiomics=False,
-                crop_path=None,
-                body_seg=False,
-                force_split=False,
-                output_type="nifti",
+                nr_threads_resampling=1,
+                nr_threads_saving=6,
                 quiet=False,
                 verbose=False,
                 test=0,
-                skip_saving=True,
-                device="gpu",
-                license_number=None,
-                statistics_exclude_masks_at_border=True,
-                no_derived_masks=False,
-                v1_order=False,
             )
-
-            img = None
-
-        elif self.model_name == "stanford_spine_v0.0.1":
-            # Setup nnunet
-            model = "3d_fullres"
-            folds = [0]
-            trainer = "nnUNetTrainerV2_ep4000_nomirror"
-            crop_path = None
-            task_id = [252]
-
-            if self.model_name == "ts_spine":
-                setup_nnunet()
-                download_pretrained_weights(task_id[0])
-            elif self.model_name == "stanford_spine_v0.0.1":
-                self.setup_nnunet_c2c(model_dir)
-                self.download_spine_model(model_dir)
-            else:
-                raise ValueError("Invalid model name.")
-
-            if not self.save_segmentations:
-                output_path = None
-
-            from totalsegmentator.nnunet import nnUNet_predict_image
-
-            with nostdout():
-                img, seg = nnUNet_predict_image(
-                    input_path,
-                    output_path,
-                    task_id,
-                    model=model,
-                    folds=folds,
-                    trainer=trainer,
-                    tta=False,
-                    multilabel_image=True,
-                    resample=1.5,
-                    crop=None,
-                    crop_path=crop_path,
-                    task_name="total",
-                    nora_tag="None",
-                    preview=False,
-                    nr_threads_resampling=1,
-                    nr_threads_saving=6,
-                    quiet=False,
-                    verbose=False,
-                    test=0,
-                )
-
         end = time()
 
         # Log total time for spine segmentation
@@ -324,51 +308,15 @@ class SpineComputeROIs(InferenceClass):
         # Compute ROIs
         inference_pipeline.spine_model_type = self.spine_model_type
 
-        (spine_hus, rois, segmentation_hus, centroids_3d, spine_masks) = (
-            spine_utils.compute_rois(
-                inference_pipeline.segmentation,
-                inference_pipeline.medical_volume,
-                self.spine_model_type,
-            )
-        )
-
-        inference_pipeline.spine_hus = spine_hus
-        inference_pipeline.segmentation_hus = segmentation_hus
-        inference_pipeline.rois = rois
-        inference_pipeline.centroids_3d = centroids_3d
-        inference_pipeline.spine_masks = spine_masks
-
-        # save the ROIs and spine masks as a single array
-        full_rois_array = np.zeros(
-            inference_pipeline.medical_volume.shape, dtype=np.int8
-        )
-        full_spine_masks_array = np.zeros(
-            inference_pipeline.medical_volume.shape, dtype=np.int8
-        )
-
-        for i, level in enumerate(rois.keys()):
-            full_rois_array[rois[level] > 0] = i + 1
-            # full_spine_masks_array[spine_masks[level] > 0] = i + 1
-
-        inference_pipeline.saveArrToNifti(
-            full_rois_array,
-            os.path.join(
-                inference_pipeline.output_dir_masks, "central_rois_mask.nii.gz"
-            ),
-        )
-
-        nib.save(
+        (_, rois, segmentation_hus, centroids_3d, _) = fda_spine_utils.compute_rois(
             inference_pipeline.segmentation,
-            os.path.join(inference_pipeline.output_dir_masks, "spine_seg.nii.gz"),
+            inference_pipeline.medical_volume,
+            self.spine_model_type,
         )
 
-        # inference_pipeline.saveArrToNifti(
-        #     full_spine_masks_array,
-        #     os.path.join(
-        #         inference_pipeline.output_dir_masks,
-        #         "vertebrae_body_mask.nii.gz",
-        #     ),
-        # )
+        inference_pipeline.segmentation_hus = segmentation_hus
+        inference_pipeline.centroids_3d = centroids_3d
+        inference_pipeline.rois = rois
 
         return {}
 
@@ -381,9 +329,10 @@ class SpineMetricsSaver(InferenceClass):
 
     def __call__(self, inference_pipeline):
         """Save metrics to a CSV file."""
-        self.spine_hus = inference_pipeline.spine_hus
+        # self.spine_hus = inference_pipeline.spine_hus
         self.seg_hus = inference_pipeline.segmentation_hus
         self.output_dir = inference_pipeline.output_dir
+        # self.bounds = inference_pipeline.bounds
         self.csv_output_dir = os.path.join(self.output_dir, "metrics")
         if not os.path.exists(self.csv_output_dir):
             os.makedirs(self.csv_output_dir, exist_ok=True)
@@ -399,11 +348,22 @@ class SpineMetricsSaver(InferenceClass):
 
     def save_results(self):
         """Save results to a CSV file."""
-        df = pd.DataFrame(columns=["Level", "ROI HU", "Seg HU"])
-        for i, level in enumerate(self.spine_hus):
-            hu = self.spine_hus[level]
+        # df = pd.DataFrame(columns=["Level", "ROI HU", "Seg HU"])
+        # for i, level in enumerate(self.spine_hus):
+        #     hu = self.spine_hus[level]
+        #     seg_hu = self.seg_hus[level]
+        #     row = [level, hu, seg_hu]
+        #     df.loc[i] = row
+        # df = df.iloc[::-1]
+        # df.to_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"), index=False)
+        df = pd.DataFrame(
+            columns=["Level", "Seg HU"]
+        )  # , "Lower Bound", "Upper Bound"])
+        for i, level in enumerate(self.seg_hus):
+            # hu = self.spine_hus[level]
             seg_hu = self.seg_hus[level]
-            row = [level, hu, seg_hu]
+            # bounds = self.bounds[level]
+            row = [level, seg_hu]  # , bounds[0], bounds[1]]
             df.loc[i] = row
         df = df.iloc[::-1]
         df.to_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"), index=False)
@@ -414,11 +374,11 @@ class SpineFindDicoms(InferenceClass):
         super().__init__()
 
     def __call__(self, inference_pipeline):
-        inferior_superior_centers = spine_utils.find_spine_dicoms(
+        inferior_superior_centers = fda_spine_utils.find_spine_dicoms(
             inference_pipeline.centroids_3d,
         )
 
-        spine_utils.save_nifti_select_slices(
+        fda_spine_utils.save_nifti_select_slices(
             inference_pipeline.output_dir, inferior_superior_centers
         )
         inference_pipeline.dicom_file_paths = [
@@ -429,113 +389,3 @@ class SpineFindDicoms(InferenceClass):
         inference_pipeline.inferior_superior_centers = inferior_superior_centers
 
         return {}
-
-
-class SpineCoronalSagittalVisualizer(InferenceClass):
-    def __init__(self, format="png"):
-        super().__init__()
-        self.format = format
-
-    def __call__(self, inference_pipeline):
-        output_path = inference_pipeline.output_dir
-        spine_model_type = inference_pipeline.spine_model_type
-
-        img_sagittal, img_coronal = spine_utils.visualize_coronal_sagittal_spine(
-            inference_pipeline.segmentation.get_fdata(),
-            list(inference_pipeline.rois.values()),
-            inference_pipeline.medical_volume.get_fdata(),
-            list(inference_pipeline.centroids_3d.values()),
-            output_path,
-            spine_hus=inference_pipeline.spine_hus,
-            seg_hus=inference_pipeline.segmentation_hus,
-            model_type=spine_model_type,
-            pixel_spacing=inference_pipeline.pixel_spacing_list,
-            format=self.format,
-        )
-        inference_pipeline.spine_vis_sagittal = img_sagittal
-        inference_pipeline.spine_vis_coronal = img_coronal
-        inference_pipeline.spine = True
-        if not inference_pipeline.save_segmentations:
-            shutil.rmtree(os.path.join(output_path, "segmentations"))
-        return {}
-
-
-class SpineReport(InferenceClass):
-    def __init__(self, format="png"):
-        super().__init__()
-        self.format = format
-
-    def __call__(self, inference_pipeline):
-        sagittal_image = inference_pipeline.spine_vis_sagittal
-        coronal_image = inference_pipeline.spine_vis_coronal
-        # concatenate these numpy arrays laterally
-        img = np.concatenate((coronal_image, sagittal_image), axis=1)
-        output_path = os.path.join(
-            inference_pipeline.output_dir, "images", "spine_report"
-        )
-        if self.format == "png":
-            im = Image.fromarray(img)
-            im.save(output_path + ".png")
-        elif self.format == "dcm":
-            to_dicom(img, output_path + ".dcm")
-        return {}
-
-
-class SpineMuscleAdiposeTissueReport(InferenceClass):
-    """Spine muscle adipose tissue report class."""
-
-    def __init__(self):
-        super().__init__()
-        self.image_files = [
-            "spine_coronal.png",
-            "spine_sagittal.png",
-            "T12.png",
-            "L1.png",
-            "L2.png",
-            "L3.png",
-            "L4.png",
-            "L5.png",
-        ]
-
-    def __call__(self, inference_pipeline):
-        image_dir = Path(inference_pipeline.output_dir) / "images"
-        self.generate_panel(image_dir)
-        return {}
-
-    def generate_panel(self, image_dir: Union[str, Path]):
-        """Generate panel.
-        Args:
-            image_dir (Union[str, Path]): Path to the image directory.
-        """
-        image_files = [os.path.join(image_dir, path) for path in self.image_files]
-        # construct a list which includes only the images that exist
-        image_files = [path for path in image_files if os.path.exists(path)]
-
-        im_cor = Image.open(image_files[0])
-        im_sag = Image.open(image_files[1])
-        im_cor_width = int(im_cor.width / im_cor.height * 512)
-        num_muscle_fat_cols = math.ceil((len(image_files) - 2) / 2)
-        width = (8 + im_cor_width + 8) + ((512 + 8) * num_muscle_fat_cols)
-        height = 1048
-        new_im = Image.new("RGB", (width, height))
-
-        index = 2
-        for j in range(8, height, 520):
-            for i in range(8 + im_cor_width + 8, width, 520):
-                try:
-                    im = Image.open(image_files[index])
-                    im.thumbnail((512, 512))
-                    new_im.paste(im, (i, j))
-                    index += 1
-                    im.close()
-                except Exception:
-                    continue
-
-        im_cor.thumbnail((im_cor_width, 512))
-        new_im.paste(im_cor, (8, 8))
-        im_sag.thumbnail((im_cor_width, 512))
-        new_im.paste(im_sag, (8, 528))
-        new_im.save(os.path.join(image_dir, "spine_muscle_adipose_tissue_report.png"))
-        im_cor.close()
-        im_sag.close()
-        new_im.close()

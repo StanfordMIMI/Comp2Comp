@@ -1,7 +1,7 @@
 import math
 import operator
 import os
-import traceback 
+import traceback
 import zipfile
 from pathlib import Path
 from time import time
@@ -397,10 +397,10 @@ class AortaDiameter(InferenceClass):
         )
         try:
             clip.write_videofile(output_dir_summary + "aaa.mp4")
-        except Exception as e:
-            print('Error encountered in video generation:\n')
+        except Exception:
+            print("Error encountered in video generation:\n")
             traceback.print_exc()
-        
+
         return {}
 
 

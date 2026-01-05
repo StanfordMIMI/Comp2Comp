@@ -14,7 +14,7 @@ import numpy as np
 import scipy
 from scipy.ndimage import zoom
 
-from comp2comp.spine import spine_visualization
+# from comp2comp.spine import spine_visualization
 
 
 def find_spine_dicoms(centroids: Dict):  # , path: str, levels):
@@ -97,7 +97,6 @@ def get_slices(seg: np.ndarray, centroids: Dict, spine_model_type):
     for level in centroids:
         label_idx = spine_model_type.categories[level]
         binary_seg = (seg[centroids[level], :, :] == label_idx).astype(int)
-        # FIXME This should maybe throw an error if >200 is not met
         if (
             np.sum(binary_seg) > 200
         ):  # heuristic to make sure enough of the body is showing
@@ -224,49 +223,31 @@ def roi_from_mask(img, centroid: np.ndarray, seg: np.ndarray, slice: np.ndarray)
         roi_start_time = time.time()
 
         mask = None
-        updated_mask = None
         inferior_superior_line = seg[int(centroid[0]), int(centroid[1]), :]
         # get the center point
         updated_z_center = np.mean(np.where(inferior_superior_line == 1))
         lower_z_idx = updated_z_center - ((length_k * 1.5) // 2)
         upper_z_idx = updated_z_center + ((length_k * 1.5) // 2)
-
         for idx in range(int(lower_z_idx), int(upper_z_idx) + 1):
-            print(f"idx: {idx}")
             # take multiple to increase robustness
             posterior_anterior_lines = [
                 slice[:, idx],
                 slice[:, idx + 1],
                 slice[:, idx - 1],
             ]
-            posterior_anterior_sums = np.array(
-                [
-                    np.sum(posterior_anterior_lines[0]),
-                    np.sum(posterior_anterior_lines[1]),
-                    np.sum(posterior_anterior_lines[2]),
-                ]
-            )
-
-            if posterior_anterior_sums.sum() == 0:
-                print(f"skipped idx {idx} since posterior_anterior_sums where 0")
-                continue
-
-            # min_idx = np.argmin(posterior_anterior_sums)
-
-            # ensure the posterior_anterior_sums array is not zero
-            nonzero_mask = posterior_anterior_sums != 0
-            min_idx = np.argmin(posterior_anterior_sums[nonzero_mask])
-            # Convert back to original indices
-            min_idx = np.where(nonzero_mask)[0][min_idx]
+            posterior_anterior_sums = [
+                np.sum(posterior_anterior_lines[0]),
+                np.sum(posterior_anterior_lines[1]),
+                np.sum(posterior_anterior_lines[2]),
+            ]
+            min_idx = np.argmin(posterior_anterior_sums)
 
             posterior_anterior_line = posterior_anterior_lines[min_idx]
-
             updated_posterior_anterior_center = (
                 np.min(np.where(posterior_anterior_line == 1))
                 + np.sum(posterior_anterior_line) * 0.58
             )
             posterior_anterior_length = (posterior_anterior_sums[min_idx] * 0.5) // 2
-            posterior_anterior_length = max(posterior_anterior_length, 1)
 
             left_right_lines = [
                 seg[:, int(updated_posterior_anterior_center), idx],
@@ -274,31 +255,17 @@ def roi_from_mask(img, centroid: np.ndarray, seg: np.ndarray, slice: np.ndarray)
                 seg[:, int(updated_posterior_anterior_center) - 1, idx],
             ]
 
-            left_right_sums = np.array(
-                [
-                    np.sum(left_right_lines[0]),
-                    np.sum(left_right_lines[1]),
-                    np.sum(left_right_lines[2]),
-                ]
-            )
+            left_right_sums = [
+                np.sum(left_right_lines[0]),
+                np.sum(left_right_lines[1]),
+                np.sum(left_right_lines[2]),
+            ]
 
-            if left_right_sums.sum() == 0:
-                print(f"skipped idx {idx} since left_right_sums where 0")
-                continue
-
-            # min_idx = np.argmin(left_right_sums)
-
-            # ensure the posterior_anterior_sums array is not zero
-            nonzero_mask = left_right_sums != 0
-            min_idx = np.argmin(left_right_sums[nonzero_mask])
-            # Convert back to original indices
-            min_idx = np.where(nonzero_mask)[0][min_idx]
-
+            min_idx = np.argmin(left_right_sums)
             left_right_line = left_right_lines[min_idx]
 
             updated_left_right_center = np.mean(np.where(left_right_line == 1))
             left_right_length = (left_right_sums[min_idx] * 0.65) // 2
-            left_right_length = max(left_right_length, 1)
 
             roi_2d = np.zeros((img_np.shape[0], img_np.shape[1]))
             h = updated_left_right_center
@@ -319,11 +286,10 @@ def roi_from_mask(img, centroid: np.ndarray, seg: np.ndarray, slice: np.ndarray)
                 for y in range(y_min - 2, y_max + 2):
                     if ((x - h) / a) ** 2 + ((y - k) / b) ** 2 <= 1:
                         roi_2d[x, y] = 1
-
             roi[:, :, idx] = roi_2d
             if idx == int(centroid[2]):
                 mask = np.flip(np.flip(np.transpose(roi_2d), axis=0), axis=1)
-            if idx == int(updated_z_center):
+            if idx == updated_z_center:
                 updated_mask = np.flip(np.flip(np.transpose(roi_2d), axis=0), axis=1)
         if mask is None:
             mask = updated_mask
@@ -343,10 +309,10 @@ def roi_from_mask(img, centroid: np.ndarray, seg: np.ndarray, slice: np.ndarray)
         end_time = time.time()
         roi_end_time = time.time()
         elapsed_time = end_time - start_time
-        print(f"Elapsed time for erosion operation: {elapsed_time:.1f} seconds")
+        print(f"Elapsed time for erosion operation: {elapsed_time} seconds")
 
         elapsed_time = roi_end_time - roi_start_time
-        print(f"Elapsed time for full ROI computation: {elapsed_time:.1f} seconds")
+        print(f"Elapsed time for full ROI computation: {elapsed_time} seconds")
 
         return roi, mask
 
@@ -405,21 +371,17 @@ def compute_rois(seg, img, spine_model_type):
     centroids_3d = {}
     segmentation_hus = {}
     spine_masks = {}
-
-    image_numpy = img.get_fdata()
-
     for i, level in enumerate(slices):
         slice = slices[level]
         center_of_mass = compute_center_of_mass(slice)
         centroid = np.array([centroids[level], center_of_mass[1], center_of_mass[0]])
-        print(f"Processing i={i} at level={level}")
-
         roi, mask_2d = roi_from_mask(
             img,
             centroid,
             (seg_np == spine_model_type.categories[level]).astype(int),
             slice,
         )
+        image_numpy = img.get_fdata()
         spine_hus[level] = mean_img_mask(image_numpy, roi, i)
         rois[level] = roi
         mask = (seg_np == spine_model_type.categories[level]).astype(int)

@@ -86,7 +86,8 @@ class InferencePipeline(InferenceClass):
 
     def saveArrToNifti(self, arr, path):
         """
-        Saves an array to nifti using the CT as reference
+        Saves an array to nifti using the CT as reference. Assumes
+        that self.medical_volume is not changed
 
         Args:
             arr (ndarray): input array.
