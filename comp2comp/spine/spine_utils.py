@@ -230,23 +230,25 @@ def roi_from_mask(img, centroid: np.ndarray, seg: np.ndarray, slice: np.ndarray)
         updated_z_center = np.mean(np.where(inferior_superior_line == 1))
         lower_z_idx = updated_z_center - ((length_k * 1.5) // 2)
         upper_z_idx = updated_z_center + ((length_k * 1.5) // 2)
-  
+
         for idx in range(int(lower_z_idx), int(upper_z_idx) + 1):
-            print(f'idx: {idx}')
+            print(f"idx: {idx}")
             # take multiple to increase robustness
             posterior_anterior_lines = [
                 slice[:, idx],
                 slice[:, idx + 1],
                 slice[:, idx - 1],
             ]
-            posterior_anterior_sums = np.array([
-                np.sum(posterior_anterior_lines[0]),
-                np.sum(posterior_anterior_lines[1]),
-                np.sum(posterior_anterior_lines[2]),
-            ])
+            posterior_anterior_sums = np.array(
+                [
+                    np.sum(posterior_anterior_lines[0]),
+                    np.sum(posterior_anterior_lines[1]),
+                    np.sum(posterior_anterior_lines[2]),
+                ]
+            )
 
             if posterior_anterior_sums.sum() == 0:
-                print(f'skipped idx {idx} since posterior_anterior_sums where 0')
+                print(f"skipped idx {idx} since posterior_anterior_sums where 0")
                 continue
 
             # min_idx = np.argmin(posterior_anterior_sums)
@@ -258,7 +260,7 @@ def roi_from_mask(img, centroid: np.ndarray, seg: np.ndarray, slice: np.ndarray)
             min_idx = np.where(nonzero_mask)[0][min_idx]
 
             posterior_anterior_line = posterior_anterior_lines[min_idx]
-            
+
             updated_posterior_anterior_center = (
                 np.min(np.where(posterior_anterior_line == 1))
                 + np.sum(posterior_anterior_line) * 0.58
@@ -272,14 +274,16 @@ def roi_from_mask(img, centroid: np.ndarray, seg: np.ndarray, slice: np.ndarray)
                 seg[:, int(updated_posterior_anterior_center) - 1, idx],
             ]
 
-            left_right_sums = np.array([
-                np.sum(left_right_lines[0]),
-                np.sum(left_right_lines[1]),
-                np.sum(left_right_lines[2]),
-            ])
+            left_right_sums = np.array(
+                [
+                    np.sum(left_right_lines[0]),
+                    np.sum(left_right_lines[1]),
+                    np.sum(left_right_lines[2]),
+                ]
+            )
 
             if left_right_sums.sum() == 0:
-                print(f'skipped idx {idx} since left_right_sums where 0')
+                print(f"skipped idx {idx} since left_right_sums where 0")
                 continue
 
             # min_idx = np.argmin(left_right_sums)
@@ -403,13 +407,13 @@ def compute_rois(seg, img, spine_model_type):
     spine_masks = {}
 
     image_numpy = img.get_fdata()
-    
+
     for i, level in enumerate(slices):
         slice = slices[level]
         center_of_mass = compute_center_of_mass(slice)
         centroid = np.array([centroids[level], center_of_mass[1], center_of_mass[0]])
-        print(f'Processing i={i} at level={level}')
-        
+        print(f"Processing i={i} at level={level}")
+
         roi, mask_2d = roi_from_mask(
             img,
             centroid,

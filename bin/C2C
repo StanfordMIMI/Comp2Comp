@@ -13,17 +13,17 @@ from comp2comp.aortic_calcium import (
 from comp2comp.contrast_phase.contrast_phase import ContrastPhaseDetection
 from comp2comp.hip import hip
 from comp2comp.inference_pipeline import InferencePipeline
-from comp2comp.io import io, fda_io
+from comp2comp.io import fda_io, io
 from comp2comp.liver_spleen_pancreas import (
     liver_spleen_pancreas,
     liver_spleen_pancreas_visualization,
 )
 from comp2comp.muscle_adipose_tissue import (
+    fda_muscle_adipose_tissue,
     muscle_adipose_tissue,
     muscle_adipose_tissue_visualization,
-    fda_muscle_adipose_tissue,
 )
-from comp2comp.spine import spine, fda_spine
+from comp2comp.spine import fda_spine, spine
 from comp2comp.utils import orientation
 from comp2comp.utils.process import process_3d
 

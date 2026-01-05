@@ -8,7 +8,9 @@ import numpy as np
 import scipy
 import SimpleITK as sitk
 from scipy import ndimage as ndi
+
 # import xgboost
+
 
 def loadNiiToArray(path):
     NiImg = nib.load(path)
@@ -176,7 +178,7 @@ def getFeatures(TSArray, scanArray):
     kidneyLMask = getClassBinaryMask(TSArray, 3)
     kidneyRMask = getClassBinaryMask(TSArray, 2)
     adRMask = getClassBinaryMask(TSArray, 11)
-    
+
     # aortaMask = getClassBinaryMask(TSArray, 52)
     # IVCMask = getClassBinaryMask(TSArray, 63)
     # portalMask = getClassBinaryMask(TSArray, 64)
@@ -421,16 +423,11 @@ def predict_phase(TS_path, scan_path, outputPath=None, save_sample=False):
     model = loadModel()
     # TS_array, image_array = loadNiftis(TS_output_nifti_path, image_nifti_path)
     featureArray, kidneyLMask, adRMask = getFeatures(TS_array, image_array)
-    
+
     y_pred_proba = model.predict_proba([featureArray])[0]
     y_pred = np.argmax(y_pred_proba)
-    
-    phase_dict = {
-        0: "non-contrast",
-        1: "arterial",
-        2: "venous",
-        3: "delayed"
-    }
+
+    phase_dict = {0: "non-contrast", 1: "arterial", 2: "venous", 3: "delayed"}
 
     pred_phase = phase_dict[y_pred]
 
@@ -447,16 +444,16 @@ def predict_phase(TS_path, scan_path, outputPath=None, save_sample=False):
     if not os.path.exists(output_path_metrics):
         os.makedirs(output_path_metrics)
     outputTxt = os.path.join(output_path_metrics, "phase_prediction.txt")
-    
-    with open(outputTxt, "w") as text_file:
-        text_file.write('phase,'+pred_phase + '\n')
-        for i in range(len(y_pred_proba)):
-            text_file.write('{},{:.3f}\n'.format(phase_dict[i], y_pred_proba[i]))
 
-    print('Predicted phase: ' + pred_phase)
-    print('\nProbabilities:')
+    with open(outputTxt, "w") as text_file:
+        text_file.write("phase," + pred_phase + "\n")
+        for i in range(len(y_pred_proba)):
+            text_file.write("{},{:.3f}\n".format(phase_dict[i], y_pred_proba[i]))
+
+    print("Predicted phase: " + pred_phase)
+    print("\nProbabilities:")
     for i in range(len(y_pred_proba)):
-        print('{:<20}{:.3f}'.format(phase_dict[i], y_pred_proba[i]))
+        print("{:<20}{:.3f}".format(phase_dict[i], y_pred_proba[i]))
 
     output_path_images = os.path.join(outputPath, "images")
     if not os.path.exists(output_path_images):

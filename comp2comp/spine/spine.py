@@ -15,18 +15,17 @@ import numpy as np
 import pandas as pd
 import wget
 from PIL import Image
+from totalsegmentator.libs import (
+    download_pretrained_weights,
+    nostdout,
+    setup_nnunet,
+)
 from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.models.models import Models
 from comp2comp.spine import spine_utils
 from comp2comp.visualization.dicom import to_dicom
-
-from totalsegmentator.libs import (
-    download_pretrained_weights,
-    nostdout,
-    setup_nnunet,
-)
 
 
 class SpineSegmentation(InferenceClass):
@@ -49,7 +48,7 @@ class SpineSegmentation(InferenceClass):
             os.makedirs(inference_pipeline.output_dir_masks)
 
         self.model_dir = inference_pipeline.model_dir
-        
+
         inference_pipeline.spine_model_name = self.model_name
 
         seg, mv = self.spine_seg(
@@ -57,7 +56,7 @@ class SpineSegmentation(InferenceClass):
             self.output_dir_segmentations + "spine.nii.gz",
             inference_pipeline.model_dir,
         )
-        
+
         os.environ["TOTALSEG_WEIGHTS_PATH"] = self.model_dir
 
         mv = nib.load(
@@ -83,7 +82,7 @@ class SpineSegmentation(InferenceClass):
         inference_pipeline.segmentation = seg
         inference_pipeline.medical_volume = mv
         inference_pipeline.save_segmentations = self.save_segmentations
-        
+
         return {}
 
     def setup_nnunet_c2c(self, model_dir: Union[str, Path]):
@@ -148,9 +147,11 @@ class SpineSegmentation(InferenceClass):
         os.environ["SCRATCH"] = self.model_dir
         os.environ["TOTALSEG_WEIGHTS_PATH"] = self.model_dir
 
-        if self.model_name == 'ts_spine':
+        if self.model_name == "ts_spine":
             seg = totalsegmentator(
-                input=os.path.join(self.output_dir_segmentations, "converted_dcm.nii.gz"),
+                input=os.path.join(
+                    self.output_dir_segmentations, "converted_dcm.nii.gz"
+                ),
                 output=os.path.join(self.output_dir_segmentations, "segmentation.nii"),
                 task_ids=[292],
                 ml=True,
@@ -176,11 +177,11 @@ class SpineSegmentation(InferenceClass):
                 statistics_exclude_masks_at_border=True,
                 no_derived_masks=False,
                 v1_order=False,
-        ) 
-        
+            )
+
             img = None
 
-        elif self.model_name == 'stanford_spine_v0.0.1':
+        elif self.model_name == "stanford_spine_v0.0.1":
             # Setup nnunet
             model = "3d_fullres"
             folds = [0]
@@ -338,26 +339,28 @@ class SpineComputeROIs(InferenceClass):
         inference_pipeline.spine_masks = spine_masks
 
         # save the ROIs and spine masks as a single array
-        full_rois_array = np.zeros(inference_pipeline.medical_volume.shape, dtype=np.int8)
-        full_spine_masks_array = np.zeros(inference_pipeline.medical_volume.shape, dtype=np.int8)
+        full_rois_array = np.zeros(
+            inference_pipeline.medical_volume.shape, dtype=np.int8
+        )
+        full_spine_masks_array = np.zeros(
+            inference_pipeline.medical_volume.shape, dtype=np.int8
+        )
 
         for i, level in enumerate(rois.keys()):
-            full_rois_array[rois[level] > 0] = i + 1 
-            # full_spine_masks_array[spine_masks[level] > 0] = i + 1 
-        
+            full_rois_array[rois[level] > 0] = i + 1
+            # full_spine_masks_array[spine_masks[level] > 0] = i + 1
+
         inference_pipeline.saveArrToNifti(
             full_rois_array,
             os.path.join(
-                inference_pipeline.output_dir_masks,
-                "central_rois_mask.nii.gz"
+                inference_pipeline.output_dir_masks, "central_rois_mask.nii.gz"
             ),
         )
 
-        nib.save(inference_pipeline.segmentation, 
-                os.path.join(
-                    inference_pipeline.output_dir_masks,
-                    "spine_seg.nii.gz")
-            )
+        nib.save(
+            inference_pipeline.segmentation,
+            os.path.join(inference_pipeline.output_dir_masks, "spine_seg.nii.gz"),
+        )
 
         # inference_pipeline.saveArrToNifti(
         #     full_spine_masks_array,

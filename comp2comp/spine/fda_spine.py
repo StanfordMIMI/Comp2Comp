@@ -2,9 +2,7 @@
 @author: louisblankemeier
 """
 
-import math
 import os
-import shutil
 import zipfile
 from pathlib import Path
 from time import time
@@ -14,21 +12,20 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 import wget
-from PIL import Image
-
 from totalsegmentatorv2.python_api import totalsegmentator
 
 from comp2comp.inference_class_base import InferenceClass
+
+# from comp2comp.visualization.dicom import to_dicom
 from comp2comp.models.fda_models import Models
 from comp2comp.spine import fda_spine_utils
-# from comp2comp.visualization.dicom import to_dicom
-from comp2comp.io import io_utils
 
 # from totalsegmentator.libs import (
 #     download_pretrained_weights,
 #     nostdout,
 #     setup_nnunet,
 # )
+
 
 class SpineSegmentation(InferenceClass):
     """Spine segmentation."""
@@ -311,12 +308,10 @@ class SpineComputeROIs(InferenceClass):
         # Compute ROIs
         inference_pipeline.spine_model_type = self.spine_model_type
 
-        (_, rois, segmentation_hus, centroids_3d, _) = (
-            fda_spine_utils.compute_rois(
-                inference_pipeline.segmentation,
-                inference_pipeline.medical_volume,
-                self.spine_model_type,
-            )
+        (_, rois, segmentation_hus, centroids_3d, _) = fda_spine_utils.compute_rois(
+            inference_pipeline.segmentation,
+            inference_pipeline.medical_volume,
+            self.spine_model_type,
         )
 
         inference_pipeline.segmentation_hus = segmentation_hus
@@ -361,12 +356,14 @@ class SpineMetricsSaver(InferenceClass):
         #     df.loc[i] = row
         # df = df.iloc[::-1]
         # df.to_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"), index=False)
-        df = pd.DataFrame(columns=["Level", "Seg HU"]) #, "Lower Bound", "Upper Bound"])
+        df = pd.DataFrame(
+            columns=["Level", "Seg HU"]
+        )  # , "Lower Bound", "Upper Bound"])
         for i, level in enumerate(self.seg_hus):
             # hu = self.spine_hus[level]
             seg_hu = self.seg_hus[level]
             # bounds = self.bounds[level]
-            row = [level, seg_hu] #, bounds[0], bounds[1]]
+            row = [level, seg_hu]  # , bounds[0], bounds[1]]
             df.loc[i] = row
         df = df.iloc[::-1]
         df.to_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"), index=False)

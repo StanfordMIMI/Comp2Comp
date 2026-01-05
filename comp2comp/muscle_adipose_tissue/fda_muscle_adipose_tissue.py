@@ -16,70 +16,46 @@ from tqdm import tqdm
 from comp2comp.inference_class_base import InferenceClass
 from comp2comp.metrics.metrics import CrossSectionalArea, HounsfieldUnits
 from comp2comp.models.models import Models
+
 # from comp2comp.muscle_adipose_tissue.data import Dataset, predict
 
-NORMATIVE_VALUES = {   
-    '12-15': {  
-        'mean': 0.9708984375000025,
-        'number': 128,
-        'std': 0.14374630102575722
-        },
-    '16-19': {
-        'mean': 1.043302985074628,
-        'number': 134,
-        'std': 0.1171623603196859
-        },
-    '20-29': {   
-        'mean': 1.0714148148148168,
-        'number': 162,
-        'std': 0.12245757380508455
-        },
-    '30-39': {
-        'mean': 1.0732317460317455,
-        'number': 126,
-        'std': 0.11887298110191502
-        },
-    '40-49': {
-        'mean': 1.0724762430939225,
-        'number': 181,
-        'std': 0.1565666675667262
-        },
-    '50-59': {
-        'mean': 1.0113555555555536,
-        'number': 162,
-        'std': 0.15325632970875053
-        },
-    '60-69': {
-        'mean': 0.9780291390728507,
-        'number': 151,
-        'std': 0.15834423166478903},
-    '8-11': {
-        'mean': 0.7280215686274502,
-        'number': 102,
-        'std': 0.1002736605470211
-        }
-    }
+NORMATIVE_VALUES = {
+    "12-15": {"mean": 0.9708984375000025, "number": 128, "std": 0.14374630102575722},
+    "16-19": {"mean": 1.043302985074628, "number": 134, "std": 0.1171623603196859},
+    "20-29": {"mean": 1.0714148148148168, "number": 162, "std": 0.12245757380508455},
+    "30-39": {"mean": 1.0732317460317455, "number": 126, "std": 0.11887298110191502},
+    "40-49": {"mean": 1.0724762430939225, "number": 181, "std": 0.1565666675667262},
+    "50-59": {"mean": 1.0113555555555536, "number": 162, "std": 0.15325632970875053},
+    "60-69": {"mean": 0.9780291390728507, "number": 151, "std": 0.15834423166478903},
+    "8-11": {"mean": 0.7280215686274502, "number": 102, "std": 0.1002736605470211},
+}
 
 CT_DENSITY_TO_BMD_DENSITY_SLOPE = 0.002533809257151385
 CT_DENSITY_TO_BMD_DENSITY_INTERCEPT = 0.2298020483820905
 
+
 def CALCULATE_DXA_SCORES(spine_bmd: float, age: int) -> dict:
     if age < 20:
-        age_group = '8-19'
+        age_group = "8-19"
     elif age > 69:
-        age_group = '60-69'
+        age_group = "60-69"
     else:
         age_group = f"{(age // 10) * 10}-{((age // 10) * 10) + 9}"
 
-    t_score_mean = (NORMATIVE_VALUES['20-29']['mean'] + NORMATIVE_VALUES['30-39']['mean']) / 2
-    t_score_std = (NORMATIVE_VALUES['20-29']['std'] + NORMATIVE_VALUES['30-39']['std']) / 2
+    t_score_mean = (
+        NORMATIVE_VALUES["20-29"]["mean"] + NORMATIVE_VALUES["30-39"]["mean"]
+    ) / 2
+    t_score_std = (
+        NORMATIVE_VALUES["20-29"]["std"] + NORMATIVE_VALUES["30-39"]["std"]
+    ) / 2
     t_score = (spine_bmd - t_score_mean) / t_score_std
 
-    z_score_mean = NORMATIVE_VALUES[age_group]['mean']
-    z_score_std = NORMATIVE_VALUES[age_group]['std']
+    z_score_mean = NORMATIVE_VALUES[age_group]["mean"]
+    z_score_std = NORMATIVE_VALUES[age_group]["std"]
     z_score = (spine_bmd - z_score_mean) / z_score_std
 
-    return {'T-score': t_score, 'Z-score': z_score}
+    return {"T-score": t_score, "Z-score": z_score}
+
 
 class MuscleAdiposeTissueSegmentation(InferenceClass):
     """Muscle adipose tissue segmentation class."""
@@ -143,7 +119,9 @@ class MuscleAdiposeTissueSegmentation(InferenceClass):
         if self.model_name == "stanford_v0.0.2":
             self.download_muscle_adipose_tissue_model(inference_pipeline.model_dir)
             nifti_path = os.path.join(
-                inference_pipeline.output_dir, "segmentations", "converted_dcm_multilevel.nii.gz"
+                inference_pipeline.output_dir,
+                "segmentations",
+                "converted_dcm_multilevel.nii.gz",
             )
             output_path = os.path.join(
                 inference_pipeline.output_dir,
@@ -510,7 +488,9 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
             index=False,
         )
 
-        metrics_data = pd.read_csv(os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv"))
+        metrics_data = pd.read_csv(
+            os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv")
+        )
 
         # print(metrics_data)
 
@@ -519,15 +499,21 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
         exam_per_level_densities = {}
         try:
             for level in levels_to_include:
-                exam_per_level_densities[level] = metrics_data.loc[metrics_data['Level'] == level][f'VAT HU'].values[0]
+                exam_per_level_densities[level] = metrics_data.loc[
+                    metrics_data["Level"] == level
+                ][f"VAT HU"].values[0]
         except:
             print("No VAT")
             return
-        vat_roi_values = np.mean(list(exam_per_level_densities.values()))
+        np.mean(list(exam_per_level_densities.values()))
         air_roi_values = -1000
 
-        image_path = os.path.join(self.segmentation_output_dir, "converted_dcm_multilevel.nii.gz")
-        seg_path = os.path.join(self.segmentation_output_dir, "multilevel_muscle_fat_seg.nii.gz")
+        image_path = os.path.join(
+            self.segmentation_output_dir, "converted_dcm_multilevel.nii.gz"
+        )
+        seg_path = os.path.join(
+            self.segmentation_output_dir, "multilevel_muscle_fat_seg.nii.gz"
+        )
 
         image = nib.load(image_path)
         image = nib.as_closest_canonical(image)
@@ -548,17 +534,25 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
         left_right_pixels = 50 / pixel_spacing[0]
         middle_left_right_pixel = image.shape[0] / 2
         anterior_posterior_pixels = 20 / pixel_spacing[1]
-        air_seg[int(middle_left_right_pixel - left_right_pixels):int(middle_left_right_pixel + left_right_pixels), int(position_anterior_most_sat_pixel + anterior_posterior_pixels):int(position_anterior_most_sat_pixel + (2 * anterior_posterior_pixels)), :] = 1
+        air_seg[
+            int(middle_left_right_pixel - left_right_pixels) : int(
+                middle_left_right_pixel + left_right_pixels
+            ),
+            int(position_anterior_most_sat_pixel + anterior_posterior_pixels) : int(
+                position_anterior_most_sat_pixel + (2 * anterior_posterior_pixels)
+            ),
+            :,
+        ] = 1
 
         air_measured = np.mean(image[air_seg == 1])
         # if air roi is not between -1050 and -950, then continue
         if air_roi_values < -1050 or air_roi_values > -950:
-            print('Error, air ROI is not between -1050 and -950 HU, aborting scan.')
+            print("Error, air ROI is not between -1050 and -950 HU, aborting scan.")
             print("Air ROI: {air_roi_values:1.f} HU")
-            return 
-            
+            return
+
         vat_measured = np.mean(image[vat_seg == 1])
-        print(f"Air ROI: {air_measured:.1f} HU" )
+        print(f"Air ROI: {air_measured:.1f} HU")
         print(f"VAT ROI: {vat_measured:.1f} HU")
 
         hu_vat = -95
@@ -567,42 +561,76 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
         intercept = hu_air - slope * air_measured
         # calibrated_value = slope * value_measured + intercept
 
-        spine_metrics = pd.read_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"))
-        spine_metrics["Calibrated Seg HU"] = spine_metrics["Seg HU"].apply(lambda x: slope * x + intercept)
-        spine_metrics.to_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"), index=False)
+        spine_metrics = pd.read_csv(
+            os.path.join(self.csv_output_dir, "spine_metrics.csv")
+        )
+        spine_metrics["Calibrated Seg HU"] = spine_metrics["Seg HU"].apply(
+            lambda x: slope * x + intercept
+        )
+        spine_metrics.to_csv(
+            os.path.join(self.csv_output_dir, "spine_metrics.csv"), index=False
+        )
 
         self.PredictDXAScores()
 
-
     def PredictDXAScores(self):
-        metrics_data = pd.read_csv(os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv"))
-        spine_metrics = pd.read_csv(os.path.join(self.csv_output_dir, "spine_metrics.csv"))
+        metrics_data = pd.read_csv(
+            os.path.join(self.csv_output_dir, "muscle_adipose_tissue_metrics.csv")
+        )
+        spine_metrics = pd.read_csv(
+            os.path.join(self.csv_output_dir, "spine_metrics.csv")
+        )
 
         levels_to_include = ["L1", "L2", "L3", "L4"]
-        average_calibrated_hu = spine_metrics.loc[spine_metrics["Level"].isin(levels_to_include)]['Calibrated Seg HU'].mean()
+        average_calibrated_hu = spine_metrics.loc[
+            spine_metrics["Level"].isin(levels_to_include)
+        ]["Calibrated Seg HU"].mean()
 
         binary_prediction = average_calibrated_hu < 300
-        dxa_density_prediction = CT_DENSITY_TO_BMD_DENSITY_SLOPE * average_calibrated_hu + CT_DENSITY_TO_BMD_DENSITY_INTERCEPT
+        dxa_density_prediction = (
+            CT_DENSITY_TO_BMD_DENSITY_SLOPE * average_calibrated_hu
+            + CT_DENSITY_TO_BMD_DENSITY_INTERCEPT
+        )
         normative_scores = CALCULATE_DXA_SCORES(dxa_density_prediction, self.age)
-        dxa_t_score_prediction = normative_scores['T-score']
-        dxa_z_score_prediction = normative_scores['Z-score']
+        dxa_t_score_prediction = normative_scores["T-score"]
+        dxa_z_score_prediction = normative_scores["Z-score"]
 
-        dxa_scores = pd.DataFrame(columns=["Mean L1-L4 Calibrated HU", "Binary Prediction", "Density Prediction", "T-score Prediction", "Z-score Prediction", "Age"])
-        dxa_scores.loc[0] = [average_calibrated_hu, int(binary_prediction), dxa_density_prediction, dxa_t_score_prediction, dxa_z_score_prediction, self.age]
-        dxa_scores.to_csv(os.path.join(self.csv_output_dir, "dxa_predictions.csv"), index = False)
+        dxa_scores = pd.DataFrame(
+            columns=[
+                "Mean L1-L4 Calibrated HU",
+                "Binary Prediction",
+                "Density Prediction",
+                "T-score Prediction",
+                "Z-score Prediction",
+                "Age",
+            ]
+        )
+        dxa_scores.loc[0] = [
+            average_calibrated_hu,
+            int(binary_prediction),
+            dxa_density_prediction,
+            dxa_t_score_prediction,
+            dxa_z_score_prediction,
+            self.age,
+        ]
+        dxa_scores.to_csv(
+            os.path.join(self.csv_output_dir, "dxa_predictions.csv"), index=False
+        )
 
-        print('\n'*3)
-        print('#'*80)
-        print('BMD Report:')
-        print('BMD score prediction: {} (T-score {} -1)\n'.format(
-            "ABNORMAL" if binary_prediction else "NORMAL",
-            "<" if binary_prediction else "≥",
-            ))
-        print('Predicted Z and T-score (NOT FDA approved):')
-        print(f'Predicted Z-score: {dxa_z_score_prediction:.1f}')
-        print(f'Predicted T-score: {dxa_t_score_prediction:.1f}')
-        
-        print('#'*80)
-        print('\n'*3)
+        print("\n" * 3)
+        print("#" * 80)
+        print("BMD Report:")
+        print(
+            "BMD score prediction: {} (T-score {} -1)\n".format(
+                "ABNORMAL" if binary_prediction else "NORMAL",
+                "<" if binary_prediction else "≥",
+            )
+        )
+        print("Predicted Z and T-score (NOT FDA approved):")
+        print(f"Predicted Z-score: {dxa_z_score_prediction:.1f}")
+        print(f"Predicted T-score: {dxa_t_score_prediction:.1f}")
+
+        print("#" * 80)
+        print("\n" * 3)
 
         return spine_metrics
