@@ -553,12 +553,13 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
         air_measured = np.mean(image[air_seg == 1])
         # if air roi is not between -1050 and -950, then continue
         if air_roi_values < -1050 or air_roi_values > -950:
-            print("Air ROI: ", air_roi_values)
+            print('Error, air ROI is not between -1050 and -950 HU, aborting scan.')
+            print("Air ROI: {air_roi_values:1.f} HU")
             return 
             
         vat_measured = np.mean(image[vat_seg == 1])
-        print("Air ROI: ", air_measured)
-        print("VAT ROI: ", vat_measured)
+        print(f"Air ROI: {air_measured:.1f} HU" )
+        print(f"VAT ROI: {vat_measured:.1f} HU")
 
         hu_vat = -95
         hu_air = -1000
@@ -589,5 +590,19 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
         dxa_scores = pd.DataFrame(columns=["Mean L1-L4 Calibrated HU", "Binary Prediction", "Density Prediction", "T-score Prediction", "Z-score Prediction", "Age"])
         dxa_scores.loc[0] = [average_calibrated_hu, int(binary_prediction), dxa_density_prediction, dxa_t_score_prediction, dxa_z_score_prediction, self.age]
         dxa_scores.to_csv(os.path.join(self.csv_output_dir, "dxa_predictions.csv"), index = False)
+
+        print('\n'*3)
+        print('#'*80)
+        print('BMD Report:')
+        print('BMD score prediction: {} (T-score {} -1)\n'.format(
+            "ABNORMAL" if binary_prediction else "NORMAL",
+            "<" if binary_prediction else "≥",
+            ))
+        print('Predicted Z and T-score (NOT FDA approved):')
+        print(f'Predicted Z-score: {dxa_z_score_prediction:.1f}')
+        print(f'Predicted T-score: {dxa_t_score_prediction:.1f}')
+        
+        print('#'*80)
+        print('\n'*3)
 
         return spine_metrics
