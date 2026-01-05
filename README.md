@@ -66,6 +66,26 @@ bin/C2C spine_muscle_adipose_tissue -i <path/to/input/folder>
   <img src="figures/spine_muscle_adipose_tissue_example.png" height="300">
 </p>
 
+## FDA Approved BunkerHill Bone Mineral Density from L1-L4
+
+### Usage
+```bash
+bin/C2C fda_bmd -i <path/to/input/folder>
+```
+- input_path should contain a DICOM series or subfolders that contain DICOM series.
+
+### Example Output
+```
+################################################################################
+BMD Report:
+BMD score prediction: NORMAL (T-score ≥ -1)
+
+Predicted Z and T-score (NOT FDA approved):
+Predicted Z-score: 0.5
+Predicted T-score: 0.1
+################################################################################
+```
+
 ## Spine Bone Mineral Density from 3D Trabecular Bone Regions at T12-L5
 
 ### Usage
