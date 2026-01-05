@@ -13,7 +13,7 @@ from comp2comp.aortic_calcium import (
 from comp2comp.contrast_phase.contrast_phase import ContrastPhaseDetection
 from comp2comp.hip import hip
 from comp2comp.inference_pipeline import InferencePipeline
-from comp2comp.io import io
+from comp2comp.io import io, fda_io
 from comp2comp.liver_spleen_pancreas import (
     liver_spleen_pancreas,
     liver_spleen_pancreas_visualization,
@@ -21,12 +21,52 @@ from comp2comp.liver_spleen_pancreas import (
 from comp2comp.muscle_adipose_tissue import (
     muscle_adipose_tissue,
     muscle_adipose_tissue_visualization,
+    fda_muscle_adipose_tissue,
 )
-from comp2comp.spine import spine
+from comp2comp.spine import spine, fda_spine
 from comp2comp.utils import orientation
 from comp2comp.utils.process import process_3d
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+
+# FDA approved BunkeHill BMD algorithm
+def FdaBmdPipelineBuilder(path, args):
+    pipeline = InferencePipeline(
+        [
+            FdaSpinePipelineBuilder(path, args),
+            fda_spine.SpineFindDicoms(),
+            FdaMuscleAdiposeTissuePipelineBuilder(args),
+        ]
+    )
+    return pipeline
+
+def FdaSpinePipelineBuilder(path, args):
+    pipeline = InferencePipeline(
+        [
+            fda_io.DicomToNifti(path),
+            fda_spine.SpineSegmentation(args.spine_model, save=True),
+            orientation.ToCanonical(),
+            fda_spine.SpineComputeROIs(args.spine_model),
+            fda_spine.SpineMetricsSaver(),
+        ]
+    )
+    return pipeline
+
+def FdaMuscleAdiposeTissuePipelineBuilder(args):
+    pipeline = InferencePipeline(
+        [
+            fda_muscle_adipose_tissue.MuscleAdiposeTissueSegmentation(
+                16, args.muscle_fat_model
+            ),
+            fda_muscle_adipose_tissue.MuscleAdiposeTissuePostProcessing(),
+            fda_muscle_adipose_tissue.MuscleAdiposeTissueComputeMetrics(),
+            # fda_muscle_adipose_tissue_visualization.MuscleAdiposeTissueVisualizer(),
+            fda_muscle_adipose_tissue.MuscleAdiposeTissueH5Saver(),
+            fda_muscle_adipose_tissue.MuscleAdiposeTissueMetricsSaver(),
+        ]
+    )
+    return pipeline
+
 
 ### AAA Pipeline
 def AAAPipelineBuilder(path, args):
@@ -197,6 +237,17 @@ def argument_parser():
         "--spine_model", default="stanford_spine_v0.0.1", type=str
     )
 
+    # FDA approved BMD algorithm (Spine + muscle + fat)
+    fda_spine_muscle_adipose_tissue_parser = subparsers.add_parser(
+        "fda_bmd", parents=[base_parser]
+    )
+    fda_spine_muscle_adipose_tissue_parser.add_argument(
+        "--muscle_fat_model", default="stanford_v0.0.2", type=str
+    )
+    fda_spine_muscle_adipose_tissue_parser.add_argument(
+        "--spine_model", default="ts_spine", type=str
+    )
+
     # Liver spleen pancreas
     liver_spleen_pancreas = subparsers.add_parser(
         "liver_spleen_pancreas", parents=[base_parser]
@@ -266,7 +317,9 @@ def argument_parser():
 
 def main():
     args = argument_parser().parse_args()
-    if args.pipeline == "spine_muscle_adipose_tissue":
+    if args.pipeline == "fda_bmd":
+        process_3d(args, FdaBmdPipelineBuilder)
+    elif args.pipeline == "spine_muscle_adipose_tissue":
         process_3d(args, SpineMuscleAdiposeTissuePipelineBuilder)
     elif args.pipeline == "spine":
         process_3d(args, SpinePipelineBuilder)
@@ -283,7 +336,8 @@ def main():
     elif args.pipeline == "all":
         process_3d(args, AllPipelineBuilder)
     else:
-        raise AssertionError("{} command not supported".format(args.action))
+        # raise AssertionError("{} command not supported".format(args.action))
+        raise AssertionError("{} command not supported".format(args.pipeline))
 
 
 if __name__ == "__main__":
