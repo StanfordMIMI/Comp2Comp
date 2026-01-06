@@ -626,7 +626,7 @@ class MuscleAdiposeTissueMetricsSaver(InferenceClass):
                 "<" if binary_prediction else "≥",
             )
         )
-        print("Predicted Z and T-score (NOT FDA approved):")
+        print("Predicted Z and T-score (NOT FDA cleared):")
         print(f"Predicted Z-score: {dxa_z_score_prediction:.1f}")
         print(f"Predicted T-score: {dxa_t_score_prediction:.1f}")
 
