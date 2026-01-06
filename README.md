@@ -80,7 +80,7 @@ bin/C2C fda_bmd -i <path/to/input/folder>
 BMD Report:
 BMD score prediction: NORMAL (T-score ≥ -1)
 
-Predicted Z and T-score (NOT FDA approved):
+Predicted Z and T-score (NOT FDA cleared):
 Predicted Z-score: 0.5
 Predicted T-score: 0.1
 ################################################################################
